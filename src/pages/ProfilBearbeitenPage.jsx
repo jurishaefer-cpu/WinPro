@@ -103,7 +103,6 @@ function ProfilBearbeitenPage() {
         <section className="form-section">
           <h2 className="section-label">FARBEN</h2>
           <div className="form-field">
-            <label>Verfügbare Farben</label>
             <FarbenDropdown value={form.farben} onChange={farben => setForm({ ...form, farben })} />
           </div>
         </section>

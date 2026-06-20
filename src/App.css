@@ -800,7 +800,7 @@ body {
   font-size: 14px;
   color: #333;
 }
-.farben-list-item button {
+.farben-list-item > button {
   background: none;
   border: none;
   color: #bbb;
@@ -809,8 +809,43 @@ body {
   padding: 2px 6px;
   line-height: 1;
 }
-.farben-list-item button:hover {
+.farben-list-item > button:hover {
   color: #c0152e;
+}
+.farben-confirm-text {
+  font-size: 13px;
+  color: #c0152e;
+  font-weight: 500;
+}
+.farben-confirm-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.farben-confirm-yes {
+  background: #c0152e;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.farben-confirm-yes:hover {
+  background: #a01024;
+}
+.farben-confirm-no {
+  background: #eceef1;
+  color: #333;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.farben-confirm-no:hover {
+  background: #e0e2e6;
 }
 
 /* ── Farben-Chips in der Liste ── */

@@ -3,11 +3,15 @@ import { useState, useRef, useEffect } from 'react';
 function FarbenDropdown({ value, onChange }) {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
+  const [confirmIndex, setConfirmIndex] = useState(null);
   const ref = useRef(null);
 
   useEffect(() => {
     function onDoc(e) {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+      if (ref.current && !ref.current.contains(e.target)) {
+        setOpen(false);
+        setConfirmIndex(null);
+      }
     }
     document.addEventListener('mousedown', onDoc);
     return () => document.removeEventListener('mousedown', onDoc);
@@ -21,6 +25,7 @@ function FarbenDropdown({ value, onChange }) {
   }
   function remove(i) {
     onChange(value.filter((_, idx) => idx !== i));
+    setConfirmIndex(null);
   }
   function onKeyDown(e) {
     if (e.key === 'Enter') {
@@ -29,16 +34,12 @@ function FarbenDropdown({ value, onChange }) {
     }
   }
 
-  const summary = value.length === 0 ? 'Farben hinzufügen…' : value.join(', ');
+  const label = value.length > 0 ? `Verfügbare Farben (${value.length})` : 'Verfügbare Farben';
 
   return (
     <div className="farben-dropdown" ref={ref}>
-      <button
-        type="button"
-        className={'farben-trigger' + (value.length === 0 ? ' is-empty' : '')}
-        onClick={() => setOpen(o => !o)}
-      >
-        <span className="farben-trigger-text">{summary}</span>
+      <button type="button" className="farben-trigger" onClick={() => setOpen(o => !o)}>
+        <span className="farben-trigger-text">{label}</span>
         <svg width="12" height="8" viewBox="0 0 12 8" fill="none" stroke="#999" strokeWidth="1.5" strokeLinecap="round">
           <path d="M1 1l5 5 5-5" />
         </svg>
@@ -62,8 +63,20 @@ function FarbenDropdown({ value, onChange }) {
             <ul className="farben-list">
               {value.map((f, i) => (
                 <li key={i} className="farben-list-item">
-                  <span>{f}</span>
-                  <button type="button" onClick={() => remove(i)} title="Entfernen">✕</button>
+                  {confirmIndex === i ? (
+                    <>
+                      <span className="farben-confirm-text">„{f}" entfernen?</span>
+                      <span className="farben-confirm-actions">
+                        <button type="button" className="farben-confirm-yes" onClick={() => remove(i)}>Ja</button>
+                        <button type="button" className="farben-confirm-no" onClick={() => setConfirmIndex(null)}>Nein</button>
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span>{f}</span>
+                      <button type="button" onClick={() => setConfirmIndex(i)} title="Entfernen">✕</button>
+                    </>
+                  )}
                 </li>
               ))}
             </ul>
