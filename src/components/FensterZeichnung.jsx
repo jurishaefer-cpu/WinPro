@@ -78,7 +78,7 @@ export function GeometrieThumb({ geometrie, glasFarbe = '#cfe3ef' }) {
   );
 }
 
-function FensterZeichnung({ geometrie, breite, hoehe, glasFarbe = '#cfe3ef' }) {
+function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, glasFarbe = '#cfe3ef' }) {
   const g = geometrie;
   const b = Math.max(200, Number(breite) || 1000);
   const hh = Math.max(200, Number(hoehe) || 1200);
@@ -91,16 +91,24 @@ function FensterZeichnung({ geometrie, breite, hoehe, glasFarbe = '#cfe3ef' }) {
   const cx = VB_W / 2 + 20, cy = VB_H / 2 + 10;
   const x = cx - rw / 2, y = cy - rh / 2;
 
-  const u = Math.min(rw, rh);
-  const r0 = { x, y, w: rw, h: rh };
-  const blendW = Math.max(12, u * 0.052);              // Blendrahmen-Breite (äußerer Rahmen) → größer
+  // Verbreiterungen (mm) als Streifen außen am Fenster, innerhalb des Gesamtmaßes
+  const vo = Math.max(0, Number(verbreiterung?.oben) || 0) * scale;
+  const vu = Math.max(0, Number(verbreiterung?.unten) || 0) * scale;
+  const vl = Math.max(0, Number(verbreiterung?.links) || 0) * scale;
+  const vr = Math.max(0, Number(verbreiterung?.rechts) || 0) * scale;
+  const hatVerb = vo || vu || vl || vr;
+  const r0 = { x, y, w: rw, h: rh };                            // Gesamtmaß (mit Verbreiterung)
+  const win = { x: x + vl, y: y + vo, w: rw - vl - vr, h: rh - vo - vu }; // eigentliches Fenster
+
+  const u = Math.min(win.w, win.h);
+  const blendW = Math.max(12, u * 0.052);              // Blendrahmen-Breite (äußerer Rahmen)
   const gap = Math.max(2.5, u * 0.011);                // schmaler Zwischenraum Blend ↔ Flügel
   const sashW = Math.max(10, u * 0.045);               // Flügelrahmen-Breite
-  const blendIn = inset(r0, blendW);                   // Blendrahmen-Innenkante
-  const sashOut = inset(r0, blendW + gap);             // Flügelrahmen außen
+  const blendIn = inset(win, blendW);                  // Blendrahmen-Innenkante
+  const sashOut = inset(win, blendW + gap);            // Flügelrahmen außen
   const glas = inset(sashOut, sashW);                  // Glas / Flügelrahmen innen
 
-  const miterBlend = gehrung(r0, blendIn);             // 45°-Gehrung am Blendrahmen
+  const miterBlend = gehrung(win, blendIn);            // 45°-Gehrung am Blendrahmen
   const miterSash = gehrung(sashOut, glas);            // 45°-Gehrung am Flügelrahmen
   const linien = g ? oeffnungsLinien(g, glas) : [];
   const istTuer = g?.open === 'tuer';
@@ -120,8 +128,13 @@ function FensterZeichnung({ geometrie, breite, hoehe, glasFarbe = '#cfe3ef' }) {
       <text x={x - 44} y={cy} textAnchor="middle" fontSize="22" fill="#0f1f3d" fontWeight="600"
             transform={`rotate(-90 ${x - 44} ${cy})`}>{Math.round(hh)}</text>
 
+      {/* Verbreiterung: Gesamtmaß-Rahmen außen herum */}
+      {hatVerb && (
+        <rect x={r0.x} y={r0.y} width={r0.w} height={r0.h} fill="#fff" stroke="#0f1f3d" strokeWidth="2.5" />
+      )}
+
       {/* Blendrahmen (Außenring) + Zwischenrahmen mit 45°-Gehrung */}
-      <rect x={r0.x} y={r0.y} width={r0.w} height={r0.h} fill="#fff" stroke="#0f1f3d" strokeWidth="2.5" />
+      <rect x={win.x} y={win.y} width={win.w} height={win.h} fill="#fff" stroke="#0f1f3d" strokeWidth="2.5" />
       <rect x={blendIn.x} y={blendIn.y} width={blendIn.w} height={blendIn.h} fill="#fff" stroke="#0f1f3d" strokeWidth="1.6" />
       {miterBlend.map((l, i) => (
         <line key={'mb' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="1.4" />

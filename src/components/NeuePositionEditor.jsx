@@ -29,6 +29,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
   const [standort, setStandort] = useState(initial?.standort ?? '');
 
   const [verbreiterung, setVerbreiterung] = useState(initial?.verbreiterung ?? false);
+  const [verb, setVerb] = useState(initial?.verb ?? { oben: 0, unten: 0, links: 0, rechts: 0 });
   const [aufsatzkasten, setAufsatzkasten] = useState(initial?.aufsatzkasten ?? false);
   const [rollladen, setRollladen] = useState(initial?.rollladen ?? 'ohne');
 
@@ -92,7 +93,12 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
       verglasung + (vsg ? ', VSG' : '') + (ornament ? ', Ornament' : ''),
       `Dichtung innen/außen: ${dichtungInnen}/${dichtungAussen}`,
     ];
-    if (verbreiterung) teile.push('mit Verbreiterung');
+    if (verbreiterung) {
+      const seiten = ['oben', 'unten', 'links', 'rechts']
+        .filter(k => Number(verb[k]) > 0)
+        .map(k => `${k} ${Number(verb[k])} mm`);
+      teile.push('Verbreiterung' + (seiten.length ? ': ' + seiten.join(', ') : ''));
+    }
     if (aufsatzkasten) teile.push('mit Aufsatzkasten');
     if (rollladen !== 'ohne') teile.push(`Rollladenführung ${rollladen}`);
     if (standort) teile.push(`Standort: ${standort}`);
@@ -104,7 +110,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
   function handleSave() {
     const config = {
       profilId, kategorie, code, breite: Number(breite), hoehe: Number(hoehe),
-      stueckzahl: Number(stueckzahl), standort, verbreiterung, aufsatzkasten, rollladen,
+      stueckzahl: Number(stueckzahl), standort, verbreiterung, verb, aufsatzkasten, rollladen,
       innenfarbe, aussenfarbe, verglasung, vsg, ornament, dichtungInnen, dichtungAussen,
       kommentar, montage: Number(montage), ausbau: Number(ausbau), entsorgung: Number(entsorgung),
       ohneMontage, nettoJeStueck: Number(nettoJeStueck),
@@ -177,6 +183,22 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
             <button className={!verbreiterung ? 'active' : ''} onClick={() => setVerbreiterung(false)}>nein</button>
             <button className={verbreiterung ? 'active' : ''} onClick={() => setVerbreiterung(true)}>ja</button>
           </div>
+          {verbreiterung && (
+            <div className="np-verb">
+              {[['oben', 'oben'], ['unten', 'unten'], ['links', 'links'], ['rechts', 'rechts']].map(([key, label]) => (
+                <div key={key}>
+                  <label className="np-field-label">{label} (mm)</label>
+                  <input
+                    className="np-input"
+                    type="number"
+                    min="0"
+                    value={verb[key]}
+                    onChange={e => setVerb({ ...verb, [key]: e.target.value })}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
           <label className="np-field-label">Aufsatzkasten</label>
           <div className="np-segmented">
             <button className={!aufsatzkasten ? 'active' : ''} onClick={() => setAufsatzkasten(false)}>nein</button>
@@ -196,7 +218,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
             <span className="np-chip">Fläche <b>{flaeche.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} m²</b></span>
           </div>
           <div className="np-canvas">
-            <FensterZeichnung geometrie={geometrie} breite={breite} hoehe={hoehe} />
+            <FensterZeichnung geometrie={geometrie} breite={breite} hoehe={hoehe} verbreiterung={verbreiterung ? verb : null} />
           </div>
           <div className="np-canvas-caption">
             <div className="np-canvas-title">{geometrie?.label}</div>
