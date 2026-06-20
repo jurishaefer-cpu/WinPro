@@ -1567,14 +1567,22 @@ body {
 .np-input, .np-select, .np-textarea {
   width: 100%;
   border: 1px solid #d1d5db; border-radius: 9px;
-  padding: 11px 12px; font-size: 15px; color: #1a1a1a;
+  padding: 14px 14px; font-size: 16px; color: #1a1a1a;
   outline: none; background: #fff;
+  box-sizing: border-box;
 }
 .np-input:focus, .np-select:focus, .np-textarea:focus { border-color: #0f1f3d; }
-.np-textarea { resize: vertical; }
-.np-select { cursor: pointer; }
+.np-textarea { resize: vertical; min-height: 96px; padding: 12px 14px; }
+.np-input { height: 50px; }
+.np-select {
+  cursor: pointer;
+  height: 50px;
+  appearance: none; -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23667085' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 14px center;
+  padding-right: 38px;
+}
 .np-select--block { width: 100%; }
-.np-select--tall { padding: 15px 14px; font-size: 16px; }
 .np-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .np-row > div { min-width: 0; }
 
