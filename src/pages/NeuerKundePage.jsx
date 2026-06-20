@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../auth/AuthContext';
 
 const emptyForm = {
   vorname: '', nachname: '', firma: '',
@@ -10,6 +11,7 @@ const emptyForm = {
 
 function NeuerKundePage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
 
@@ -20,7 +22,7 @@ function NeuerKundePage() {
   async function handleSubmit(e) {
     e.preventDefault();
     setSaving(true);
-    await supabase.from('kunden').insert([form]);
+    await supabase.from('kunden').insert([{ ...form, owner_id: user.id }]);
     navigate('/kunden');
   }
 

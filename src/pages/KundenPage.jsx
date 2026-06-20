@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { useView } from '../view/ViewContext';
 
 function getInitials(k) {
   const v = k.vorname?.[0] ?? '';
@@ -14,15 +15,20 @@ function KundenPage() {
   const [filter, setFilter] = useState('Alle');
   const [loading, setLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const { selectedOwner } = useView();
 
   useEffect(() => {
+    if (!selectedOwner) return;
     async function laden() {
-      const { data } = await supabase.from('kunden').select('*').order('created_at', { ascending: false });
+      setLoading(true);
+      let query = supabase.from('kunden').select('*').order('created_at', { ascending: false });
+      if (selectedOwner !== 'alle') query = query.eq('owner_id', selectedOwner);
+      const { data } = await query;
       setKunden(data ?? []);
       setLoading(false);
     }
     laden();
-  }, []);
+  }, [selectedOwner]);
 
   async function confirmDelete() {
     const id = deleteTarget.id;

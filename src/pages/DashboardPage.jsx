@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { useView } from '../view/ViewContext';
 import DashboardCards from '../components/DashboardCards';
 
 // TODO: später aus den Einstellungen (Firmen-/Benutzername) laden
@@ -15,6 +16,7 @@ function DashboardPage() {
   const [now, setNow] = useState(new Date());
   const [kundenCount, setKundenCount] = useState(null);
   const [profileCount, setProfileCount] = useState(null);
+  const { selectedOwner } = useView();
 
   // Live-Uhr: jede Sekunde aktualisieren
   useEffect(() => {
@@ -22,12 +24,13 @@ function DashboardPage() {
     return () => clearInterval(timer);
   }, []);
 
-  // Anzahlen aus der Datenbank laden
+  // Anzahlen aus der Datenbank laden (passend zur gewählten Ansicht)
   useEffect(() => {
+    if (!selectedOwner) return;
     async function laden() {
-      const { count: kc } = await supabase
-        .from('kunden')
-        .select('*', { count: 'exact', head: true });
+      let kq = supabase.from('kunden').select('*', { count: 'exact', head: true });
+      if (selectedOwner !== 'alle') kq = kq.eq('owner_id', selectedOwner);
+      const { count: kc } = await kq;
       setKundenCount(kc ?? 0);
 
       const { count: pc } = await supabase
@@ -36,7 +39,7 @@ function DashboardPage() {
       setProfileCount(pc ?? 0);
     }
     laden();
-  }, []);
+  }, [selectedOwner]);
 
   const datum = now.toLocaleDateString('de-DE', {
     weekday: 'long',
