@@ -13,7 +13,7 @@ function ProfilBearbeitenPage() {
   useEffect(() => {
     async function laden() {
       const { data } = await supabase.from('profile').select('*').eq('id', id).single();
-      if (data) setForm(data);
+      if (data) setForm({ ...data, farben: data.farben ?? [] });
       else navigate('/profile');
     }
     laden();
@@ -21,6 +21,18 @@ function ProfilBearbeitenPage() {
 
   function handleChange(e) {
     setForm({ ...form, [e.target.name]: e.target.value });
+  }
+
+  function addFarbe() {
+    setForm({ ...form, farben: [...form.farben, ''] });
+  }
+  function updateFarbe(i, value) {
+    const farben = [...form.farben];
+    farben[i] = value;
+    setForm({ ...form, farben });
+  }
+  function removeFarbe(i) {
+    setForm({ ...form, farben: form.farben.filter((_, idx) => idx !== i) });
   }
 
   async function handleSubmit(e) {
@@ -34,6 +46,7 @@ function ProfilBearbeitenPage() {
       bautiefe: num(form.bautiefe),
       anzahl_kammern: num(form.anzahl_kammern),
       dichtungsebenen: num(form.dichtungsebenen),
+      farben: form.farben.map(f => f.trim()).filter(Boolean),
       notizen: form.notizen,
     }).eq('id', id);
     navigate('/profile');
@@ -96,6 +109,28 @@ function ProfilBearbeitenPage() {
               <input type="number" name="dichtungsebenen" value={form.dichtungsebenen ?? ''} onChange={handleChange} />
             </div>
           </div>
+        </section>
+
+        <section className="form-section">
+          <h2 className="section-label">FARBEN</h2>
+          {form.farben.length === 0 && (
+            <p className="farbe-empty">Noch keine Farben hinzugefügt.</p>
+          )}
+          {form.farben.map((farbe, i) => (
+            <div className="farbe-row" key={i}>
+              <input
+                value={farbe}
+                onChange={e => updateFarbe(i, e.target.value)}
+                placeholder="z.B. Anthrazitgrau, Golden Oak, Weiß"
+              />
+              <button type="button" className="farbe-remove" onClick={() => removeFarbe(i)} title="Entfernen">
+                ✕
+              </button>
+            </div>
+          ))}
+          <button type="button" className="farbe-add" onClick={addFarbe}>
+            + Farbe hinzufügen
+          </button>
         </section>
 
         <section className="form-section">

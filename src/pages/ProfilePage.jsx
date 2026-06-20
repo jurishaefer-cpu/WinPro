@@ -79,6 +79,11 @@ function ProfilePage() {
                   {[p.material, p.bautiefe && `${p.bautiefe} mm`, p.anzahl_kammern && `${p.anzahl_kammern} Kammern`]
                     .filter(Boolean).join(' · ') || '—'}
                 </div>
+                {p.farben?.length > 0 && (
+                  <div className="farbe-chips">
+                    {p.farben.map((f, i) => <span className="farbe-chip" key={i}>{f}</span>)}
+                  </div>
+                )}
               </div>
               <div className="kunde-actions">
                 <Link to={`/profile/${p.id}/bearbeiten`} className="icon-btn" title="Bearbeiten">

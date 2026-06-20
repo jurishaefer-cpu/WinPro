@@ -703,6 +703,77 @@ body {
   background: #0f1f3d;
   color: #fff;
 }
+
+/* ── Farben-Eingabe ── */
+.farbe-empty {
+  font-size: 14px;
+  color: #999;
+  margin-bottom: 14px;
+}
+.farbe-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.farbe-row input {
+  flex: 1;
+  padding: 12px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 15px;
+  color: #1a1a1a;
+  outline: none;
+  background: white;
+}
+.farbe-row input:focus {
+  border-color: #0f1f3d;
+  box-shadow: 0 0 0 3px rgba(15, 31, 61, 0.08);
+}
+.farbe-remove {
+  flex-shrink: 0;
+  width: 44px;
+  border: 1px solid #f3c0c0;
+  background: #fff5f5;
+  color: #c0152e;
+  border-radius: 8px;
+  font-size: 15px;
+  cursor: pointer;
+}
+.farbe-remove:hover {
+  background: #ffe9e9;
+}
+.farbe-add {
+  display: inline-block;
+  margin-top: 2px;
+  padding: 10px 16px;
+  border: 1px dashed #c0c4cc;
+  background: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #0f1f3d;
+  cursor: pointer;
+}
+.farbe-add:hover {
+  background: #f7f8fa;
+  border-color: #0f1f3d;
+}
+
+/* ── Farben-Chips in der Liste ── */
+.farbe-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.farbe-chip {
+  font-size: 12px;
+  color: #444;
+  background: #f0f1f3;
+  border: 1px solid #e0e2e6;
+  border-radius: 6px;
+  padding: 3px 8px;
+}
 .form-field input.error {
   border-color: #d63031;
 }
