@@ -743,10 +743,41 @@ body {
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
   padding: 12px;
 }
+.farben-import-btn {
+  width: 100%;
+  padding: 11px;
+  margin-bottom: 10px;
+  background: #0f1f3d;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.farben-import-btn:hover {
+  background: #1a3060;
+}
 .farben-add-row {
   display: flex;
   gap: 8px;
   margin-bottom: 10px;
+}
+.farben-item-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.farben-code {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 700;
+  color: #555;
+  background: #eceef1;
+  border-radius: 4px;
+  padding: 2px 6px;
+  letter-spacing: 0.3px;
 }
 .farben-add-row input {
   flex: 1;

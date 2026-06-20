@@ -1,10 +1,16 @@
 import { useState, useRef, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
 
 function FarbenDropdown({ value, onChange }) {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
   const [confirmIndex, setConfirmIndex] = useState(null);
+  const [katalog, setKatalog] = useState([]);
   const ref = useRef(null);
+
+  useEffect(() => {
+    supabase.from('farbe_katalog').select('*').order('id').then(({ data }) => setKatalog(data ?? []));
+  }, []);
 
   useEffect(() => {
     function onDoc(e) {
@@ -17,6 +23,10 @@ function FarbenDropdown({ value, onChange }) {
     return () => document.removeEventListener('mousedown', onDoc);
   }, []);
 
+  // Name → Code (für das Anzeigen des AP-Codes)
+  const codeByName = {};
+  katalog.forEach(k => { codeByName[k.name] = k.code; });
+
   function add() {
     const v = input.trim();
     if (!v) return;
@@ -27,11 +37,13 @@ function FarbenDropdown({ value, onChange }) {
     onChange(value.filter((_, idx) => idx !== i));
     setConfirmIndex(null);
   }
+  function importieren() {
+    const merged = [...value];
+    katalog.forEach(k => { if (!merged.includes(k.name)) merged.push(k.name); });
+    onChange(merged);
+  }
   function onKeyDown(e) {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      add();
-    }
+    if (e.key === 'Enter') { e.preventDefault(); add(); }
   }
 
   const label = value.length > 0 ? `Verfügbare Farben (${value.length})` : 'Verfügbare Farben';
@@ -47,16 +59,23 @@ function FarbenDropdown({ value, onChange }) {
 
       {open && (
         <div className="farben-panel">
+          {katalog.length > 0 && (
+            <button type="button" className="farben-import-btn" onClick={importieren}>
+              ↧ Alle {katalog.length} Farben aus Katalog übernehmen
+            </button>
+          )}
+
           <div className="farben-add-row">
             <input
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={onKeyDown}
-              placeholder="Farbe eingeben…"
+              placeholder="Farbe manuell hinzufügen…"
               autoFocus
             />
             <button type="button" className="farben-add-btn" onClick={add}>Hinzufügen</button>
           </div>
+
           {value.length === 0 ? (
             <div className="farben-empty">Noch keine Farben.</div>
           ) : (
@@ -73,7 +92,10 @@ function FarbenDropdown({ value, onChange }) {
                     </>
                   ) : (
                     <>
-                      <span>{f}</span>
+                      <span className="farben-item-label">
+                        {codeByName[f] && <span className="farben-code">{codeByName[f]}</span>}
+                        {f}
+                      </span>
                       <button type="button" onClick={() => setConfirmIndex(i)} title="Entfernen">✕</button>
                     </>
                   )}
