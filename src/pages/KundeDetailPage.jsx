@@ -3,8 +3,6 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../auth/AuthContext';
 
-const STATUS_OPTIONS = ['Entwurf', 'Versendet', 'Angenommen', 'Abgelehnt'];
-
 function getInitials(k) {
   if (k.firma) {
     const teile = k.firma.trim().split(/\s+/);
@@ -40,10 +38,8 @@ function KundeDetailPage() {
   const [kunde, setKunde] = useState(null);
   const [angebote, setAngebote] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
-  const [neu, setNeu] = useState({ bezeichnung: '', betrag: '', status: 'Entwurf' });
-  const [saving, setSaving] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     async function laden() {
@@ -65,19 +61,15 @@ function KundeDetailPage() {
     laden();
   }, [id, navigate]);
 
-  async function handleSaveAngebot(e) {
-    e.preventDefault();
-    setSaving(true);
-    const betrag = parseFloat(String(neu.betrag).replace(',', '.')) || 0;
+  async function handleNeuesAngebot() {
+    setCreating(true);
     const { data } = await supabase
       .from('angebote')
-      .insert([{ kunde_id: Number(id), owner_id: user.id, bezeichnung: neu.bezeichnung, betrag, status: neu.status }])
+      .insert([{ kunde_id: Number(id), owner_id: user.id, status: 'Entwurf', betrag: 0 }])
       .select()
       .single();
-    if (data) setAngebote([data, ...angebote]);
-    setSaving(false);
-    setShowModal(false);
-    setNeu({ bezeichnung: '', betrag: '', status: 'Entwurf' });
+    if (data) navigate(`/kunden/${id}/angebote/${data.id}`);
+    else setCreating(false);
   }
 
   async function handleDeleteKunde() {
@@ -179,8 +171,8 @@ function KundeDetailPage() {
       {/* Angebote */}
       <div className="angebote-header">
         <h2>Angebote</h2>
-        <button className="btn btn-primary btn-red" onClick={() => setShowModal(true)}>
-          Neues Angebot
+        <button className="btn btn-primary btn-red" onClick={handleNeuesAngebot} disabled={creating}>
+          {creating ? 'Wird angelegt…' : 'Neues Angebot'}
         </button>
       </div>
 
@@ -199,7 +191,12 @@ function KundeDetailPage() {
       ) : (
         <div className="angebote-list">
           {angebote.map(a => (
-            <div key={a.id} className="angebot-card">
+            <div
+              key={a.id}
+              className="angebot-card"
+              style={{ cursor: 'pointer' }}
+              onClick={() => navigate(`/kunden/${id}/angebote/${a.id}`)}
+            >
               <div className="angebot-main">
                 <div className="angebot-bez">{a.bezeichnung || 'Ohne Bezeichnung'}</div>
                 <div className="angebot-meta">{datum(a.created_at)}</div>
@@ -208,54 +205,6 @@ function KundeDetailPage() {
               <div className="angebot-betrag">{euro(a.betrag)}</div>
             </div>
           ))}
-        </div>
-      )}
-
-      {/* Neues-Angebot-Dialog */}
-      {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <form className="modal-box" onClick={e => e.stopPropagation()} onSubmit={handleSaveAngebot}>
-            <h2 className="modal-title">Neues Angebot</h2>
-            <div className="form-field" style={{ marginBottom: 16 }}>
-              <label>Bezeichnung</label>
-              <input
-                autoFocus
-                value={neu.bezeichnung}
-                onChange={e => setNeu({ ...neu, bezeichnung: e.target.value })}
-                placeholder="z.B. Fenster Erdgeschoss"
-              />
-            </div>
-            <div className="form-row">
-              <div className="form-field">
-                <label>Betrag (€)</label>
-                <input
-                  inputMode="decimal"
-                  value={neu.betrag}
-                  onChange={e => setNeu({ ...neu, betrag: e.target.value })}
-                  placeholder="0,00"
-                />
-              </div>
-              <div className="form-field">
-                <label>Status</label>
-                <select
-                  className="filter-select"
-                  style={{ width: '100%' }}
-                  value={neu.status}
-                  onChange={e => setNeu({ ...neu, status: e.target.value })}
-                >
-                  {STATUS_OPTIONS.map(s => <option key={s}>{s}</option>)}
-                </select>
-              </div>
-            </div>
-            <div className="modal-actions" style={{ marginTop: 24 }}>
-              <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>
-                Abbrechen
-              </button>
-              <button type="submit" className="btn btn-primary" disabled={saving}>
-                {saving ? 'Speichern…' : 'Angebot anlegen'}
-              </button>
-            </div>
-          </form>
         </div>
       )}
 

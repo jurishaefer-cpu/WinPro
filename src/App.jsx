@@ -5,6 +5,7 @@ import KundenPage from './pages/KundenPage';
 import NeuerKundePage from './pages/NeuerKundePage';
 import KundeBearbeitenPage from './pages/KundeBearbeitenPage';
 import KundeDetailPage from './pages/KundeDetailPage';
+import AngebotEditorPage from './pages/AngebotEditorPage';
 import ProfilePage from './pages/ProfilePage';
 import NeuesProfilPage from './pages/NeuesProfilPage';
 import ProfilBearbeitenPage from './pages/ProfilBearbeitenPage';
@@ -36,6 +37,7 @@ function App() {
         <Route path="/kunden" element={<KundenPage />} />
         <Route path="/kunden/neu" element={<NeuerKundePage />} />
         <Route path="/kunden/:id" element={<KundeDetailPage />} />
+        <Route path="/kunden/:id/angebote/:angebotId" element={<AngebotEditorPage />} />
         <Route path="/kunden/:id/bearbeiten" element={<KundeBearbeitenPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/profile/neu" element={<NeuesProfilPage />} />

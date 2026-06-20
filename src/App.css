@@ -1107,6 +1107,352 @@ body {
   border: 1px solid #e0e2e6;
 }
 
+/* ── Angebots-Editor ── */
+.angebot-editor {
+  max-width: 1100px;
+  padding-bottom: 96px;
+}
+.angebot-editor .back-link {
+  color: #8b1a1a;
+  font-weight: 600;
+  text-decoration: underline;
+}
+.editor-kunde {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+.editor-kunde-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #eef0f3;
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.editor-kunde-name {
+  font-size: 19px;
+  color: #1a1a1a;
+}
+
+/* Status-/Stepper-Karte */
+.stepper-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 22px 24px;
+  margin-bottom: 28px;
+}
+.stepper-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 22px;
+}
+.status-pill {
+  font-size: 14px;
+  font-weight: 600;
+  color: #4a4f57;
+  background: #eef0f3;
+  border-radius: 20px;
+  padding: 6px 16px;
+}
+.stepper-subtitle {
+  font-size: 15px;
+  color: #6b7280;
+}
+.stepper {
+  display: flex;
+  align-items: flex-start;
+}
+.stepper-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+  width: 120px;
+  text-align: center;
+}
+.stepper-dot {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid #d8dce1;
+  background: white;
+  color: #b0b6bd;
+  font-size: 17px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.stepper-step.active .stepper-dot {
+  border-color: #0f1f3d;
+  color: #0f1f3d;
+  box-shadow: 0 0 0 4px rgba(15, 31, 61, 0.08);
+}
+.stepper-step.done .stepper-dot {
+  border-color: #0f1f3d;
+  background: #0f1f3d;
+  color: white;
+}
+.stepper-label {
+  font-size: 14px;
+  color: #9aa0a8;
+}
+.stepper-step.active .stepper-label {
+  color: #0f1f3d;
+  font-weight: 600;
+}
+.stepper-line {
+  flex: 1;
+  height: 2px;
+  background: #e5e7eb;
+  margin-top: 21px;
+}
+.stepper-line.done {
+  background: #0f1f3d;
+}
+.stepper-belege {
+  border-top: 1px solid #eef0f2;
+  margin-top: 22px;
+  padding-top: 16px;
+  font-size: 15px;
+  color: #6b7280;
+}
+.stepper-belege b {
+  color: #9aa0a8;
+  font-size: 13px;
+  letter-spacing: 0.6px;
+  margin-right: 12px;
+}
+
+/* Editor-Kopf */
+.editor-title {
+  font-size: 30px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.editor-count {
+  font-size: 15px;
+  color: #9aa0a8;
+  margin-bottom: 20px;
+}
+.editor-toolbar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 22px;
+}
+.editor-bezeichnung {
+  flex: 1;
+  max-width: 460px;
+}
+.editor-bezeichnung label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #4a4f57;
+  margin-bottom: 8px;
+}
+.editor-bezeichnung input {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  padding: 14px 16px;
+  font-size: 16px;
+  color: #333;
+  outline: none;
+}
+.editor-bezeichnung input:focus {
+  border-color: #0f1f3d;
+}
+.editor-pos-buttons {
+  display: flex;
+  gap: 12px;
+}
+.btn-dark {
+  background: #0f1f3d;
+  color: white;
+}
+.btn-dark:hover {
+  background: #1a3060;
+}
+.btn-outline {
+  background: white;
+  color: #1a1a1a;
+  border: 1px solid #d1d5db;
+}
+.btn-outline:hover {
+  background: #f6f7f9;
+}
+
+/* Positionen */
+.pos-empty {
+  border: 1px dashed #d8dce1;
+  border-radius: 12px;
+  background: #fafbfc;
+  padding: 48px 24px;
+  text-align: center;
+}
+.pos-empty-text {
+  font-size: 16px;
+  color: #9aa0a8;
+  margin-bottom: 20px;
+}
+.pos-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.pos-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px 20px;
+}
+.pos-row-main {
+  flex: 1;
+  min-width: 0;
+}
+.pos-row-desc {
+  font-size: 15px;
+  color: #1a1a1a;
+  word-break: break-word;
+}
+.pos-row-desc p { margin: 0; }
+.pos-row-menge {
+  font-size: 13px;
+  color: #9aa0a8;
+  margin-top: 4px;
+}
+.pos-row-preis {
+  font-size: 17px;
+  font-weight: 700;
+  color: #1a1a1a;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Sticky-Footer */
+.editor-footer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: white;
+  border-top: 1px solid #e5e7eb;
+  box-shadow: 0 -4px 14px rgba(0, 0, 0, 0.05);
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  z-index: 40;
+}
+.footer-summe {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.footer-summe-label {
+  font-size: 15px;
+  color: #6b7280;
+}
+.footer-summe-wert {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1a1a1a;
+  font-variant-numeric: tabular-nums;
+}
+.footer-summe-stk {
+  font-size: 14px;
+  color: #9aa0a8;
+}
+.footer-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 12px;
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Rich-Text-Editor (Manuelle Position) */
+.modal-box--wide {
+  max-width: 560px;
+}
+.rte {
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.rte-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 10px;
+  border-bottom: 1px solid #e5e7eb;
+  flex-wrap: wrap;
+}
+.rte-btn {
+  min-width: 34px;
+  height: 34px;
+  border: none;
+  background: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  color: #333;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8px;
+}
+.rte-btn:hover {
+  background: #f0f2f5;
+}
+.rte-btn.bold { font-weight: 700; }
+.rte-btn.italic { font-style: italic; }
+.rte-btn.underline { text-decoration: underline; }
+.rte-sep {
+  width: 1px;
+  height: 22px;
+  background: #e0e2e6;
+  margin: 0 6px;
+}
+.rte-color {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+.rte-area {
+  min-height: 150px;
+  padding: 14px 16px;
+  outline: none;
+  font-size: 15px;
+  color: #1a1a1a;
+  line-height: 1.5;
+}
+.rte-area:empty::before {
+  content: attr(data-placeholder);
+  color: #b0b6bd;
+}
+
 /* ── Mobiler Header: Hamburger statt Inline-Navigation ── */
 @media (max-width: 900px) {
   .app-header {
