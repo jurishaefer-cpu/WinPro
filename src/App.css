@@ -1067,44 +1067,96 @@ body {
   flex-direction: column;
   gap: 10px;
 }
+.angebot-row {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+}
 .angebot-card {
+  flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 16px;
   background: white;
   border: 1px solid #e5e7eb;
+  border-left: 4px solid #cbd0d6;
   border-radius: 12px;
   padding: 16px 20px;
+  transition: box-shadow 0.12s, border-color 0.12s;
+}
+.angebot-card:hover {
+  box-shadow: 0 2px 10px rgba(15, 31, 61, 0.08);
 }
 .angebot-main {
   flex: 1;
   min-width: 0;
 }
+.angebot-titelzeile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
 .angebot-bez {
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 17px;
+  font-weight: 700;
   color: #1a1a1a;
 }
 .angebot-meta {
   font-size: 14px;
-  color: #888;
-  margin-top: 3px;
+  color: #9aa0a8;
+  margin-top: 4px;
+  font-variant-numeric: tabular-nums;
 }
 .angebot-betrag {
   font-size: 18px;
   font-weight: 700;
   color: #1a1a1a;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.angebot-chevron {
+  color: #c4c9d0;
+  flex-shrink: 0;
 }
 .angebot-status {
   font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.4px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
   border-radius: 20px;
-  padding: 4px 10px;
+  padding: 4px 12px;
   background: #f0f1f3;
   color: #555;
-  border: 1px solid #e0e2e6;
+}
+/* Status-Farben (Karte links + Badge) */
+.angebot-card--entwurf { border-left-color: #cbd0d6; }
+.angebot-status--entwurf { background: #eef0f3; color: #6b7280; }
+.angebot-card--angebot { border-left-color: #3b6fe0; }
+.angebot-status--angebot { background: #e7eefc; color: #2a55c0; }
+.angebot-card--ab { border-left-color: #6b46c1; }
+.angebot-status--ab { background: #ede8fb; color: #5a37a8; }
+.angebot-card--bestellung { border-left-color: #d97706; }
+.angebot-status--bestellung { background: #fcefdc; color: #b45f08; }
+.angebot-card--rechnung { border-left-color: #1f9d57; }
+.angebot-status--rechnung { background: #e2f6ea; color: #16804a; }
+/* Löschen-Button neben der Karte */
+.angebot-delete {
+  flex-shrink: 0;
+  width: 52px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  color: #bbb;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.angebot-delete:hover {
+  color: #d63031;
+  background: #fff5f5;
+  border-color: #f3c2c2;
 }
 
 /* ── Angebots-Editor ── */

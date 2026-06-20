@@ -37,8 +37,10 @@ function KundeDetailPage() {
   const { user } = useAuth();
   const [kunde, setKunde] = useState(null);
   const [angebote, setAngebote] = useState([]);
+  const [posCounts, setPosCounts] = useState({});
   const [loading, setLoading] = useState(true);
   const [showDelete, setShowDelete] = useState(false);
+  const [deleteAngebot, setDeleteAngebot] = useState(null);
   const [creating, setCreating] = useState(false);
 
   useEffect(() => {
@@ -55,7 +57,17 @@ function KundeDetailPage() {
         .select('*')
         .eq('kunde_id', id)
         .order('created_at', { ascending: false });
-      setAngebote(a ?? []);
+      const liste = a ?? [];
+      setAngebote(liste);
+      if (liste.length) {
+        const { data: pos } = await supabase
+          .from('positionen')
+          .select('angebot_id')
+          .in('angebot_id', liste.map(x => x.id));
+        const counts = {};
+        (pos ?? []).forEach(p => { counts[p.angebot_id] = (counts[p.angebot_id] ?? 0) + 1; });
+        setPosCounts(counts);
+      }
       setLoading(false);
     }
     laden();
@@ -77,6 +89,12 @@ function KundeDetailPage() {
     navigate('/kunden');
   }
 
+  async function handleDeleteAngebot() {
+    await supabase.from('angebote').delete().eq('id', deleteAngebot.id);
+    setAngebote(angebote.filter(a => a.id !== deleteAngebot.id));
+    setDeleteAngebot(null);
+  }
+
   if (loading || !kunde) return <main className="app-main"><p>Laden…</p></main>;
 
   const name = kunde.firma || `${kunde.vorname ?? ''} ${kunde.nachname ?? ''}`.trim();
@@ -86,6 +104,20 @@ function KundeDetailPage() {
     .join(' , ');
   const gesamt = angebote.reduce((s, a) => s + Number(a.betrag || 0), 0);
   const letztes = angebote[0]?.created_at;
+
+  // Fortlaufende Nummer pro Kunde (älteste = 1), unabhängig von der Anzeige-Reihenfolge
+  const nummerMap = {};
+  [...angebote]
+    .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+    .forEach((a, i) => { nummerMap[a.id] = i + 1; });
+
+  const statusSlug = s => ({
+    'Entwurf': 'entwurf',
+    'Angebot': 'angebot',
+    'Auftragsbestätigung': 'ab',
+    'Bestellung': 'bestellung',
+    'Rechnung': 'rechnung',
+  }[s] || 'entwurf');
 
   return (
     <main className="app-main kunde-detail">
@@ -190,21 +222,40 @@ function KundeDetailPage() {
         </div>
       ) : (
         <div className="angebote-list">
-          {angebote.map(a => (
-            <div
-              key={a.id}
-              className="angebot-card"
-              style={{ cursor: 'pointer' }}
-              onClick={() => navigate(`/kunden/${id}/angebote/${a.id}`)}
-            >
-              <div className="angebot-main">
-                <div className="angebot-bez">{a.bezeichnung || 'Ohne Bezeichnung'}</div>
-                <div className="angebot-meta">{datum(a.created_at)}</div>
+          {angebote.map(a => {
+            const anzahl = posCounts[a.id] ?? 0;
+            return (
+              <div key={a.id} className="angebot-row">
+                <div
+                  className={'angebot-card angebot-card--' + statusSlug(a.status)}
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => navigate(`/kunden/${id}/angebote/${a.id}`)}
+                >
+                  <div className="angebot-main">
+                    <div className="angebot-titelzeile">
+                      <span className="angebot-bez">{a.bezeichnung?.trim() || `Angebot ${nummerMap[a.id]}`}</span>
+                      <span className={'angebot-status angebot-status--' + statusSlug(a.status)}>{a.status}</span>
+                    </div>
+                    <div className="angebot-meta">
+                      vom {datum(a.created_at)} · {anzahl} {anzahl === 1 ? 'Position' : 'Positionen'}
+                    </div>
+                  </div>
+                  <div className="angebot-betrag">{euro(a.betrag)}</div>
+                  <svg className="angebot-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="9 18 15 12 9 6"/>
+                  </svg>
+                </div>
+                <button className="angebot-delete" title="Angebot löschen" onClick={() => setDeleteAngebot(a)}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                    <path d="M10 11v6"/><path d="M14 11v6"/>
+                    <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                  </svg>
+                </button>
               </div>
-              <span className="angebot-status">{a.status}</span>
-              <div className="angebot-betrag">{euro(a.betrag)}</div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -220,6 +271,23 @@ function KundeDetailPage() {
             <div className="modal-actions">
               <button className="btn btn-secondary" onClick={() => setShowDelete(false)}>Abbrechen</button>
               <button className="btn btn-danger" onClick={handleDeleteKunde}>Endgültig löschen</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Angebot-löschen-Dialog */}
+      {deleteAngebot && (
+        <div className="modal-overlay" onClick={() => setDeleteAngebot(null)}>
+          <div className="modal-box" onClick={e => e.stopPropagation()}>
+            <h2 className="modal-title">Angebot löschen?</h2>
+            <p className="modal-text">
+              Möchtest du <strong>{deleteAngebot.bezeichnung?.trim() || `Angebot ${nummerMap[deleteAngebot.id]}`}</strong> wirklich
+              unwiderruflich löschen? Alle erfassten Positionen werden ebenfalls entfernt.
+            </p>
+            <div className="modal-actions">
+              <button className="btn btn-secondary" onClick={() => setDeleteAngebot(null)}>Abbrechen</button>
+              <button className="btn btn-danger" onClick={handleDeleteAngebot}>Endgültig löschen</button>
             </div>
           </div>
         </div>
