@@ -6,9 +6,21 @@ import NeuerKundePage from './pages/NeuerKundePage';
 import KundeBearbeitenPage from './pages/KundeBearbeitenPage';
 import ProfilePage from './pages/ProfilePage';
 import EinstellungenPage from './pages/EinstellungenPage';
+import LoginPage from './pages/LoginPage';
+import { useAuth } from './auth/AuthContext';
 import './App.css';
 
 function App() {
+  const { session } = useAuth();
+
+  if (session === undefined) {
+    return <div className="app-loading">Laden…</div>;
+  }
+
+  if (!session) {
+    return <LoginPage />;
+  }
+
   return (
     <div className="app">
       <Header />
