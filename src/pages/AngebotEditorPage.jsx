@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../auth/AuthContext';
 import ManuellePositionModal from '../components/ManuellePositionModal';
+import NeuePositionEditor from '../components/NeuePositionEditor';
 
 const STUFEN = ['Entwurf', 'Angebot', 'Auftragsbestätigung', 'Bestellung', 'Rechnung'];
 const SUBTITLE = {
@@ -35,7 +36,8 @@ function AngebotEditorPage() {
   const [positionen, setPositionen] = useState([]);
   const [bezeichnung, setBezeichnung] = useState('');
   const [loading, setLoading] = useState(true);
-  const [editPos, setEditPos] = useState(null); // 'neu' = neue Position, sonst die zu bearbeitende Position
+  const [editPos, setEditPos] = useState(null); // manuelle Position: 'neu' oder Positionsobjekt
+  const [strukturPos, setStrukturPos] = useState(null); // Fenster/Tür-Editor: 'neu' oder Positionsobjekt
   const [deletePos, setDeletePos] = useState(null);
 
   useEffect(() => {
@@ -71,21 +73,30 @@ function AngebotEditorPage() {
     setAngebot({ ...angebot, bezeichnung });
   }
 
-  async function speicherePosition({ beschreibung, nettopreis }) {
+  async function persistPosition(data, existing) {
     let liste;
-    if (editPos && editPos !== 'neu') {
-      await supabase.from('positionen').update({ beschreibung, nettopreis }).eq('id', editPos.id);
-      liste = positionen.map(p => (p.id === editPos.id ? { ...p, beschreibung, nettopreis } : p));
+    if (existing && existing !== 'neu') {
+      await supabase.from('positionen').update(data).eq('id', existing.id);
+      liste = positionen.map(p => (p.id === existing.id ? { ...p, ...data } : p));
     } else {
-      const { data } = await supabase
+      const { data: row } = await supabase
         .from('positionen')
-        .insert([{ angebot_id: angebotId, owner_id: user.id, typ: 'manuell', beschreibung, menge: 1, nettopreis, sortierung: positionen.length }])
+        .insert([{ angebot_id: angebotId, owner_id: user.id, sortierung: positionen.length, ...data }])
         .select().single();
-      liste = data ? [...positionen, data] : positionen;
+      liste = row ? [...positionen, row] : positionen;
     }
     setPositionen(liste);
     await syncBetrag(liste);
+  }
+
+  async function speichereManuell({ beschreibung, nettopreis }) {
+    await persistPosition({ typ: 'manuell', beschreibung, menge: 1, nettopreis }, editPos);
     setEditPos(null);
+  }
+
+  async function speichereStruktur(data) {
+    await persistPosition(data, strukturPos);
+    setStrukturPos(null);
   }
 
   async function loeschePosition() {
@@ -152,7 +163,7 @@ function AngebotEditorPage() {
           />
         </div>
         <div className="editor-pos-buttons">
-          <button className="btn btn-dark" onClick={() => setEditPos('neu')}>+ Position</button>
+          <button className="btn btn-dark" onClick={() => setStrukturPos('neu')}>+ Position</button>
           <button className="btn btn-outline" onClick={() => setEditPos('neu')}>+ Manuelle Position</button>
         </div>
       </div>
@@ -160,12 +171,12 @@ function AngebotEditorPage() {
       {positionen.length === 0 ? (
         <div className="pos-empty">
           <div className="pos-empty-text">Noch keine Positionen erfasst</div>
-          <button className="btn btn-primary btn-red" onClick={() => setEditPos('neu')}>Erste Position erfassen</button>
+          <button className="btn btn-primary btn-red" onClick={() => setStrukturPos('neu')}>Erste Position erfassen</button>
         </div>
       ) : (
         <div className="pos-list">
           {positionen.map((p) => (
-            <div key={p.id} className="pos-row" style={{ cursor: 'pointer' }} onClick={() => setEditPos(p)} title="Zum Bearbeiten klicken">
+            <div key={p.id} className="pos-row" style={{ cursor: 'pointer' }} onClick={() => (p.typ === 'fenster' ? setStrukturPos(p) : setEditPos(p))} title="Zum Bearbeiten klicken">
               <div className="pos-row-main">
                 <div className="pos-row-desc" dangerouslySetInnerHTML={{ __html: p.beschreibung || '<p>Position</p>' }} />
                 <div className="pos-row-menge">{Number(p.menge || 1)} Stück</div>
@@ -211,8 +222,17 @@ function AngebotEditorPage() {
       {editPos && (
         <ManuellePositionModal
           onClose={() => setEditPos(null)}
-          onSave={speicherePosition}
+          onSave={speichereManuell}
           initial={editPos !== 'neu' ? { beschreibung: editPos.beschreibung, nettopreis: editPos.nettopreis } : null}
+        />
+      )}
+
+      {strukturPos && (
+        <NeuePositionEditor
+          kundeName={kundeName}
+          onClose={() => setStrukturPos(null)}
+          onSave={speichereStruktur}
+          initial={strukturPos !== 'neu' ? strukturPos.config : null}
         />
       )}
 
