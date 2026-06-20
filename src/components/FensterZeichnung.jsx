@@ -55,18 +55,20 @@ export function GeometrieThumb({ geometrie, glasFarbe = '#cfe3ef' }) {
   const g = geometrie;
   const W = 120, H = 92, m = 7;
   const r0 = { x: m, y: m, w: W - 2 * m, h: H - 2 * m };
-  const blendIn = inset(r0, 5);           // Blendrahmen-Innenkante (Zwischenrahmen)
-  const sashOut = inset(r0, 10);          // Flügelrahmen außen
+  const blendIn = inset(r0, 3);           // Blendrahmen-Innenkante (schmaler Zwischenrahmen)
+  const sashOut = inset(r0, 9);           // Flügelrahmen außen
   const glas = inset(sashOut, 5);         // Glas
   const linien = g ? oeffnungsLinien(g, glas) : [];
-  const miter = gehrung(r0, blendIn);
+  const miterBlend = gehrung(r0, blendIn);
+  const miterSash = gehrung(sashOut, glas);
   const istTuer = g?.open === 'tuer';
   return (
     <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="100%">
       <rect x={r0.x} y={r0.y} width={r0.w} height={r0.h} fill="#fff" stroke="#0f1f3d" strokeWidth="1.6" />
       <rect x={blendIn.x} y={blendIn.y} width={blendIn.w} height={blendIn.h} fill="#fff" stroke="#0f1f3d" strokeWidth="1.1" />
-      {miter.map((l, i) => <line key={'m' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="0.8" />)}
+      {miterBlend.map((l, i) => <line key={'mb' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="0.8" />)}
       <rect x={sashOut.x} y={sashOut.y} width={sashOut.w} height={sashOut.h} fill="#fff" stroke="#0f1f3d" strokeWidth="1.1" />
+      {miterSash.map((l, i) => <line key={'ms' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="0.8" />)}
       <rect x={glas.x} y={glas.y} width={glas.w} height={glas.h} fill={istTuer ? '#e7edf2' : glasFarbe} stroke="#0f1f3d" strokeWidth="0.9" />
       {linien.map((l, i) => (
         <line key={i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="0.9" />
@@ -90,11 +92,12 @@ function FensterZeichnung({ geometrie, breite, hoehe, glasFarbe = '#cfe3ef' }) {
 
   const u = Math.min(rw, rh);
   const r0 = { x, y, w: rw, h: rh };
-  const blendIn = inset(r0, Math.max(8, u * 0.028));   // Blendrahmen-Innenkante → schmaler Außenring (Zwischenrahmen)
+  const blendIn = inset(r0, Math.max(5, u * 0.016));   // Blendrahmen-Innenkante → schmaler Außenring (Zwischenrahmen)
   const sashOut = inset(r0, Math.max(20, u * 0.075));  // Flügelrahmen außen
   const glas = inset(sashOut, Math.max(10, u * 0.04)); // Glas / Flügelrahmen innen
 
-  const miter = gehrung(r0, blendIn);                  // 45°-Gehrung am Blendrahmen
+  const miterBlend = gehrung(r0, blendIn);             // 45°-Gehrung am Blendrahmen
+  const miterSash = gehrung(sashOut, glas);            // 45°-Gehrung am Flügelrahmen
   const linien = g ? oeffnungsLinien(g, glas) : [];
   const istTuer = g?.open === 'tuer';
 
@@ -116,12 +119,15 @@ function FensterZeichnung({ geometrie, breite, hoehe, glasFarbe = '#cfe3ef' }) {
       {/* Blendrahmen (Außenring) + Zwischenrahmen mit 45°-Gehrung */}
       <rect x={r0.x} y={r0.y} width={r0.w} height={r0.h} fill="#fff" stroke="#0f1f3d" strokeWidth="2.5" />
       <rect x={blendIn.x} y={blendIn.y} width={blendIn.w} height={blendIn.h} fill="#fff" stroke="#0f1f3d" strokeWidth="1.6" />
-      {miter.map((l, i) => (
-        <line key={'m' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="1.4" />
+      {miterBlend.map((l, i) => (
+        <line key={'mb' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="1.4" />
       ))}
 
-      {/* Flügelrahmen + Glas */}
+      {/* Flügelrahmen + Glas, ebenfalls mit 45°-Gehrung */}
       <rect x={sashOut.x} y={sashOut.y} width={sashOut.w} height={sashOut.h} fill="#fff" stroke="#0f1f3d" strokeWidth="2" />
+      {miterSash.map((l, i) => (
+        <line key={'ms' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="1.4" />
+      ))}
       <rect x={glas.x} y={glas.y} width={glas.w} height={glas.h}
             fill={istTuer ? '#e7edf2' : glasFarbe} stroke="#0f1f3d" strokeWidth="1.4" opacity="0.95" />
 
