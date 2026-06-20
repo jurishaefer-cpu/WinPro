@@ -1574,6 +1574,7 @@ body {
 .np-textarea { resize: vertical; }
 .np-select { cursor: pointer; }
 .np-select--block { width: 100%; }
+.np-select--tall { padding: 15px 14px; font-size: 16px; }
 .np-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .np-row > div { min-width: 0; }
 

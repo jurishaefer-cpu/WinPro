@@ -266,11 +266,11 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
         <aside className="np-col np-col--right">
           <div className="np-group-label">FARBEN</div>
           <label className="np-field-label">Innenfarbe</label>
-          <select className="np-select np-select--block" value={innenfarbe} onChange={e => setInnenfarbe(e.target.value)}>
+          <select className="np-select np-select--block np-select--tall" value={innenfarbe} onChange={e => setInnenfarbe(e.target.value)}>
             {farbOptionen.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
           <label className="np-field-label">Außenfarbe</label>
-          <select className="np-select np-select--block" value={aussenfarbe} onChange={e => setAussenfarbe(e.target.value)}>
+          <select className="np-select np-select--block np-select--tall" value={aussenfarbe} onChange={e => setAussenfarbe(e.target.value)}>
             {farbOptionen.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
 
