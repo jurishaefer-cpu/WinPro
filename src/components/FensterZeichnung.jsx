@@ -55,9 +55,9 @@ export function GeometrieThumb({ geometrie, glasFarbe = '#cfe3ef' }) {
   const g = geometrie;
   const W = 120, H = 92, m = 7;
   const r0 = { x: m, y: m, w: W - 2 * m, h: H - 2 * m };
-  const blendIn = inset(r0, 3);           // Blendrahmen-Innenkante (schmaler Zwischenrahmen)
-  const sashOut = inset(r0, 9);           // Flügelrahmen außen
-  const glas = inset(sashOut, 5);         // Glas
+  const blendIn = inset(r0, 6);           // Blendrahmen breit (äußerer Rahmen)
+  const sashOut = inset(r0, 8);           // schmaler Zwischenraum → Flügelrahmen außen
+  const glas = inset(sashOut, 4.5);       // Glas
   const linien = g ? oeffnungsLinien(g, glas) : [];
   const miterBlend = gehrung(r0, blendIn);
   const miterSash = gehrung(sashOut, glas);
@@ -92,9 +92,12 @@ function FensterZeichnung({ geometrie, breite, hoehe, glasFarbe = '#cfe3ef' }) {
 
   const u = Math.min(rw, rh);
   const r0 = { x, y, w: rw, h: rh };
-  const blendIn = inset(r0, Math.max(5, u * 0.016));   // Blendrahmen-Innenkante → schmaler Außenring (Zwischenrahmen)
-  const sashOut = inset(r0, Math.max(20, u * 0.075));  // Flügelrahmen außen
-  const glas = inset(sashOut, Math.max(10, u * 0.04)); // Glas / Flügelrahmen innen
+  const blendW = Math.max(12, u * 0.052);              // Blendrahmen-Breite (äußerer Rahmen) → größer
+  const gap = Math.max(2.5, u * 0.011);                // schmaler Zwischenraum Blend ↔ Flügel
+  const sashW = Math.max(10, u * 0.045);               // Flügelrahmen-Breite
+  const blendIn = inset(r0, blendW);                   // Blendrahmen-Innenkante
+  const sashOut = inset(r0, blendW + gap);             // Flügelrahmen außen
+  const glas = inset(sashOut, sashW);                  // Glas / Flügelrahmen innen
 
   const miterBlend = gehrung(r0, blendIn);             // 45°-Gehrung am Blendrahmen
   const miterSash = gehrung(sashOut, glas);            // 45°-Gehrung am Flügelrahmen
