@@ -1,29 +1,69 @@
+import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import UserMenu from './UserMenu';
 
+const navItems = [
+  { to: '/', label: 'Dashboard', end: true },
+  { to: '/kunden', label: 'Kunden' },
+  { to: '/profile', label: 'Profile' },
+  { to: '/einstellungen', label: 'Einstellungen' },
+];
+
 function Header() {
+  const [menuOpen, setMenuOpen] = useState(false);
+
   return (
     <header className="app-header">
+      <button className="hamburger" onClick={() => setMenuOpen(true)} aria-label="Menü öffnen">
+        <span />
+        <span />
+        <span />
+      </button>
+
       <div className="header-left">
         <img src="/logo-white.png" alt="WinPro" className="logo-img" />
       </div>
+
       <div className="header-right">
         <nav className="header-nav">
-          <NavLink to="/" end className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
-            Dashboard
-          </NavLink>
-          <NavLink to="/kunden" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
-            Kunden
-          </NavLink>
-          <NavLink to="/profile" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
-            Profile
-          </NavLink>
-          <NavLink to="/einstellungen" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
-            Einstellungen
-          </NavLink>
+          {navItems.map(item => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.end}
+              className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
+            >
+              {item.label}
+            </NavLink>
+          ))}
         </nav>
         <UserMenu />
       </div>
+
+      {menuOpen && (
+        <>
+          <div className="drawer-overlay" onClick={() => setMenuOpen(false)} />
+          <nav className="drawer">
+            <div className="drawer-head">
+              <img src="/logo-white.png" alt="WinPro" className="drawer-logo" />
+              <button className="drawer-close" onClick={() => setMenuOpen(false)} aria-label="Menü schließen">
+                ✕
+              </button>
+            </div>
+            {navItems.map(item => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.end}
+                onClick={() => setMenuOpen(false)}
+                className={({ isActive }) => (isActive ? 'drawer-link active' : 'drawer-link')}
+              >
+                {item.label}
+              </NavLink>
+            ))}
+          </nav>
+        </>
+      )}
     </header>
   );
 }

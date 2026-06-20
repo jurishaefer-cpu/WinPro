@@ -195,6 +195,100 @@ body {
   border-bottom-color: #d63031;
 }
 
+/* ── Hamburger (nur mobil sichtbar) ── */
+.hamburger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 40px;
+  height: 40px;
+  padding: 9px;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.hamburger span {
+  display: block;
+  height: 2px;
+  border-radius: 2px;
+  background: #ffffff;
+}
+
+/* ── Seitenmenü (Drawer) ── */
+.drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 31, 61, 0.5);
+  z-index: 200;
+  animation: fadeIn 0.15s ease;
+}
+.drawer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 260px;
+  max-width: 78%;
+  background: #0f1f3d;
+  z-index: 201;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.35);
+  animation: slideIn 0.2s ease;
+}
+.drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding: 6px 4px;
+}
+.drawer-logo {
+  height: 28px;
+  width: auto;
+}
+.drawer-close {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px 8px;
+  line-height: 1;
+}
+.drawer-close:hover {
+  color: #fff;
+}
+.drawer-link {
+  color: rgba(255, 255, 255, 0.8);
+  text-decoration: none;
+  font-size: 16px;
+  font-weight: 500;
+  padding: 14px 12px;
+  border-radius: 8px;
+}
+.drawer-link:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+.drawer-link.active {
+  background: rgba(214, 48, 49, 0.2);
+  color: #fff;
+  border-left: 3px solid #d63031;
+  padding-left: 9px;
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes slideIn {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
 .app-main {
   padding: 40px;
 }
@@ -585,33 +679,22 @@ body {
   margin-top: 8px;
 }
 
-/* ── Header umbrechen, sobald Logo + Navigation nicht mehr nebeneinander passen ── */
+/* ── Mobiler Header: Hamburger statt Inline-Navigation ── */
 @media (max-width: 900px) {
   .app-header {
-    position: relative;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
+    flex-direction: row;
+    align-items: center;
+    gap: 14px;
     padding: 14px 16px;
   }
-  .header-right {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
+  .hamburger {
+    display: flex;
   }
   .header-nav {
-    flex-wrap: wrap;
-    gap: 10px 20px;
+    display: none;
   }
-  .nav-link {
-    white-space: nowrap;
-    flex-shrink: 0;
-  }
-  /* Initialen fest in die obere rechte Ecke */
-  .user-menu {
-    position: absolute;
-    top: 14px;
-    right: 16px;
+  .header-right {
+    margin-left: auto;
   }
 }
 
