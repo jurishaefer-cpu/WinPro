@@ -22,14 +22,15 @@ function oeffnungsLinien(g, r) {
   const { x, y, w, h } = r;
   const TL = [x, y], TR = [x + w, y], BR = [x + w, y + h], BL = [x, y + h];
   const midL = [x, y + h / 2], midR = [x + w, y + h / 2];
-  const midB = [x + w / 2, y + h];
+  const midT = [x + w / 2, y];
   const linien = [];
   const dreh = (din) => {
     // apex = Griffseite (gegenüber den Bändern)
     if (din === 'links') { linien.push([TL, midR], [BL, midR]); } // Bänder links → Griff rechts
     else { linien.push([TR, midL], [BR, midL]); }
   };
-  const kipp = () => { linien.push([TL, midB], [TR, midB]); };
+  // Kippstellung: Bänder unten, Dreieck-Spitze zeigt nach oben
+  const kipp = () => { linien.push([BL, midT], [BR, midT]); };
   if (g.open === 'dreh' || g.open === 'tuer') dreh(g.din || 'links');
   else if (g.open === 'kipp') kipp();
   else if (g.open === 'drehkipp') { dreh(g.din || 'links'); kipp(); }
