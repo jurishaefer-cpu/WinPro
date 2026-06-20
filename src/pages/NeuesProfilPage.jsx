@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { PROFIL_FARBEN } from '../constants/profilFarben';
 
 const MATERIALIEN = ['PVC', 'Holz', 'Aluminium', 'Holz-Alu'];
 
@@ -115,11 +116,16 @@ function NeuesProfilPage() {
           )}
           {form.farben.map((farbe, i) => (
             <div className="farbe-row" key={i}>
-              <input
+              <select
+                className="farbe-select"
                 value={farbe}
                 onChange={e => updateFarbe(i, e.target.value)}
-                placeholder="z.B. Anthrazitgrau, Golden Oak, Weiß"
-              />
+              >
+                <option value="">Farbe wählen…</option>
+                {(PROFIL_FARBEN.includes(farbe) || !farbe ? PROFIL_FARBEN : [farbe, ...PROFIL_FARBEN]).map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
               <button type="button" className="farbe-remove" onClick={() => removeFarbe(i)} title="Entfernen">
                 ✕
               </button>
