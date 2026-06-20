@@ -914,6 +914,199 @@ body {
   margin-top: 8px;
 }
 
+/* ── Kunden-Detailseite ── */
+.kunde-detail {
+  max-width: 900px;
+}
+.kunde-detail .back-link {
+  color: #8b1a1a;
+  font-weight: 600;
+}
+.detail-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-bottom: 16px;
+}
+.detail-card-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+}
+.detail-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  background: #0f1f3d;
+  color: white;
+  font-size: 20px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  letter-spacing: 0.5px;
+}
+.detail-headline {
+  flex: 1;
+  min-width: 0;
+}
+.detail-name {
+  font-size: 26px;
+  font-weight: 700;
+  color: #1a1a1a;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  line-height: 1.2;
+}
+.detail-zhd {
+  font-size: 16px;
+  color: #777;
+  margin-top: 6px;
+}
+.detail-head-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.detail-head-actions .icon-btn {
+  border: 1px solid #e0e2e6;
+  color: #888;
+  padding: 10px;
+  border-radius: 9px;
+}
+.detail-contact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 40px;
+  border-top: 1px solid #eef0f2;
+  margin-top: 20px;
+  padding-top: 18px;
+}
+.detail-contact-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  color: #444;
+}
+.detail-contact-item svg {
+  color: #9aa0a8;
+  flex-shrink: 0;
+}
+.detail-contact-item a {
+  color: #444;
+  text-decoration: none;
+}
+.detail-contact-item a:hover {
+  text-decoration: underline;
+}
+.detail-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 32px;
+}
+.stat-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px 22px;
+}
+.stat-label {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  color: #9aa0a8;
+  margin-bottom: 12px;
+}
+.stat-value {
+  font-size: 30px;
+  font-weight: 700;
+  color: #1a1a1a;
+  font-variant-numeric: tabular-nums;
+}
+.angebote-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.angebote-header h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+.angebote-empty {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 56px 24px;
+  text-align: center;
+  color: #9aa0a8;
+}
+.angebote-empty svg {
+  color: #c4c9d0;
+  margin-bottom: 16px;
+}
+.angebote-empty-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #4a4f57;
+  margin-bottom: 6px;
+}
+.angebote-empty-text {
+  font-size: 15px;
+  color: #9aa0a8;
+}
+.angebote-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.angebot-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px 20px;
+}
+.angebot-main {
+  flex: 1;
+  min-width: 0;
+}
+.angebot-bez {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+.angebot-meta {
+  font-size: 14px;
+  color: #888;
+  margin-top: 3px;
+}
+.angebot-betrag {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a1a1a;
+  font-variant-numeric: tabular-nums;
+}
+.angebot-status {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  border-radius: 20px;
+  padding: 4px 10px;
+  background: #f0f1f3;
+  color: #555;
+  border: 1px solid #e0e2e6;
+}
+
 /* ── Mobiler Header: Hamburger statt Inline-Navigation ── */
 @media (max-width: 900px) {
   .app-header {
@@ -991,5 +1184,19 @@ body {
     width: 100%;
     text-align: center;
     padding: 14px 20px;
+  }
+
+  /* Detailseite: Statistik-Karten untereinander */
+  .detail-stats {
+    grid-template-columns: 1fr;
+  }
+  .detail-name {
+    font-size: 22px;
+  }
+  .detail-card {
+    padding: 18px 16px;
+  }
+  .angebote-header h2 {
+    font-size: 20px;
   }
 }

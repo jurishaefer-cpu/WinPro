@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useView } from '../view/ViewContext';
 
@@ -16,6 +16,7 @@ function KundenPage() {
   const [loading, setLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const { selectedOwner } = useView();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!selectedOwner) return;
@@ -89,7 +90,12 @@ function KundenPage() {
       ) : (
         <div className="kunden-list">
           {gefiltert.map(k => (
-            <div key={k.id} className="kunden-card">
+            <div
+              key={k.id}
+              className="kunden-card"
+              style={{ cursor: 'pointer' }}
+              onClick={() => navigate(`/kunden/${k.id}`)}
+            >
               <div className="kunde-avatar">{getInitials(k)}</div>
               <div className="kunde-info">
                 <div className="kunde-name">
@@ -103,7 +109,7 @@ function KundenPage() {
                   </div>
                 )}
               </div>
-              <div className="kunde-actions">
+              <div className="kunde-actions" onClick={e => e.stopPropagation()}>
                 <Link to={`/kunden/${k.id}/bearbeiten`} className="icon-btn" title="Bearbeiten">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
