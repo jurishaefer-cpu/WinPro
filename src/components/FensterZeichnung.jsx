@@ -36,23 +36,40 @@ function oeffnungsLinien(g, r) {
   return linien;
 }
 
+// Rechteck nach innen einrücken
+function inset(r, d) {
+  return { x: r.x + d, y: r.y + d, w: r.w - 2 * d, h: r.h - 2 * d };
+}
+// 45°-Gehrungslinien: verbindet die Ecken des äußeren mit dem inneren Rahmen
+function gehrung(o, i) {
+  return [
+    [[o.x, o.y], [i.x, i.y]],
+    [[o.x + o.w, o.y], [i.x + i.w, i.y]],
+    [[o.x + o.w, o.y + o.h], [i.x + i.w, i.y + i.h]],
+    [[o.x, o.y + o.h], [i.x, i.y + i.h]],
+  ];
+}
+
 // Kleine Vorschau ohne Maßlinien (für das Geometrie-Dropdown)
 export function GeometrieThumb({ geometrie, glasFarbe = '#cfe3ef' }) {
   const g = geometrie;
-  const W = 120, H = 92, m = 8;
-  const rw = W - 2 * m, rh = H - 2 * m, x = m, y = m;
-  const frame = 9;
-  const sash = { x: x + frame, y: y + frame, w: rw - 2 * frame, h: rh - 2 * frame };
-  const glas = { x: sash.x + 5, y: sash.y + 5, w: sash.w - 10, h: sash.h - 10 };
+  const W = 120, H = 92, m = 7;
+  const r0 = { x: m, y: m, w: W - 2 * m, h: H - 2 * m };
+  const blendIn = inset(r0, 5);           // Blendrahmen-Innenkante (Zwischenrahmen)
+  const sashOut = inset(r0, 10);          // Flügelrahmen außen
+  const glas = inset(sashOut, 5);         // Glas
   const linien = g ? oeffnungsLinien(g, glas) : [];
+  const miter = gehrung(r0, blendIn);
   const istTuer = g?.open === 'tuer';
   return (
     <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="100%">
-      <rect x={x} y={y} width={rw} height={rh} fill="#fff" stroke="#0f1f3d" strokeWidth="2" />
-      <rect x={sash.x} y={sash.y} width={sash.w} height={sash.h} fill="#fff" stroke="#0f1f3d" strokeWidth="1.5" />
-      <rect x={glas.x} y={glas.y} width={glas.w} height={glas.h} fill={istTuer ? '#e7edf2' : glasFarbe} stroke="#0f1f3d" strokeWidth="1" />
+      <rect x={r0.x} y={r0.y} width={r0.w} height={r0.h} fill="#fff" stroke="#0f1f3d" strokeWidth="1.6" />
+      <rect x={blendIn.x} y={blendIn.y} width={blendIn.w} height={blendIn.h} fill="#fff" stroke="#0f1f3d" strokeWidth="1.1" />
+      {miter.map((l, i) => <line key={'m' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="0.8" />)}
+      <rect x={sashOut.x} y={sashOut.y} width={sashOut.w} height={sashOut.h} fill="#fff" stroke="#0f1f3d" strokeWidth="1.1" />
+      <rect x={glas.x} y={glas.y} width={glas.w} height={glas.h} fill={istTuer ? '#e7edf2' : glasFarbe} stroke="#0f1f3d" strokeWidth="0.9" />
       {linien.map((l, i) => (
-        <line key={i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="1" />
+        <line key={i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="0.9" />
       ))}
     </svg>
   );
@@ -71,11 +88,14 @@ function FensterZeichnung({ geometrie, breite, hoehe, glasFarbe = '#cfe3ef' }) {
   const cx = VB_W / 2 + 20, cy = VB_H / 2 + 10;
   const x = cx - rw / 2, y = cy - rh / 2;
 
-  const frame = Math.max(9, Math.min(rw, rh) * 0.045);
-  const sash = { x: x + frame, y: y + frame, w: rw - 2 * frame, h: rh - 2 * frame };
-  const glas = { x: sash.x + frame * 0.7, y: sash.y + frame * 0.7, w: sash.w - 1.4 * frame, h: sash.h - 1.4 * frame };
+  const u = Math.min(rw, rh);
+  const r0 = { x, y, w: rw, h: rh };
+  const blendIn = inset(r0, Math.max(8, u * 0.028));   // Blendrahmen-Innenkante → schmaler Außenring (Zwischenrahmen)
+  const sashOut = inset(r0, Math.max(20, u * 0.075));  // Flügelrahmen außen
+  const glas = inset(sashOut, Math.max(10, u * 0.04)); // Glas / Flügelrahmen innen
 
-  const linien = g ? oeffnungsLinien(g, g.tuer || g.open === 'tuer' ? glas : glas) : [];
+  const miter = gehrung(r0, blendIn);                  // 45°-Gehrung am Blendrahmen
+  const linien = g ? oeffnungsLinien(g, glas) : [];
   const istTuer = g?.open === 'tuer';
 
   return (
@@ -93,9 +113,15 @@ function FensterZeichnung({ geometrie, breite, hoehe, glasFarbe = '#cfe3ef' }) {
       <text x={x - 44} y={cy} textAnchor="middle" fontSize="22" fill="#0f1f3d" fontWeight="600"
             transform={`rotate(-90 ${x - 44} ${cy})`}>{Math.round(hh)}</text>
 
-      {/* Rahmen + Flügel + Glas */}
-      <rect x={x} y={y} width={rw} height={rh} fill="#fff" stroke="#0f1f3d" strokeWidth="2.5" />
-      <rect x={sash.x} y={sash.y} width={sash.w} height={sash.h} fill="#fff" stroke="#0f1f3d" strokeWidth="2" />
+      {/* Blendrahmen (Außenring) + Zwischenrahmen mit 45°-Gehrung */}
+      <rect x={r0.x} y={r0.y} width={r0.w} height={r0.h} fill="#fff" stroke="#0f1f3d" strokeWidth="2.5" />
+      <rect x={blendIn.x} y={blendIn.y} width={blendIn.w} height={blendIn.h} fill="#fff" stroke="#0f1f3d" strokeWidth="1.6" />
+      {miter.map((l, i) => (
+        <line key={'m' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="1.4" />
+      ))}
+
+      {/* Flügelrahmen + Glas */}
+      <rect x={sashOut.x} y={sashOut.y} width={sashOut.w} height={sashOut.h} fill="#fff" stroke="#0f1f3d" strokeWidth="2" />
       <rect x={glas.x} y={glas.y} width={glas.w} height={glas.h}
             fill={istTuer ? '#e7edf2' : glasFarbe} stroke="#0f1f3d" strokeWidth="1.4" opacity="0.95" />
 
