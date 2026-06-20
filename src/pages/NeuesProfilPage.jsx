@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { PROFIL_FARBEN } from '../constants/profilFarben';
+import FarbenDropdown from '../components/FarbenDropdown';
 
 const MATERIALIEN = ['PVC', 'Holz', 'Aluminium', 'Holz-Alu'];
 
@@ -31,18 +31,6 @@ function NeuesProfilPage() {
 
   function handleChange(e) {
     setForm({ ...form, [e.target.name]: e.target.value });
-  }
-
-  function addFarbe() {
-    setForm({ ...form, farben: [...form.farben, ''] });
-  }
-  function updateFarbe(i, value) {
-    const farben = [...form.farben];
-    farben[i] = value;
-    setForm({ ...form, farben });
-  }
-  function removeFarbe(i) {
-    setForm({ ...form, farben: form.farben.filter((_, idx) => idx !== i) });
   }
 
   async function handleSubmit(e) {
@@ -111,29 +99,10 @@ function NeuesProfilPage() {
 
         <section className="form-section">
           <h2 className="section-label">FARBEN</h2>
-          {form.farben.length === 0 && (
-            <p className="farbe-empty">Noch keine Farben hinzugefügt.</p>
-          )}
-          {form.farben.map((farbe, i) => (
-            <div className="farbe-row" key={i}>
-              <select
-                className="farbe-select"
-                value={farbe}
-                onChange={e => updateFarbe(i, e.target.value)}
-              >
-                <option value="">Farbe wählen…</option>
-                {(PROFIL_FARBEN.includes(farbe) || !farbe ? PROFIL_FARBEN : [farbe, ...PROFIL_FARBEN]).map(c => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-              <button type="button" className="farbe-remove" onClick={() => removeFarbe(i)} title="Entfernen">
-                ✕
-              </button>
-            </div>
-          ))}
-          <button type="button" className="farbe-add" onClick={addFarbe}>
-            + Farbe hinzufügen
-          </button>
+          <div className="form-field">
+            <label>Verfügbare Farben</label>
+            <FarbenDropdown value={form.farben} onChange={farben => setForm({ ...form, farben })} />
+          </div>
         </section>
 
         <section className="form-section">
