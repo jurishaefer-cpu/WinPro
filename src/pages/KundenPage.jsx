@@ -13,6 +13,7 @@ function KundenPage() {
   const [suche, setSuche] = useState('');
   const [filter, setFilter] = useState('Alle');
   const [loading, setLoading] = useState(true);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   useEffect(() => {
     async function laden() {
@@ -23,9 +24,11 @@ function KundenPage() {
     laden();
   }, []);
 
-  async function handleDelete(id) {
+  async function confirmDelete() {
+    const id = deleteTarget.id;
     await supabase.from('kunden').delete().eq('id', id);
     setKunden(kunden.filter(k => k.id !== id));
+    setDeleteTarget(null);
   }
 
   const gefiltert = kunden.filter(k => {
@@ -101,7 +104,7 @@ function KundenPage() {
                     <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                   </svg>
                 </Link>
-                <button className="icon-btn icon-btn--delete" onClick={() => handleDelete(k.id)} title="Löschen">
+                <button className="icon-btn icon-btn--delete" onClick={() => setDeleteTarget(k)} title="Löschen">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="3 6 5 6 21 6"/>
                     <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
@@ -112,6 +115,26 @@ function KundenPage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {deleteTarget && (
+        <div className="modal-overlay" onClick={() => setDeleteTarget(null)}>
+          <div className="modal-box" onClick={e => e.stopPropagation()}>
+            <h2 className="modal-title">Kunde löschen?</h2>
+            <p className="modal-text">
+              Möchtest du <strong>{deleteTarget.vorname} {deleteTarget.nachname}</strong> wirklich
+              unwiderruflich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
+            </p>
+            <div className="modal-actions">
+              <button className="btn btn-secondary" onClick={() => setDeleteTarget(null)}>
+                Abbrechen
+              </button>
+              <button className="btn btn-danger" onClick={confirmDelete}>
+                Endgültig löschen
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </main>
