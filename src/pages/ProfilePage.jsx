@@ -72,18 +72,13 @@ function ProfilePage() {
               <div className="kunde-avatar">{getInitials(p)}</div>
               <div className="kunde-info">
                 <div className="kunde-name">
-                  {p.hersteller || '—'}
-                  {p.system && <span className="profil-system">· {p.system}</span>}
+                  {[p.hersteller, p.system].filter(Boolean).join(' ') || '—'}
+                  {p.material && <span className="firma-badge">{p.material}</span>}
                 </div>
                 <div className="kunde-ort">
-                  {[p.material, p.bautiefe && `${p.bautiefe} mm`, p.anzahl_kammern && `${p.anzahl_kammern} Kammern`]
+                  {[p.bautiefe && `${p.bautiefe} mm`, p.farben?.length ? `${p.farben.length} Farben` : null]
                     .filter(Boolean).join(' · ') || '—'}
                 </div>
-                {p.farben?.length > 0 && (
-                  <div className="farbe-chips">
-                    {p.farben.map((f, i) => <span className="farbe-chip" key={i}>{f}</span>)}
-                  </div>
-                )}
               </div>
               <div className="kunde-actions">
                 <Link to={`/profile/${p.id}/bearbeiten`} className="icon-btn" title="Bearbeiten">
