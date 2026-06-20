@@ -31,6 +31,9 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
   const [verbreiterung, setVerbreiterung] = useState(initial?.verbreiterung ?? false);
   const [verb, setVerb] = useState(initial?.verb ?? { oben: 0, unten: 0, links: 0, rechts: 0 });
   const [aufsatzkasten, setAufsatzkasten] = useState(initial?.aufsatzkasten ?? false);
+  const [kasten, setKasten] = useState(initial?.kasten ?? {
+    kastenhoehe: 165, bedienung: 'Gurt', bedienungsseite: 'rechts', lamellenfarbe: '', lamellentyp: 'Alulamelle',
+  });
   const [rollladen, setRollladen] = useState(initial?.rollladen ?? 'ohne');
 
   const [innenfarbe, setInnenfarbe] = useState(initial?.innenfarbe ?? 'WEISS');
@@ -99,7 +102,11 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
         .map(k => `${k} ${Number(verb[k])} mm`);
       teile.push('Verbreiterung' + (seiten.length ? ': ' + seiten.join(', ') : ''));
     }
-    if (aufsatzkasten) teile.push('mit Aufsatzkasten');
+    if (aufsatzkasten) {
+      teile.push(`Aufsatzkasten ${Number(kasten.kastenhoehe) || 0} mm, ${kasten.bedienung} (${kasten.bedienungsseite})`
+        + (kasten.lamellentyp ? `, ${kasten.lamellentyp}` : '')
+        + (kasten.lamellenfarbe ? ` ${kasten.lamellenfarbe}` : ''));
+    }
     if (rollladen !== 'ohne') teile.push(`Rollladenführung ${rollladen}`);
     if (standort) teile.push(`Standort: ${standort}`);
     if (ohneMontage) teile.push('ohne Montage');
@@ -110,7 +117,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
   function handleSave() {
     const config = {
       profilId, kategorie, code, breite: Number(breite), hoehe: Number(hoehe),
-      stueckzahl: Number(stueckzahl), standort, verbreiterung, verb, aufsatzkasten, rollladen,
+      stueckzahl: Number(stueckzahl), standort, verbreiterung, verb, aufsatzkasten, kasten, rollladen,
       innenfarbe, aussenfarbe, verglasung, vsg, ornament, dichtungInnen, dichtungAussen,
       kommentar, montage: Number(montage), ausbau: Number(ausbau), entsorgung: Number(entsorgung),
       ohneMontage, nettoJeStueck: Number(nettoJeStueck),
@@ -204,6 +211,33 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
             <button className={!aufsatzkasten ? 'active' : ''} onClick={() => setAufsatzkasten(false)}>nein</button>
             <button className={aufsatzkasten ? 'active' : ''} onClick={() => setAufsatzkasten(true)}>ja</button>
           </div>
+          {aufsatzkasten && (
+            <div className="np-sub">
+              <label className="np-field-label">Kastenhöhe (mm)</label>
+              <input className="np-input" type="number" min="0" value={kasten.kastenhoehe}
+                     onChange={e => setKasten({ ...kasten, kastenhoehe: e.target.value })} />
+
+              <label className="np-field-label">Bedienung</label>
+              <div className="np-segmented">
+                <button className={kasten.bedienung === 'Gurt' ? 'active' : ''} onClick={() => setKasten({ ...kasten, bedienung: 'Gurt' })}>Gurt</button>
+                <button className={kasten.bedienung === 'Motor' ? 'active' : ''} onClick={() => setKasten({ ...kasten, bedienung: 'Motor' })}>Motor</button>
+              </div>
+
+              <label className="np-field-label">Bedienungsseite</label>
+              <div className="np-segmented">
+                <button className={kasten.bedienungsseite === 'links' ? 'active' : ''} onClick={() => setKasten({ ...kasten, bedienungsseite: 'links' })}>links</button>
+                <button className={kasten.bedienungsseite === 'rechts' ? 'active' : ''} onClick={() => setKasten({ ...kasten, bedienungsseite: 'rechts' })}>rechts</button>
+              </div>
+
+              <label className="np-field-label">Lamellenfarbe</label>
+              <input className="np-input" value={kasten.lamellenfarbe}
+                     onChange={e => setKasten({ ...kasten, lamellenfarbe: e.target.value })} />
+
+              <label className="np-field-label">Lamellentyp</label>
+              <input className="np-input" value={kasten.lamellentyp}
+                     onChange={e => setKasten({ ...kasten, lamellentyp: e.target.value })} />
+            </div>
+          )}
           <label className="np-field-label">Rollladenführung</label>
           <select className="np-select np-select--block" value={rollladen} onChange={e => setRollladen(e.target.value)}>
             {ROLLLADEN.map(r => <option key={r} value={r}>{r}</option>)}
@@ -218,7 +252,9 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
             <span className="np-chip">Fläche <b>{flaeche.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} m²</b></span>
           </div>
           <div className="np-canvas">
-            <FensterZeichnung geometrie={geometrie} breite={breite} hoehe={hoehe} verbreiterung={verbreiterung ? verb : null} />
+            <FensterZeichnung geometrie={geometrie} breite={breite} hoehe={hoehe}
+              verbreiterung={verbreiterung ? verb : null}
+              aufsatzkasten={aufsatzkasten ? kasten : null} />
           </div>
           <div className="np-canvas-caption">
             <div className="np-canvas-title">{geometrie?.label}</div>

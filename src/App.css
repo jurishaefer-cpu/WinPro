@@ -1595,6 +1595,12 @@ body {
 }
 .np-verb .np-field-label { margin-top: 0; }
 
+.np-sub {
+  margin-top: 12px; padding: 14px 16px;
+  background: #f7f8fa; border: 1px solid #eef0f2; border-radius: 10px;
+}
+.np-sub > .np-field-label:first-child { margin-top: 0; }
+
 .np-check {
   display: flex; align-items: center; gap: 9px;
   font-size: 14px; color: #374151; margin-top: 12px; cursor: pointer;

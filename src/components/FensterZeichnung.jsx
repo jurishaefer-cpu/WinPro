@@ -78,7 +78,7 @@ export function GeometrieThumb({ geometrie, glasFarbe = '#cfe3ef' }) {
   );
 }
 
-function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, glasFarbe = '#cfe3ef' }) {
+function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkasten, glasFarbe = '#cfe3ef' }) {
   const g = geometrie;
   const b = Math.max(200, Number(breite) || 1000);
   const hh = Math.max(200, Number(hoehe) || 1200);
@@ -96,9 +96,14 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, glasFarbe =
   const vu = Math.max(0, Number(verbreiterung?.unten) || 0) * scale;
   const vl = Math.max(0, Number(verbreiterung?.links) || 0) * scale;
   const vr = Math.max(0, Number(verbreiterung?.rechts) || 0) * scale;
+  // Aufsatzkasten (Rollladenkasten oben), Höhe innerhalb des Gesamtmaßes
+  const kh = aufsatzkasten ? Math.max(0, Number(aufsatzkasten.kastenhoehe) || 0) * scale : 0;
+  const hatKasten = !!aufsatzkasten && kh > 0;
+
   const hatVerb = vo || vu || vl || vr;
-  const r0 = { x, y, w: rw, h: rh };                            // Gesamtmaß (mit Verbreiterung)
-  const win = { x: x + vl, y: y + vo, w: rw - vl - vr, h: rh - vo - vu }; // eigentliches Fenster
+  const r0 = { x, y, w: rw, h: rh };                            // Gesamtmaß (mit Verbreiterung/Kasten)
+  const kasten = { x, y, w: rw, h: kh };
+  const win = { x: x + vl, y: y + vo + kh, w: rw - vl - vr, h: rh - vo - vu - kh }; // eigentliches Fenster
 
   const u = Math.min(win.w, win.h);
   const blendW = Math.max(12, u * 0.052);              // Blendrahmen-Breite (äußerer Rahmen)
@@ -112,6 +117,24 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, glasFarbe =
   const miterSash = gehrung(sashOut, glas);            // 45°-Gehrung am Flügelrahmen
   const linien = g ? oeffnungsLinien(g, glas) : [];
   const istTuer = g?.open === 'tuer';
+
+  // Lamellen (Rollladen) im oberen Drittel der Glasfläche
+  const lamellen = [];
+  if (hatKasten) {
+    const anz = 7;
+    const bereich = glas.h * 0.32;
+    for (let i = 1; i <= anz; i++) {
+      const ly = glas.y + (bereich / anz) * i;
+      lamellen.push(ly);
+    }
+  }
+  // Bedien-Badge (G = Gurt, M = Motor) an der Bedienungsseite
+  const badge = hatKasten ? {
+    cx: aufsatzkasten.bedienungsseite === 'rechts' ? win.x + win.w : win.x,
+    cy: win.y,
+    r: Math.max(16, u * 0.05),
+    text: aufsatzkasten.bedienung === 'Motor' ? 'M' : 'G',
+  } : null;
 
   return (
     <svg viewBox={`0 0 ${VB_W} ${VB_H}`} width="100%" style={{ maxHeight: '60vh' }}>
@@ -128,9 +151,14 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, glasFarbe =
       <text x={x - 44} y={cy} textAnchor="middle" fontSize="22" fill="#0f1f3d" fontWeight="600"
             transform={`rotate(-90 ${x - 44} ${cy})`}>{Math.round(hh)}</text>
 
-      {/* Verbreiterung: Gesamtmaß-Rahmen außen herum */}
-      {hatVerb && (
+      {/* Gesamtmaß-Rahmen außen herum (bei Verbreiterung/Aufsatzkasten) */}
+      {(hatVerb || hatKasten) && (
         <rect x={r0.x} y={r0.y} width={r0.w} height={r0.h} fill="#fff" stroke="#0f1f3d" strokeWidth="2.5" />
+      )}
+
+      {/* Aufsatzkasten oben */}
+      {hatKasten && (
+        <rect x={kasten.x} y={kasten.y} width={kasten.w} height={kasten.h} fill="#fff" stroke="#0f1f3d" strokeWidth="2.5" />
       )}
 
       {/* Blendrahmen (Außenring) + Zwischenrahmen mit 45°-Gehrung */}
@@ -148,11 +176,25 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, glasFarbe =
       <rect x={glas.x} y={glas.y} width={glas.w} height={glas.h}
             fill={istTuer ? '#e7edf2' : glasFarbe} stroke="#0f1f3d" strokeWidth="1.4" opacity="0.95" />
 
+      {/* Rollladen-Lamellen im oberen Glasbereich */}
+      {lamellen.map((ly, i) => (
+        <line key={'lam' + i} x1={glas.x} y1={ly} x2={glas.x + glas.w} y2={ly} stroke="#0f1f3d" strokeWidth="1" opacity="0.7" />
+      ))}
+
       {/* Öffnungssymbole */}
       {linien.map((l, i) => (
         <line key={i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]}
               stroke="#0f1f3d" strokeWidth="1.4" />
       ))}
+
+      {/* Bedien-Badge (Gurt/Motor) */}
+      {badge && (
+        <g>
+          <circle cx={badge.cx} cy={badge.cy} r={badge.r} fill="#fff" stroke="#0f1f3d" strokeWidth="2" />
+          <text x={badge.cx} y={badge.cy} textAnchor="middle" dominantBaseline="central"
+                fontSize={badge.r * 1.1} fontWeight="700" fill="#0f1f3d">{badge.text}</text>
+        </g>
+      )}
 
       {/* Türgriff-Andeutung */}
       {istTuer && (
