@@ -66,7 +66,7 @@ body {
 
 .dashboard-cards {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 20px;
   margin-top: 24px;
 }
@@ -382,4 +382,77 @@ body {
   gap: 12px;
   justify-content: flex-end;
   margin-top: 8px;
+}
+
+/* ── Mobile (Handy) ── */
+@media (max-width: 640px) {
+  /* Header: Logo oben, Navigation darunter scrollbar */
+  .app-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 14px 16px;
+  }
+  .header-nav {
+    gap: 20px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 2px;
+  }
+  .nav-link {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* Weniger Innenabstand auf kleinen Schirmen */
+  .app-main {
+    padding: 20px 16px;
+  }
+  .app-main h1 {
+    font-size: 24px;
+  }
+  .form-title {
+    font-size: 24px;
+    margin-bottom: 20px;
+  }
+
+  /* Seiten-Kopf: Titel und Button untereinander */
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+  .page-header .btn {
+    text-align: center;
+  }
+
+  /* Toolbar: Suche und Filter untereinander */
+  .kunden-toolbar {
+    flex-direction: column;
+  }
+  .filter-select {
+    width: 100%;
+  }
+
+  /* Formular: zweispaltige Reihen werden einspaltig */
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .form-section {
+    padding: 20px 16px;
+  }
+  .form-field--narrow {
+    max-width: none;
+  }
+
+  /* Aktions-Buttons volle Breite, Speichern oben */
+  .form-actions {
+    flex-direction: column-reverse;
+  }
+  .form-actions .btn {
+    width: 100%;
+    text-align: center;
+    padding: 14px 20px;
+  }
 }
