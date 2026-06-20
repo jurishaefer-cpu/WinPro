@@ -4,7 +4,7 @@ function Header() {
   return (
     <header className="app-header">
       <div className="header-left">
-        <span className="logo-text">WinPro</span>
+        <img src="/logo.png" alt="WinPro" className="logo-img" />
       </div>
       <nav className="header-nav">
         <NavLink to="/" end className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
