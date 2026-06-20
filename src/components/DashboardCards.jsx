@@ -1,16 +1,16 @@
-function DashboardCards() {
+function DashboardCards({ kundenCount, profileCount }) {
   return (
     <div className="dashboard-cards">
       <div className="card card-highlight">
         <div className="card-icon">👥</div>
-        <div className="card-number">5</div>
+        <div className="card-number">{kundenCount ?? '–'}</div>
         <div className="card-title">Kunden</div>
         <div className="card-subtitle">Kontakte und Angebote</div>
       </div>
 
       <div className="card">
         <div className="card-icon">📋</div>
-        <div className="card-number">3</div>
+        <div className="card-number">{profileCount ?? '–'}</div>
         <div className="card-title">Profile</div>
         <div className="card-subtitle">Fenster- und Türsysteme</div>
       </div>
