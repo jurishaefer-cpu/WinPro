@@ -14,13 +14,12 @@ body {
 }
 
 .app-header {
-  background: #ffffff;
-  color: #0f1f3d;
+  background: #0f1f3d;
+  color: white;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 14px 32px;
-  border-bottom: 1px solid #e5e7eb;
 }
 
 .header-left {
@@ -29,7 +28,7 @@ body {
 }
 
 .logo-img {
-  height: 38px;
+  height: 34px;
   width: auto;
   display: block;
 }
@@ -40,7 +39,7 @@ body {
 }
 
 .nav-link {
-  color: #5a6172;
+  color: rgba(255, 255, 255, 0.7);
   text-decoration: none;
   font-size: 15px;
   font-weight: 500;
@@ -49,12 +48,12 @@ body {
 }
 
 .nav-link:hover {
-  color: #0f1f3d;
+  color: white;
 }
 
 .nav-link.active {
-  color: #0f1f3d;
-  border-bottom-color: #8b1a1a;
+  color: white;
+  border-bottom-color: #d63031;
 }
 
 .app-main {
