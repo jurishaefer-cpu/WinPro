@@ -5,6 +5,8 @@ import KundenPage from './pages/KundenPage';
 import NeuerKundePage from './pages/NeuerKundePage';
 import KundeBearbeitenPage from './pages/KundeBearbeitenPage';
 import ProfilePage from './pages/ProfilePage';
+import NeuesProfilPage from './pages/NeuesProfilPage';
+import ProfilBearbeitenPage from './pages/ProfilBearbeitenPage';
 import EinstellungenPage from './pages/EinstellungenPage';
 import LoginPage from './pages/LoginPage';
 import NameSetupModal from './components/NameSetupModal';
@@ -34,6 +36,8 @@ function App() {
         <Route path="/kunden/neu" element={<NeuerKundePage />} />
         <Route path="/kunden/:id/bearbeiten" element={<KundeBearbeitenPage />} />
         <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/profile/neu" element={<NeuesProfilPage />} />
+        <Route path="/profile/:id/bearbeiten" element={<ProfilBearbeitenPage />} />
         <Route path="/einstellungen" element={<EinstellungenPage />} />
       </Routes>
       {nameFehlt && <NameSetupModal />}

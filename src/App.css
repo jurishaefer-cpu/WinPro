@@ -552,6 +552,10 @@ body {
   padding: 2px 8px;
   letter-spacing: 0.5px;
 }
+.profil-system {
+  font-weight: 400;
+  color: #666;
+}
 .kunde-ort {
   font-size: 14px;
   color: #888;
@@ -655,9 +659,49 @@ body {
   outline: none;
   background: white;
 }
-.form-field input:focus {
+.form-field textarea {
+  padding: 12px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 15px;
+  font-family: inherit;
+  color: #1a1a1a;
+  outline: none;
+  background: white;
+  resize: vertical;
+}
+.form-field input:focus,
+.form-field textarea:focus {
   border-color: #0f1f3d;
   box-shadow: 0 0 0 3px rgba(15, 31, 61, 0.08);
+}
+
+/* ── Segmentierter Umschalter (z.B. Material) ── */
+.segmented {
+  display: flex;
+  background: #f0f1f3;
+  border-radius: 10px;
+  padding: 4px;
+  gap: 4px;
+}
+.segmented-option {
+  flex: 1;
+  padding: 12px 8px;
+  border: none;
+  background: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #555;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.segmented-option:hover {
+  color: #1a1a1a;
+}
+.segmented-option.is-active {
+  background: #0f1f3d;
+  color: #fff;
 }
 .form-field input.error {
   border-color: #d63031;
@@ -740,6 +784,12 @@ body {
   }
   .form-field--narrow {
     max-width: none;
+  }
+
+  /* Material-Umschalter kompakter, damit alle vier passen */
+  .segmented-option {
+    padding: 10px 4px;
+    font-size: 13px;
   }
 
   /* Aktions-Buttons volle Breite, Speichern oben */
