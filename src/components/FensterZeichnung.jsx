@@ -36,6 +36,28 @@ function oeffnungsLinien(g, r) {
   return linien;
 }
 
+// Kleine Vorschau ohne Maßlinien (für das Geometrie-Dropdown)
+export function GeometrieThumb({ geometrie, glasFarbe = '#cfe3ef' }) {
+  const g = geometrie;
+  const W = 120, H = 92, m = 8;
+  const rw = W - 2 * m, rh = H - 2 * m, x = m, y = m;
+  const frame = 9;
+  const sash = { x: x + frame, y: y + frame, w: rw - 2 * frame, h: rh - 2 * frame };
+  const glas = { x: sash.x + 5, y: sash.y + 5, w: sash.w - 10, h: sash.h - 10 };
+  const linien = g ? oeffnungsLinien(g, glas) : [];
+  const istTuer = g?.open === 'tuer';
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="100%">
+      <rect x={x} y={y} width={rw} height={rh} fill="#fff" stroke="#0f1f3d" strokeWidth="2" />
+      <rect x={sash.x} y={sash.y} width={sash.w} height={sash.h} fill="#fff" stroke="#0f1f3d" strokeWidth="1.5" />
+      <rect x={glas.x} y={glas.y} width={glas.w} height={glas.h} fill={istTuer ? '#e7edf2' : glasFarbe} stroke="#0f1f3d" strokeWidth="1" />
+      {linien.map((l, i) => (
+        <line key={i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="1" />
+      ))}
+    </svg>
+  );
+}
+
 function FensterZeichnung({ geometrie, breite, hoehe, glasFarbe = '#cfe3ef' }) {
   const g = geometrie;
   const b = Math.max(200, Number(breite) || 1000);

@@ -1595,6 +1595,39 @@ body {
 .np-check input { width: 17px; height: 17px; accent-color: #0f1f3d; cursor: pointer; }
 .np-check--inline { margin-top: 0; }
 
+/* Geometrie-Dropdown mit Vorschau */
+.geo-select { position: relative; }
+.geo-trigger, .geo-option {
+  width: 100%;
+  display: flex; align-items: center; gap: 14px;
+  background: #fff; border: 1px solid #d1d5db; border-radius: 12px;
+  padding: 10px 14px; cursor: pointer; text-align: left;
+}
+.geo-trigger:hover, .geo-option:hover { border-color: #c0c5cc; background: #fafbfc; }
+.geo-thumb {
+  flex-shrink: 0;
+  width: 58px; height: 44px;
+  background: #f3f5f7; border: 1px solid #e5e7eb; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  padding: 3px;
+}
+.geo-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.geo-label { font-size: 16px; font-weight: 700; color: #1a1a1a; line-height: 1.25; }
+.geo-code { font-size: 13px; color: #9aa0a8; margin-top: 2px; }
+.geo-caret { color: #6b7280; flex-shrink: 0; transition: transform 0.15s; }
+.geo-caret.offen { transform: rotate(180deg); }
+.geo-menu {
+  position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+  background: #fff; border: 1px solid #e5e7eb; border-radius: 12px;
+  box-shadow: 0 12px 30px rgba(15, 31, 61, 0.14);
+  padding: 6px; z-index: 20;
+  max-height: 320px; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.geo-option { border: 1px solid transparent; border-radius: 9px; }
+.geo-option.aktiv { background: #eef2fb; border-color: #d6e0f7; }
+.geo-option .geo-label { font-size: 15px; }
+
 /* Mitte */
 .np-chips { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; align-self: flex-start; }
 .np-chip {

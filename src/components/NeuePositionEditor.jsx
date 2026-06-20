@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import FensterZeichnung, { GEOMETRIEN, geometrieByCode } from './FensterZeichnung';
+import GeometrieSelect from './GeometrieSelect';
 
 const VERGLASUNGEN = [
   '2-fach Verglasung, Ug 1,1 mit warmer Kante',
@@ -146,9 +147,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
           </div>
 
           <label className="np-field-label">Geometrie</label>
-          <select className="np-select np-select--block" value={code} onChange={e => setCode(e.target.value)}>
-            {geomOptionen.map(g => <option key={g.code} value={g.code}>{`${g.label} · ${g.code}`}</option>)}
-          </select>
+          <GeometrieSelect optionen={geomOptionen} value={code} onChange={setCode} />
 
           <div className="np-group-label" style={{ marginTop: 24 }}>MASSE</div>
           <div className="np-row">
