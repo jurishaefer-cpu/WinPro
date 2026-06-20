@@ -1,12 +1,19 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../auth/AuthContext';
 
-function getInitials(email) {
-  if (!email) return '?';
-  const name = email.split('@')[0];
-  const parts = name.split(/[.\-_]/).filter(Boolean);
-  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
-  return name.slice(0, 2).toUpperCase();
+function getInitials(user) {
+  const m = user?.user_metadata ?? {};
+  const v = (m.first_name || '').trim();
+  const n = (m.last_name || '').trim();
+  if (v || n) return ((v[0] || '') + (n[0] || '')).toUpperCase();
+  // Fallback: voller Name mit Leerzeichen
+  const full = (m.full_name || m.name || '').trim();
+  if (full.includes(' ')) {
+    const p = full.split(/\s+/);
+    return (p[0][0] + p[p.length - 1][0]).toUpperCase();
+  }
+  const email = user?.email || '';
+  return email.slice(0, 2).toUpperCase() || '?';
 }
 
 function UserMenu() {
@@ -27,7 +34,7 @@ function UserMenu() {
   return (
     <div className="user-menu" ref={ref}>
       <button className="user-avatar" onClick={() => setOpen(o => !o)} title={user.email}>
-        {getInitials(user.email)}
+        {getInitials(user)}
       </button>
       {open && (
         <div className="user-dropdown">

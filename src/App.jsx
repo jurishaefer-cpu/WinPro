@@ -7,11 +7,12 @@ import KundeBearbeitenPage from './pages/KundeBearbeitenPage';
 import ProfilePage from './pages/ProfilePage';
 import EinstellungenPage from './pages/EinstellungenPage';
 import LoginPage from './pages/LoginPage';
+import NameSetupModal from './components/NameSetupModal';
 import { useAuth } from './auth/AuthContext';
 import './App.css';
 
 function App() {
-  const { session } = useAuth();
+  const { session, user } = useAuth();
 
   if (session === undefined) {
     return <div className="app-loading">Laden…</div>;
@@ -20,6 +21,9 @@ function App() {
   if (!session) {
     return <LoginPage />;
   }
+
+  const meta = user?.user_metadata ?? {};
+  const nameFehlt = !meta.first_name && !meta.last_name;
 
   return (
     <div className="app">
@@ -32,6 +36,7 @@ function App() {
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/einstellungen" element={<EinstellungenPage />} />
       </Routes>
+      {nameFehlt && <NameSetupModal />}
     </div>
   );
 }
