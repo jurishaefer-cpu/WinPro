@@ -137,7 +137,7 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
   } : null;
 
   return (
-    <svg viewBox={`0 0 ${VB_W} ${VB_H}`} width="100%" style={{ maxHeight: '60vh' }}>
+    <svg viewBox={`0 0 ${VB_W} ${VB_H}`} preserveAspectRatio="xMidYMid meet" className="fz-svg">
       {/* Maßlinie oben */}
       <line x1={x} y1={y - 34} x2={x + rw} y2={y - 34} stroke="#0f1f3d" strokeWidth="1.2" />
       <line x1={x} y1={y - 40} x2={x} y2={y - 14} stroke="#0f1f3d" strokeWidth="1.2" />

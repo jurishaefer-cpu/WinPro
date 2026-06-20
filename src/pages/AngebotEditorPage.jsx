@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../auth/AuthContext';
 import ManuellePositionModal from '../components/ManuellePositionModal';
 import NeuePositionEditor from '../components/NeuePositionEditor';
+import FensterZeichnung, { geometrieByCode } from '../components/FensterZeichnung';
 
 const STUFEN = ['Entwurf', 'Angebot', 'Auftragsbestätigung', 'Bestellung', 'Rechnung'];
 const SUBTITLE = {
@@ -99,6 +100,12 @@ function AngebotEditorPage() {
     setStrukturPos(null);
   }
 
+  async function dupliziere(p) {
+    await persistPosition({
+      typ: p.typ, beschreibung: p.beschreibung, menge: p.menge, nettopreis: p.nettopreis, config: p.config,
+    }, null);
+  }
+
   async function loeschePosition() {
     const pid = deletePos.id;
     await supabase.from('positionen').delete().eq('id', pid);
@@ -175,23 +182,67 @@ function AngebotEditorPage() {
         </div>
       ) : (
         <div className="pos-list">
-          {positionen.map((p) => (
-            <div key={p.id} className="pos-row" style={{ cursor: 'pointer' }} onClick={() => (p.typ === 'fenster' ? setStrukturPos(p) : setEditPos(p))} title="Zum Bearbeiten klicken">
-              <div className="pos-row-main">
-                <div className="pos-row-desc" dangerouslySetInnerHTML={{ __html: p.beschreibung || '<p>Position</p>' }} />
-                <div className="pos-row-menge">{Number(p.menge || 1)} Stück</div>
+          {positionen.map((p, i) => {
+            const menge = Number(p.menge || 1);
+            const preis = euro(Number(p.nettopreis || 0) * menge);
+            const trash = (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                <path d="M10 11v6"/><path d="M14 11v6"/>
+                <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+              </svg>
+            );
+
+            if (p.typ === 'fenster' && p.config) {
+              const c = p.config;
+              return (
+                <div key={p.id} className="pos-card">
+                  <div className="pos-card-head">
+                    <span className="pos-card-num">{i + 1}</span>
+                    <span className="pos-card-titel">{c.standort?.trim() || '—'}</span>
+                    <span className="pos-card-menge">{menge}×</span>
+                  </div>
+                  <div className="pos-card-canvas" onClick={() => setStrukturPos(p)} title="Zum Bearbeiten klicken">
+                    <FensterZeichnung
+                      geometrie={geometrieByCode(c.code)}
+                      breite={c.breite}
+                      hoehe={c.hoehe}
+                      verbreiterung={c.verbreiterung ? c.verb : null}
+                      aufsatzkasten={c.aufsatzkasten ? c.kasten : null}
+                    />
+                  </div>
+                  <div className="pos-card-foot">
+                    <button className="icon-btn" title="Bearbeiten" onClick={() => setStrukturPos(p)}>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                      </svg>
+                    </button>
+                    <button className="icon-btn" title="Duplizieren" onClick={() => dupliziere(p)}>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="9" y="9" width="13" height="13" rx="2"/>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                      </svg>
+                    </button>
+                    <button className="icon-btn icon-btn--delete" title="Position löschen" onClick={() => setDeletePos(p)}>{trash}</button>
+                    <span className="pos-card-preis">{preis}</span>
+                  </div>
+                </div>
+              );
+            }
+
+            return (
+              <div key={p.id} className="pos-row" style={{ cursor: 'pointer' }} onClick={() => setEditPos(p)} title="Zum Bearbeiten klicken">
+                <div className="pos-row-main">
+                  <div className="pos-row-desc" dangerouslySetInnerHTML={{ __html: p.beschreibung || '<p>Position</p>' }} />
+                  <div className="pos-row-menge">{menge} Stück</div>
+                </div>
+                <div className="pos-row-preis">{preis}</div>
+                <button className="icon-btn icon-btn--delete" title="Position löschen" onClick={(e) => { e.stopPropagation(); setDeletePos(p); }}>{trash}</button>
               </div>
-              <div className="pos-row-preis">{euro(Number(p.nettopreis || 0) * Number(p.menge || 1))}</div>
-              <button className="icon-btn icon-btn--delete" title="Position löschen" onClick={(e) => { e.stopPropagation(); setDeletePos(p); }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="3 6 5 6 21 6"/>
-                  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-                  <path d="M10 11v6"/><path d="M14 11v6"/>
-                  <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-                </svg>
-              </button>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

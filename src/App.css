@@ -1374,6 +1374,59 @@ body {
   border-radius: 12px;
   padding: 16px 20px;
 }
+
+/* Fenster-Position als Karte mit Zeichnung */
+.pos-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  overflow: hidden;
+}
+.pos-card-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border-bottom: 1px solid #eef0f2;
+}
+.pos-card-num {
+  width: 34px; height: 34px;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: #f0f1f3; border-radius: 8px;
+  font-size: 16px; font-weight: 700; color: #1a1a1a;
+}
+.pos-card-titel {
+  flex: 1; text-align: center;
+  font-size: 16px; color: #6b7280;
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.pos-card-menge {
+  flex-shrink: 0;
+  font-size: 16px; font-weight: 700; color: #1a1a1a;
+  font-variant-numeric: tabular-nums;
+}
+.pos-card-canvas {
+  display: flex; align-items: center; justify-content: center;
+  padding: 18px;
+  cursor: pointer;
+  background:
+    linear-gradient(#f2f4f6 1px, transparent 1px) 0 0 / 22px 22px,
+    linear-gradient(90deg, #f2f4f6 1px, transparent 1px) 0 0 / 22px 22px,
+    #fbfcfd;
+}
+.pos-card-canvas .fz-svg { height: 300px; width: auto; max-width: 100%; }
+.pos-card-foot {
+  display: flex; align-items: center; gap: 6px;
+  padding: 12px 18px;
+  border-top: 1px solid #eef0f2;
+}
+.pos-card-foot .icon-btn { padding: 8px; }
+.pos-card-preis {
+  margin-left: auto;
+  font-size: 20px; font-weight: 700; color: #1a1a1a;
+  font-variant-numeric: tabular-nums;
+}
 .pos-row-main {
   flex: 1;
   min-width: 0;
@@ -1660,7 +1713,9 @@ body {
 }
 .np-chip b { color: #1a1a1a; }
 .np-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #c0152e; margin-right: 4px; }
+.fz-svg { display: block; }
 .np-canvas { flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; }
+.np-canvas .fz-svg { height: 56vh; width: auto; max-width: 100%; }
 .np-canvas-caption { text-align: center; padding: 8px 0 16px; }
 .np-canvas-title { font-size: 17px; font-weight: 700; color: #1a1a1a; }
 .np-canvas-badge {
@@ -1827,6 +1882,11 @@ body {
   .editor-bezeichnung { max-width: none; }
   .editor-pos-buttons { width: 100%; }
   .editor-pos-buttons .btn { flex: 1; text-align: center; }
+
+  /* Fenster-Positions-Karte kompakter */
+  .pos-card-canvas { padding: 12px; }
+  .pos-card-canvas .fz-svg { height: 220px; }
+  .pos-card-preis { font-size: 18px; }
 
   /* Sticky-Summenleiste gestapelt */
   .editor-footer { flex-direction: column; align-items: stretch; gap: 12px; padding: 12px 16px; }
