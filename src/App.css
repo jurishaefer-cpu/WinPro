@@ -1415,7 +1415,7 @@ body {
     linear-gradient(90deg, #f2f4f6 1px, transparent 1px) 0 0 / 22px 22px,
     #fbfcfd;
 }
-.pos-card-canvas .fz-svg { height: 300px; width: auto; max-width: 100%; }
+.pos-card-canvas .fz-svg { width: 240px; height: 240px; max-width: 100%; }
 .pos-card-foot {
   display: flex; align-items: center; gap: 6px;
   padding: 12px 18px;
@@ -1885,7 +1885,7 @@ body {
 
   /* Fenster-Positions-Karte kompakter */
   .pos-card-canvas { padding: 12px; }
-  .pos-card-canvas .fz-svg { height: 220px; }
+  .pos-card-canvas .fz-svg { width: 200px; height: 200px; }
   .pos-card-preis { font-size: 18px; }
 
   /* Sticky-Summenleiste gestapelt */
