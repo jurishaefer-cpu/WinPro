@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 
 const FARBEN = [
   { name: 'Schwarz', wert: '#1a1a1a' },
@@ -7,10 +7,18 @@ const FARBEN = [
 ];
 const GROESSEN = [8, 9, 12];
 
-function ManuellePositionModal({ onClose, onSave }) {
+function ManuellePositionModal({ onClose, onSave, initial }) {
   const editorRef = useRef(null);
-  const [nettopreis, setNettopreis] = useState('');
+  const [nettopreis, setNettopreis] = useState(
+    initial && initial.nettopreis ? String(initial.nettopreis).replace('.', ',') : ''
+  );
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (editorRef.current && initial?.beschreibung) {
+      editorRef.current.innerHTML = initial.beschreibung;
+    }
+  }, [initial]);
 
   function exec(cmd, value) {
     editorRef.current?.focus();
@@ -36,7 +44,7 @@ function ManuellePositionModal({ onClose, onSave }) {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-box modal-box--wide" onClick={e => e.stopPropagation()}>
-        <h2 className="modal-title">Manuelle Position</h2>
+        <h2 className="modal-title">{initial ? 'Position bearbeiten' : 'Manuelle Position'}</h2>
 
         <label className="editor-bezeichnung" style={{ marginBottom: 8 }}>
           <span style={{ display: 'block', fontWeight: 600, fontSize: 14, color: '#4a4f57', marginBottom: 8 }}>

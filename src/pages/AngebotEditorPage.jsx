@@ -35,7 +35,8 @@ function AngebotEditorPage() {
   const [positionen, setPositionen] = useState([]);
   const [bezeichnung, setBezeichnung] = useState('');
   const [loading, setLoading] = useState(true);
-  const [showManuell, setShowManuell] = useState(false);
+  const [editPos, setEditPos] = useState(null); // 'neu' = neue Position, sonst die zu bearbeitende Position
+  const [deletePos, setDeletePos] = useState(null);
 
   useEffect(() => {
     async function laden() {
@@ -70,22 +71,30 @@ function AngebotEditorPage() {
     setAngebot({ ...angebot, bezeichnung });
   }
 
-  async function addManuellePosition({ beschreibung, nettopreis }) {
-    const { data } = await supabase
-      .from('positionen')
-      .insert([{ angebot_id: angebotId, owner_id: user.id, typ: 'manuell', beschreibung, menge: 1, nettopreis, sortierung: positionen.length }])
-      .select().single();
-    const liste = data ? [...positionen, data] : positionen;
+  async function speicherePosition({ beschreibung, nettopreis }) {
+    let liste;
+    if (editPos && editPos !== 'neu') {
+      await supabase.from('positionen').update({ beschreibung, nettopreis }).eq('id', editPos.id);
+      liste = positionen.map(p => (p.id === editPos.id ? { ...p, beschreibung, nettopreis } : p));
+    } else {
+      const { data } = await supabase
+        .from('positionen')
+        .insert([{ angebot_id: angebotId, owner_id: user.id, typ: 'manuell', beschreibung, menge: 1, nettopreis, sortierung: positionen.length }])
+        .select().single();
+      liste = data ? [...positionen, data] : positionen;
+    }
     setPositionen(liste);
     await syncBetrag(liste);
-    setShowManuell(false);
+    setEditPos(null);
   }
 
-  async function loeschePosition(pid) {
+  async function loeschePosition() {
+    const pid = deletePos.id;
     await supabase.from('positionen').delete().eq('id', pid);
     const liste = positionen.filter(p => p.id !== pid);
     setPositionen(liste);
     await syncBetrag(liste);
+    setDeletePos(null);
   }
 
   async function setzeStufe(index) {
@@ -143,26 +152,26 @@ function AngebotEditorPage() {
           />
         </div>
         <div className="editor-pos-buttons">
-          <button className="btn btn-dark" onClick={() => setShowManuell(true)}>+ Position</button>
-          <button className="btn btn-outline" onClick={() => setShowManuell(true)}>+ Manuelle Position</button>
+          <button className="btn btn-dark" onClick={() => setEditPos('neu')}>+ Position</button>
+          <button className="btn btn-outline" onClick={() => setEditPos('neu')}>+ Manuelle Position</button>
         </div>
       </div>
 
       {positionen.length === 0 ? (
         <div className="pos-empty">
           <div className="pos-empty-text">Noch keine Positionen erfasst</div>
-          <button className="btn btn-primary btn-red" onClick={() => setShowManuell(true)}>Erste Position erfassen</button>
+          <button className="btn btn-primary btn-red" onClick={() => setEditPos('neu')}>Erste Position erfassen</button>
         </div>
       ) : (
         <div className="pos-list">
-          {positionen.map((p, i) => (
-            <div key={p.id} className="pos-row">
+          {positionen.map((p) => (
+            <div key={p.id} className="pos-row" style={{ cursor: 'pointer' }} onClick={() => setEditPos(p)} title="Zum Bearbeiten klicken">
               <div className="pos-row-main">
                 <div className="pos-row-desc" dangerouslySetInnerHTML={{ __html: p.beschreibung || '<p>Position</p>' }} />
                 <div className="pos-row-menge">{Number(p.menge || 1)} Stück</div>
               </div>
               <div className="pos-row-preis">{euro(Number(p.nettopreis || 0) * Number(p.menge || 1))}</div>
-              <button className="icon-btn icon-btn--delete" title="Position löschen" onClick={() => loeschePosition(p.id)}>
+              <button className="icon-btn icon-btn--delete" title="Position löschen" onClick={(e) => { e.stopPropagation(); setDeletePos(p); }}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="3 6 5 6 21 6"/>
                   <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
@@ -199,8 +208,25 @@ function AngebotEditorPage() {
         </div>
       </div>
 
-      {showManuell && (
-        <ManuellePositionModal onClose={() => setShowManuell(false)} onSave={addManuellePosition} />
+      {editPos && (
+        <ManuellePositionModal
+          onClose={() => setEditPos(null)}
+          onSave={speicherePosition}
+          initial={editPos !== 'neu' ? { beschreibung: editPos.beschreibung, nettopreis: editPos.nettopreis } : null}
+        />
+      )}
+
+      {deletePos && (
+        <div className="modal-overlay" onClick={() => setDeletePos(null)}>
+          <div className="modal-box" onClick={e => e.stopPropagation()}>
+            <h2 className="modal-title">Position löschen?</h2>
+            <p className="modal-text">Möchtest du diese Position wirklich aus dem Angebot entfernen?</p>
+            <div className="modal-actions">
+              <button className="btn btn-secondary" onClick={() => setDeletePos(null)}>Abbrechen</button>
+              <button className="btn btn-danger" onClick={loeschePosition}>Löschen</button>
+            </div>
+          </div>
+        </div>
       )}
     </main>
   );
