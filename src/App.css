@@ -1798,7 +1798,62 @@ body {
   .detail-card {
     padding: 18px 16px;
   }
+  .detail-card-head { gap: 12px; }
+  .detail-avatar { width: 52px; height: 52px; font-size: 17px; }
   .angebote-header h2 {
     font-size: 20px;
   }
+  .detail-contact { gap: 8px 20px; }
+  .detail-contact-item { font-size: 14px; }
+
+  /* Angebots-Karte: Betrag/Pfeil bleiben, Löschen-Button schmaler */
+  .angebot-delete { width: 44px; }
+  .angebot-bez { font-size: 16px; }
+
+  /* ── Angebots-Editor mobil ── */
+  .angebot-editor { padding-bottom: 150px; }
+  .editor-title { font-size: 22px; }
+  .stepper-card { padding: 16px 14px; }
+  .stepper-head { flex-wrap: wrap; gap: 10px; }
+  /* Stepper horizontal scrollbar statt Überlauf */
+  .stepper { overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 6px; }
+  .stepper-step { width: 84px; }
+  .stepper-dot { width: 38px; height: 38px; font-size: 15px; }
+  .stepper-label { font-size: 12px; }
+  .stepper-line { margin-top: 18px; min-width: 16px; }
+
+  /* Bezeichnung + Positions-Buttons untereinander, Buttons volle Breite */
+  .editor-toolbar { flex-direction: column; align-items: stretch; gap: 14px; }
+  .editor-bezeichnung { max-width: none; }
+  .editor-pos-buttons { width: 100%; }
+  .editor-pos-buttons .btn { flex: 1; text-align: center; }
+
+  /* Sticky-Summenleiste gestapelt */
+  .editor-footer { flex-direction: column; align-items: stretch; gap: 12px; padding: 12px 16px; }
+  .footer-summe { justify-content: space-between; flex-wrap: wrap; }
+  .footer-actions { margin-left: 0; }
+  .footer-actions .btn { flex: 1; text-align: center; padding: 12px 6px; }
+
+  /* ── Fenster-Konfigurator mobil ── */
+  .np-header { flex-wrap: wrap; gap: 10px; padding: 12px 16px; }
+  .np-title { flex-direction: column; gap: 2px; }
+  .np-title strong { font-size: 17px; }
+  .np-subtitle { font-size: 13px; }
+  .np-header-right { gap: 8px; }
+  .np-system-label { display: none; }
+  .np-header-right .np-select { height: 44px; padding: 8px 32px 8px 12px; font-size: 14px; max-width: 190px; }
+  .np-col { padding: 16px; }
+  .np-col--center { min-height: 46vh; }
+  .np-chips { gap: 6px; }
+  .np-chip { font-size: 12px; padding: 6px 10px; }
+
+  /* Fuß: Kosten + Preis + Aktionen gestapelt */
+  .np-footer { padding: 12px 16px; gap: 14px; }
+  .np-footer-kosten { gap: 12px; }
+  .np-footer-preis { flex-direction: column; align-items: stretch; gap: 12px; }
+  .np-netto { width: 100%; }
+  .np-euro-input--lg { width: 100%; }
+  .np-footer-actions { width: 100%; }
+  .np-footer-actions .btn { flex: 1; text-align: center; }
+  .np-gesamt { align-self: flex-start; padding-bottom: 0; }
 }
