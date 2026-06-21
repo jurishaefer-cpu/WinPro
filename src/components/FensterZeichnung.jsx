@@ -153,7 +153,6 @@ export function GeometrieThumb({ geometrie, glasFarbe = '#cfe3ef' }) {
   const W = 120, H = 92, m = 7;
   const r0 = { x: m, y: m, w: W - 2 * m, h: H - 2 * m };
   const istFest = g?.open === 'fest';
-  const istTuer = g?.open === 'tuer' || g?.kategorie === 'tuer';
   const blendIn = inset(r0, 6);           // Blendrahmen breit (äußerer Rahmen)
   const miterBlend = gehrung(r0, blendIn);
   const inner = inset(r0, 8);
@@ -161,12 +160,12 @@ export function GeometrieThumb({ geometrie, glasFarbe = '#cfe3ef' }) {
 
   const mk = (rect, geo) => {
     const gl = inset(rect, sashW);
-    return { sash: rect, glas: gl, miter: gehrung(rect, gl), lines: geo ? oeffnungsLinien(geo, gl) : [] };
+    return { sash: rect, glas: gl, miter: gehrung(rect, gl), lines: geo ? oeffnungsLinien(geo, gl) : [], tuer: geo?.open === 'tuer' };
   };
   let leaves = [];
   const pfostenList = [];
   if (istFest) {
-    leaves = [{ sash: null, glas: inset(blendIn, 2.5), miter: [], lines: [] }];
+    leaves = [{ sash: null, glas: inset(blendIn, 2.5), miter: [], lines: [], tuer: false }];
   } else if (g?.panes) {
     const anz = g.panes.length;
     const cols = g.cols || anz;
@@ -180,7 +179,7 @@ export function GeometrieThumb({ geometrie, glasFarbe = '#cfe3ef' }) {
     g.panes.forEach((p, idx) => {
       const c = idx % cols, r = Math.floor(idx / cols);
       const rect = { x: colX[c], y: rowY[r], w: colW, h: rowH };
-      if (p.fest) leaves.push({ sash: null, glas: inset(rect, 2.5), miter: [], lines: [] });
+      if (p.fest) leaves.push({ sash: null, glas: inset(rect, 2.5), miter: [], lines: [], tuer: false });
       else leaves.push(mk(rect, { open: p.open, din: p.din }));
     });
     const istStulp = g?.teilung === 'stulp';
@@ -203,7 +202,7 @@ export function GeometrieThumb({ geometrie, glasFarbe = '#cfe3ef' }) {
         <g key={'lf' + li}>
           {lf.sash && <rect x={lf.sash.x} y={lf.sash.y} width={lf.sash.w} height={lf.sash.h} fill="#fff" stroke="#0f1f3d" strokeWidth="1.1" />}
           {lf.miter.map((l, i) => <line key={'ms' + li + '-' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="0.8" />)}
-          <rect x={lf.glas.x} y={lf.glas.y} width={lf.glas.w} height={lf.glas.h} fill={istTuer ? '#e7edf2' : glasFarbe} stroke="#0f1f3d" strokeWidth="0.9" />
+          <rect x={lf.glas.x} y={lf.glas.y} width={lf.glas.w} height={lf.glas.h} fill={lf.tuer ? '#e7edf2' : glasFarbe} stroke="#0f1f3d" strokeWidth="0.9" />
         </g>
       ))}
       {leaves.map((lf, li) => lf.lines.map((l, i) => (
@@ -253,7 +252,7 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
   // Flügel (1, 2 oder Festverglasung)
   const machFluegel = (rect, geo) => {
     const gl = inset(rect, sashW);
-    return { sash: rect, rect, glas: gl, miter: gehrung(rect, gl), lines: geo ? oeffnungsLinien(geo, gl) : [] };
+    return { sash: rect, rect, glas: gl, miter: gehrung(rect, gl), lines: geo ? oeffnungsLinien(geo, gl) : [], tuer: geo?.open === 'tuer' };
   };
   const effPanes = panesProp || g?.panes;
   let leaves = [];
@@ -261,7 +260,7 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
   let subCols = [];   // Zwischenmaße Spalten (Breite)
   let subRows = [];   // Zwischenmaße Zeilen (Höhe)
   if (istFest && !effPanes) {
-    leaves = [{ sash: null, rect: blendIn, glas: inset(blendIn, Math.max(6, u * 0.02)), miter: [], lines: [] }];
+    leaves = [{ sash: null, rect: blendIn, glas: inset(blendIn, Math.max(6, u * 0.02)), miter: [], lines: [], tuer: false }];
   } else if (effPanes) {
     const anz = effPanes.length;
     const cols = colsProp || g?.cols || anz;
@@ -282,7 +281,7 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
     effPanes.forEach((p, idx) => {
       const c = idx % cols, r = Math.floor(idx / cols);
       const rect = { x: colX[c], y: rowY[r], w: colWpx[c], h: rowHpx[r] };
-      if (p.fest) leaves.push({ sash: null, rect, glas: inset(rect, Math.max(4, sashW * 0.5)), miter: [], lines: [] });
+      if (p.fest) leaves.push({ sash: null, rect, glas: inset(rect, Math.max(4, sashW * 0.5)), miter: [], lines: [], tuer: false });
       else leaves.push(machFluegel(rect, { open: p.open, din: p.din }));
     });
     const istStulp = g?.teilung === 'stulp';
@@ -428,7 +427,7 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
             <line key={'ms' + li + '-' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="1.4" />
           ))}
           <rect x={lf.glas.x} y={lf.glas.y} width={lf.glas.w} height={lf.glas.h}
-                fill={istTuer ? '#e7edf2' : glasFarbe} stroke="#0f1f3d" strokeWidth="1.4" opacity="0.95" />
+                fill={lf.tuer ? '#e7edf2' : glasFarbe} stroke="#0f1f3d" strokeWidth="1.4" opacity="0.95" />
         </g>
       ))}
 
