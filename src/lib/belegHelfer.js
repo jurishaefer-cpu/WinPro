@@ -1,3 +1,5 @@
+import { geometrieByCode, fensterBezeichnung } from '../components/FensterZeichnung';
+
 export function euro(n) {
   return Number(n || 0).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
 }
@@ -12,9 +14,20 @@ function esc(s) {
   return String(s ?? '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 }
 
+// Gesamt-Außenmaß einer Kombination (max. Breite je Spalte aufsummiert, max. Höhe je Zeile)
+export function kombiMass(elemente) {
+  const els = elemente || [];
+  const colsSet = [...new Set(els.map(e => e.col ?? 0))];
+  const rowsSet = [...new Set(els.map(e => e.row ?? 0))];
+  const w = colsSet.reduce((a, cc) => a + Math.max(0, ...els.filter(e => (e.col ?? 0) === cc).map(e => Number(e.breite) || 0)), 0);
+  const h = rowsSet.reduce((a, rr) => a + Math.max(0, ...els.filter(e => (e.row ?? 0) === rr).map(e => Number(e.hoehe) || 0)), 0);
+  return { w, h };
+}
+
 // Beschreibungszeilen einer Fenster-Position für den Beleg (HTML-Strings)
 export function positionZeilen(config, profil) {
   if (!config) return [];
+  if (config.elemente?.length > 1) return kombiZeilen(config, profil);
   const z = [];
   if (profil?.material) z.push(`Material: ${esc(profil.material.toLowerCase())}`);
   const profilTeile = [profil?.hersteller, profil?.system].filter(Boolean).join(' ');
@@ -45,6 +58,34 @@ export function positionZeilen(config, profil) {
     z.push(`Aufsatzkasten: ${Number(config.kasten.kastenhoehe) || 0} mm, ${config.kasten.bedienung} (${config.kasten.bedienungsseite})`);
   }
   if (config.rollladen) z.push(`Rollladenführung: ${esc(config.rollladen)}`);
+  if (!config.ohneMontage && Number(config.montage) > 0) {
+    z.push(`Im Positionspreis enthalten ist die Montage mit ${euro(config.montage)}.`);
+  }
+  return z;
+}
+
+// Beschreibungszeilen einer Fensterkombination (mehrere gekoppelte Elemente)
+function kombiZeilen(config, profil) {
+  const z = [];
+  if (profil?.material) z.push(`Material: ${esc(profil.material.toLowerCase())}`);
+  const profilTeile = [profil?.hersteller, profil?.system].filter(Boolean).join(' ');
+  if (profilTeile || profil?.bautiefe) {
+    z.push(`Profil: ${esc(profilTeile)}${profil?.bautiefe ? ` · ${profil.bautiefe} mm Bautiefe` : ''}`);
+  }
+  const { w, h } = kombiMass(config.elemente);
+  z.push(`Fensterkombination · Gesamtmaß ${Math.round(w)} × ${Math.round(h)} mm`);
+  config.elemente.forEach((el, i) => {
+    const geo = geometrieByCode(el.code);
+    const bez = fensterBezeichnung(geo, el.panes, el.cols);
+    let line = `Element ${i + 1}: ${esc(bez)} (${esc(el.code)}), ${Math.round(el.breite)} × ${Math.round(el.hoehe)} mm`;
+    if (el.innenfarbe || el.aussenfarbe) {
+      line += el.innenfarbe === el.aussenfarbe
+        ? `, Farbe ${esc(el.innenfarbe)}`
+        : `, Farbe innen ${esc(el.innenfarbe ?? '')} / außen ${esc(el.aussenfarbe ?? '')}`;
+    }
+    if (el.verglasung) line += `, ${esc(el.verglasung)}${el.vsg ? ', VSG' : ''}${el.ornament ? ', Ornament' : ''}`;
+    z.push(line);
+  });
   if (!config.ohneMontage && Number(config.montage) > 0) {
     z.push(`Im Positionspreis enthalten ist die Montage mit ${euro(config.montage)}.`);
   }

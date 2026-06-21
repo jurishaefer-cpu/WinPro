@@ -1,8 +1,9 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import FensterZeichnung, { GEOMETRIEN, geometrieByCode, GeometrieThumb, fensterBezeichnung } from './FensterZeichnung';
+import FensterZeichnung, { GEOMETRIEN, geometrieByCode, GeometrieThumb, fensterBezeichnung, KombinationsZeichnung } from './FensterZeichnung';
 import GeometrieSelect from './GeometrieSelect';
 import RichTextEditor from './RichTextEditor';
+import { kombiMass } from '../lib/belegHelfer';
 
 const VERGLASUNGEN = [
   '2-fach Verglasung, Ug 1,1 mit warmer Kante',
@@ -29,8 +30,52 @@ function panesFromGeo(geo) {
   return [{ open: geo.open, din: geo.din }];
 }
 
-function euro(n) {
-  return Number(n || 0).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
+const DEFAULT_KASTEN = { kastenhoehe: 165, bedienung: 'Gurt', bedienungsseite: 'rechts', lamellenfarbe: '', lamellentyp: 'Alulamelle' };
+
+// Baut ein einzelnes Element aus (Teil-)Konfig oder Defaults.
+function makeElement(src, id) {
+  const code = src?.code ?? 'F01';
+  const geo = geometrieByCode(code);
+  const panes = src?.panes ?? panesFromGeo(geo);
+  const cols = src?.cols ?? (geo?.cols || panes.length);
+  const rows = Math.ceil(panes.length / cols);
+  const breite = src?.breite ?? 1000;
+  const hoehe = src?.hoehe ?? 1200;
+  return {
+    id,
+    row: src?.row ?? 0,
+    col: src?.col ?? 0,
+    kategorie: src?.kategorie ?? 'fenster',
+    code,
+    panes,
+    cols,
+    colWidths: src?.colWidths ?? Array(cols).fill(Math.round(breite / cols)),
+    rowHeights: src?.rowHeights ?? Array(rows).fill(Math.round(hoehe / rows)),
+    breite,
+    hoehe,
+    verbreiterung: src?.verbreiterung ?? false,
+    verb: src?.verb ?? { oben: 0, unten: 0, links: 0, rechts: 0 },
+    aufsatzkasten: src?.aufsatzkasten ?? false,
+    kasten: src?.kasten ?? { ...DEFAULT_KASTEN },
+    rollladen: src?.rollladen && src.rollladen !== 'ohne' ? src.rollladen : '',
+    innenfarbe: src?.innenfarbe ?? 'WEISS',
+    aussenfarbe: src?.aussenfarbe ?? 'WEISS',
+    verglasung: src?.verglasung ?? VERGLASUNGEN[0],
+    vsg: src?.vsg ?? false,
+    ornament: src?.ornament ?? false,
+    ornamentArt: src?.ornamentArt ?? '',
+    dichtungInnen: src?.dichtungInnen ?? 'Grau',
+    dichtungAussen: src?.dichtungAussen ?? 'Grau',
+    kommentar: src?.kommentar ?? '',
+    nettoJeStueck: src?.nettoJeStueck ?? 0,
+  };
+}
+
+function buildInitElemente(cfg) {
+  if (cfg?.elemente?.length) {
+    return cfg.elemente.map((e, i) => makeElement(e, e.id ?? `el${i}`));
+  }
+  return [makeElement(cfg, 'el0')];
 }
 
 function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
@@ -38,47 +83,19 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
   const [katalog, setKatalog] = useState({}); // name -> code
   const [profilId, setProfilId] = useState(initial?.profilId ?? null);
 
-  const [kategorie, setKategorie] = useState(initial?.kategorie ?? 'fenster');
-  const [code, setCode] = useState(initial?.code ?? 'F01');
-  const initGeo = geometrieByCode(initial?.code ?? 'F01');
-  const initPanes = initial?.panes ?? panesFromGeo(initGeo);
-  const initCols = initial?.cols ?? (initGeo?.cols || initPanes.length);
-  const initRows = Math.ceil(initPanes.length / initCols);
-  const initBreite = initial?.breite ?? 1000;
-  const initHoehe = initial?.hoehe ?? 1200;
-  const [panes, setPanes] = useState(initPanes);
-  const [cols, setCols] = useState(initCols);
+  const [elemente, setElemente] = useState(() => buildInitElemente(initial));
+  const [activeId, setActiveId] = useState(() => buildInitElemente(initial)[0].id);
   const [selectedPane, setSelectedPane] = useState(null);
-  const [breite, setBreite] = useState(initBreite);
-  const [hoehe, setHoehe] = useState(initHoehe);
-  const [colWidths, setColWidths] = useState(initial?.colWidths ?? Array(initCols).fill(Math.round(initBreite / initCols)));
-  const [rowHeights, setRowHeights] = useState(initial?.rowHeights ?? Array(initRows).fill(Math.round(initHoehe / initRows)));
+  const [addMenu, setAddMenu] = useState(false);
+  const nextId = useRef(1000);
+
+  // Positions-Ebene (für alle Elemente gemeinsam)
   const [stueckzahl, setStueckzahl] = useState(initial?.stueckzahl ?? 1);
   const [standort, setStandort] = useState(initial?.standort ?? '');
-
-  const [verbreiterung, setVerbreiterung] = useState(initial?.verbreiterung ?? false);
-  const [verb, setVerb] = useState(initial?.verb ?? { oben: 0, unten: 0, links: 0, rechts: 0 });
-  const [aufsatzkasten, setAufsatzkasten] = useState(initial?.aufsatzkasten ?? false);
-  const [kasten, setKasten] = useState(initial?.kasten ?? {
-    kastenhoehe: 165, bedienung: 'Gurt', bedienungsseite: 'rechts', lamellenfarbe: '', lamellentyp: 'Alulamelle',
-  });
-  const [rollladen, setRollladen] = useState(initial?.rollladen && initial.rollladen !== 'ohne' ? initial.rollladen : '');
-
-  const [innenfarbe, setInnenfarbe] = useState(initial?.innenfarbe ?? 'WEISS');
-  const [aussenfarbe, setAussenfarbe] = useState(initial?.aussenfarbe ?? 'WEISS');
-  const [verglasung, setVerglasung] = useState(initial?.verglasung ?? VERGLASUNGEN[0]);
-  const [vsg, setVsg] = useState(initial?.vsg ?? false);
-  const [ornament, setOrnament] = useState(initial?.ornament ?? false);
-  const [ornamentArt, setOrnamentArt] = useState(initial?.ornamentArt ?? '');
-  const [dichtungInnen, setDichtungInnen] = useState(initial?.dichtungInnen ?? 'Grau');
-  const [dichtungAussen, setDichtungAussen] = useState(initial?.dichtungAussen ?? 'Grau');
-  const [kommentar, setKommentar] = useState(initial?.kommentar ?? '');
-
   const [montage, setMontage] = useState(initial?.montage ?? 140);
   const [ausbau, setAusbau] = useState(initial?.ausbau ?? 30);
   const [entsorgung, setEntsorgung] = useState(initial?.entsorgung ?? 15);
   const [ohneMontage, setOhneMontage] = useState(initial?.ohneMontage ?? false);
-  const [nettoJeStueck, setNettoJeStueck] = useState(initial?.nettoJeStueck ?? 0);
 
   useEffect(() => {
     async function laden() {
@@ -94,8 +111,11 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
   }, [initial]);
 
   const profil = profile.find(p => p.id === profilId);
-  const geometrie = geometrieByCode(code);
-  const geomOptionen = GEOMETRIEN.filter(g => g.kategorie === kategorie);
+  const aktiv = elemente.find(e => e.id === activeId) || elemente[0];
+  const istMain = aktiv && aktiv.id === elemente[0].id;
+  const geometrie = geometrieByCode(aktiv.code);
+  const geomOptionen = GEOMETRIEN.filter(g => g.kategorie === aktiv.kategorie);
+  const istKombi = elemente.length > 1;
 
   // Farboptionen aus dem gewählten Profil
   const farbOptionen = useMemo(() => {
@@ -103,94 +123,152 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
     return namen.map(name => ({ value: name, label: katalog[name] ? `${katalog[name]} -- ${name}` : name }));
   }, [profil, katalog]);
 
+  // --- aktives Element ändern ---
+  function updAktiv(patch) {
+    setElemente(prev => prev.map(e => (e.id === activeId ? { ...e, ...patch } : e)));
+  }
+  function switchActive(id) {
+    setActiveId(id);
+    setSelectedPane(null);
+  }
+
   function waehleGeometrie(neuCode) {
-    setCode(neuCode);
     const geo = geometrieByCode(neuCode);
     const np = panesFromGeo(geo);
     const c = geo?.cols || np.length;
     const r = Math.ceil(np.length / c);
-    setPanes(np);
-    setCols(c);
-    setColWidths(Array(c).fill(Math.round((Number(breite) || 1000) / c)));
-    setRowHeights(Array(r).fill(Math.round((Number(hoehe) || 1200) / r)));
+    updAktiv({
+      code: neuCode,
+      panes: np,
+      cols: c,
+      colWidths: Array(c).fill(Math.round((Number(aktiv.breite) || 1000) / c)),
+      rowHeights: Array(r).fill(Math.round((Number(aktiv.hoehe) || 1200) / r)),
+    });
     setSelectedPane(null);
   }
 
   function setMainBreite(val) {
-    setBreite(val);
-    const n = cols;
-    setColWidths(Array(n).fill(Math.round((Number(val) || 0) / n)));
+    const n = aktiv.cols;
+    updAktiv({ breite: val, colWidths: Array(n).fill(Math.round((Number(val) || 0) / n)) });
   }
   function setMainHoehe(val) {
-    setHoehe(val);
-    const n = Math.ceil(panes.length / cols);
-    setRowHeights(Array(n).fill(Math.round((Number(val) || 0) / n)));
+    const n = Math.ceil(aktiv.panes.length / aktiv.cols);
+    updAktiv({ hoehe: val, rowHeights: Array(n).fill(Math.round((Number(val) || 0) / n)) });
   }
   function setColWidth(i, val) {
-    const next = colWidths.map((c, idx) => (idx === i ? (Number(val) || 0) : c));
-    setColWidths(next);
-    setBreite(next.reduce((a, c) => a + c, 0));
+    const next = aktiv.colWidths.map((c, idx) => (idx === i ? (Number(val) || 0) : c));
+    updAktiv({ colWidths: next, breite: next.reduce((a, c) => a + c, 0) });
   }
   function setRowHeight(i, val) {
-    const next = rowHeights.map((rr, idx) => (idx === i ? (Number(val) || 0) : rr));
-    setRowHeights(next);
-    setHoehe(next.reduce((a, c) => a + c, 0));
+    const next = aktiv.rowHeights.map((rr, idx) => (idx === i ? (Number(val) || 0) : rr));
+    updAktiv({ rowHeights: next, hoehe: next.reduce((a, c) => a + c, 0) });
   }
 
   function wechselKategorie(k) {
-    setKategorie(k);
     const erste = GEOMETRIEN.find(g => g.kategorie === k);
+    updAktiv({ kategorie: k });
     if (erste) waehleGeometrie(erste.code);
   }
 
   function setzePane(cfg) {
     if (selectedPane == null) return;
-    setPanes(panes.map((p, i) => (i === selectedPane ? { ...cfg } : p)));
+    updAktiv({ panes: aktiv.panes.map((p, i) => (i === selectedPane ? { ...cfg } : p)) });
     setSelectedPane(null);
   }
 
-  const flaeche = (Number(breite) * Number(hoehe)) / 1_000_000; // m²
+  // --- Elemente hinzufügen / entfernen ---
+  function addElement(kat) {
+    const id = `el${nextId.current++}`;
+    const main = elemente[0];
+    const isT = kat === 'tuer';
+    const code = isT ? 'T01' : 'F01';
+    const breite = isT ? 1000 : 600;
+    const hoehe = Number(main.hoehe) || 1200;           // gleiche Höhe → kein Spalt (eine Zeile)
+    const maxCol = Math.max(...elemente.map(e => e.col ?? 0));
+    const neu = makeElement({
+      kategorie: kat, code, breite, hoehe, row: 0, col: maxCol + 1,
+      innenfarbe: main.innenfarbe, aussenfarbe: main.aussenfarbe,
+      verglasung: main.verglasung, dichtungInnen: main.dichtungInnen, dichtungAussen: main.dichtungAussen,
+    }, id);
+    setElemente(prev => [...prev, neu]);
+    setActiveId(id);
+    setSelectedPane(null);
+    setAddMenu(false);
+  }
+  function removeElement(id) {
+    if (id === elemente[0].id) return;                  // Hauptelement bleibt
+    const rest = elemente.filter(e => e.id !== id);
+    setElemente(rest);
+    if (activeId === id) setActiveId(rest[0].id);
+    setSelectedPane(null);
+  }
+
+  // --- Maße / Preis ---
+  const kombi = kombiMass(elemente);
+  const breiteGes = istKombi ? kombi.w : Number(aktiv.breite);
+  const hoeheGes = istKombi ? kombi.h : Number(aktiv.hoehe);
+  const flaeche = (breiteGes * hoeheGes) / 1_000_000; // m²
+  const summeNetto = elemente.reduce((a, e) => a + (Number(e.nettoJeStueck) || 0), 0);
   const zuschlag = ohneMontage ? 0 : Number(montage) + Number(ausbau) + Number(entsorgung);
-  const proStueck = Number(nettoJeStueck) + zuschlag;
-  const gesamt = proStueck * Number(stueckzahl || 1);
+  const proStueck = summeNetto + zuschlag;
   const systemLabel = profil ? `${profil.hersteller} ${profil.system}`.trim() : '—';
 
   function buildBeschreibung() {
     const farbe = (name) => katalog[name] ? `${katalog[name]} ${name}` : name;
-    const teile = [
-      `<strong>${fensterBezeichnung(geometrie, panes, cols)} (${code})</strong>`,
-      `${Math.round(breite)} × ${Math.round(hoehe)} mm · ${flaeche.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} m²`,
-      systemLabel,
-      `Innen ${farbe(innenfarbe)} / Außen ${farbe(aussenfarbe)}`,
-      verglasung + (vsg ? ', VSG' : '') + (ornament ? `, Ornament${ornamentArt ? ` (${ornamentArt})` : ''}` : ''),
-      `Dichtung innen/außen: ${dichtungInnen}/${dichtungAussen}`,
-    ];
-    if (verbreiterung) {
-      const seiten = ['oben', 'unten', 'links', 'rechts']
-        .filter(k => Number(verb[k]) > 0)
-        .map(k => `${k} ${Number(verb[k])} mm`);
-      teile.push('Verbreiterung' + (seiten.length ? ': ' + seiten.join(', ') : ''));
+    const teile = [];
+    if (istKombi) {
+      teile.push('<strong>Fensterkombination</strong>');
+      teile.push(`Gesamtmaß ${Math.round(breiteGes)} × ${Math.round(hoeheGes)} mm · ${flaeche.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} m²`);
+      teile.push(systemLabel);
+      elemente.forEach((el, i) => {
+        const geo = geometrieByCode(el.code);
+        teile.push(`Element ${i + 1}: ${fensterBezeichnung(geo, el.panes, el.cols)} (${el.code}), ${Math.round(el.breite)} × ${Math.round(el.hoehe)} mm, Innen ${farbe(el.innenfarbe)} / Außen ${farbe(el.aussenfarbe)}, ${el.verglasung}${el.vsg ? ', VSG' : ''}${el.ornament ? ', Ornament' : ''}`);
+      });
+    } else {
+      const el = aktiv;
+      teile.push(`<strong>${fensterBezeichnung(geometrie, el.panes, el.cols)} (${el.code})</strong>`);
+      teile.push(`${Math.round(el.breite)} × ${Math.round(el.hoehe)} mm · ${flaeche.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} m²`);
+      teile.push(systemLabel);
+      teile.push(`Innen ${farbe(el.innenfarbe)} / Außen ${farbe(el.aussenfarbe)}`);
+      teile.push(el.verglasung + (el.vsg ? ', VSG' : '') + (el.ornament ? `, Ornament${el.ornamentArt ? ` (${el.ornamentArt})` : ''}` : ''));
+      teile.push(`Dichtung innen/außen: ${el.dichtungInnen}/${el.dichtungAussen}`);
+      if (el.verbreiterung) {
+        const seiten = ['oben', 'unten', 'links', 'rechts'].filter(k => Number(el.verb[k]) > 0).map(k => `${k} ${Number(el.verb[k])} mm`);
+        teile.push('Verbreiterung' + (seiten.length ? ': ' + seiten.join(', ') : ''));
+      }
+      if (el.aufsatzkasten) {
+        teile.push(`Aufsatzkasten ${Number(el.kasten.kastenhoehe) || 0} mm, ${el.kasten.bedienung} (${el.kasten.bedienungsseite})`
+          + (el.kasten.lamellentyp ? `, ${el.kasten.lamellentyp}` : '')
+          + (el.kasten.lamellenfarbe ? ` ${el.kasten.lamellenfarbe}` : ''));
+      }
+      if (el.rollladen && el.rollladen !== 'ohne') teile.push(`Rollladenführung ${el.rollladen}`);
+      const komText = (el.kommentar || '').replace(/<[^>]*>/g, '').trim();
+      if (komText) teile.push(`Kommentar: ${el.kommentar}`);
     }
-    if (aufsatzkasten) {
-      teile.push(`Aufsatzkasten ${Number(kasten.kastenhoehe) || 0} mm, ${kasten.bedienung} (${kasten.bedienungsseite})`
-        + (kasten.lamellentyp ? `, ${kasten.lamellentyp}` : '')
-        + (kasten.lamellenfarbe ? ` ${kasten.lamellenfarbe}` : ''));
-    }
-    if (rollladen && rollladen !== 'ohne') teile.push(`Rollladenführung ${rollladen}`);
     if (standort) teile.push(`Standort: ${standort}`);
     if (ohneMontage) teile.push('ohne Montage');
-    const komText = (kommentar || '').replace(/<[^>]*>/g, '').trim();
-    if (komText) teile.push(`Kommentar: ${kommentar}`);
     return `<div>${teile.join('<br>')}</div>`;
   }
 
   function handleSave() {
+    const main = elemente[0];
     const config = {
-      profilId, kategorie, code, panes, cols, colWidths, rowHeights, breite: Number(breite), hoehe: Number(hoehe),
-      stueckzahl: Number(stueckzahl), standort, verbreiterung, verb, aufsatzkasten, kasten, rollladen,
-      innenfarbe, aussenfarbe, verglasung, vsg, ornament, ornamentArt, dichtungInnen, dichtungAussen,
-      kommentar, montage: Number(montage), ausbau: Number(ausbau), entsorgung: Number(entsorgung),
-      ohneMontage, nettoJeStueck: Number(nettoJeStueck),
+      profilId,
+      // Positions-Ebene
+      stueckzahl: Number(stueckzahl), standort,
+      montage: Number(montage), ausbau: Number(ausbau), entsorgung: Number(entsorgung), ohneMontage,
+      // Abwärtskompatibel: Flachfelder = Hauptelement
+      kategorie: main.kategorie, code: main.code, panes: main.panes, cols: main.cols,
+      colWidths: main.colWidths, rowHeights: main.rowHeights,
+      breite: Number(main.breite), hoehe: Number(main.hoehe),
+      verbreiterung: main.verbreiterung, verb: main.verb,
+      aufsatzkasten: main.aufsatzkasten, kasten: main.kasten, rollladen: main.rollladen,
+      innenfarbe: main.innenfarbe, aussenfarbe: main.aussenfarbe, verglasung: main.verglasung, vsg: main.vsg,
+      ornament: main.ornament, ornamentArt: main.ornamentArt,
+      dichtungInnen: main.dichtungInnen, dichtungAussen: main.dichtungAussen,
+      kommentar: main.kommentar, nettoJeStueck: Number(main.nettoJeStueck),
+      // Mehrteilig (immer mitgespeichert)
+      elemente,
     };
     onSave({
       typ: 'fenster',
@@ -221,26 +299,34 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
       <div className="np-body">
         {/* Linke Spalte */}
         <aside className="np-col np-col--left">
+          {istKombi && (
+            <div className="np-aktiv-hinweis">
+              {istMain ? 'Hauptelement' : `Element ${elemente.findIndex(e => e.id === activeId) + 1}`} wird bearbeitet
+              {!istMain && (
+                <button className="np-aktiv-remove" onClick={() => removeElement(activeId)} title="Dieses Element entfernen">Entfernen</button>
+              )}
+            </div>
+          )}
           <div className="np-group-label">TYP &amp; GEOMETRIE</div>
 
           <label className="np-field-label">Kategorie</label>
           <div className="np-segmented">
-            <button className={kategorie === 'fenster' ? 'active' : ''} onClick={() => wechselKategorie('fenster')}>Fenster</button>
-            <button className={kategorie === 'tuer' ? 'active' : ''} onClick={() => wechselKategorie('tuer')}>Tür</button>
+            <button className={aktiv.kategorie === 'fenster' ? 'active' : ''} onClick={() => wechselKategorie('fenster')}>Fenster</button>
+            <button className={aktiv.kategorie === 'tuer' ? 'active' : ''} onClick={() => wechselKategorie('tuer')}>Tür</button>
           </div>
 
           <label className="np-field-label">Geometrie</label>
-          <GeometrieSelect optionen={geomOptionen} value={code} onChange={waehleGeometrie} panes={panes} cols={cols} />
+          <GeometrieSelect optionen={geomOptionen} value={aktiv.code} onChange={waehleGeometrie} panes={aktiv.panes} cols={aktiv.cols} />
 
           <div className="np-group-label" style={{ marginTop: 24 }}>MASSE</div>
           <div className="np-row">
             <div>
               <label className="np-field-label">Breite (mm)</label>
-              <input className="np-input" type="number" value={breite} onChange={e => setMainBreite(e.target.value)} />
+              <input className="np-input" type="number" value={aktiv.breite} onChange={e => setMainBreite(e.target.value)} />
             </div>
             <div>
               <label className="np-field-label">Höhe (mm)</label>
-              <input className="np-input" type="number" value={hoehe} onChange={e => setMainHoehe(e.target.value)} />
+              <input className="np-input" type="number" value={aktiv.hoehe} onChange={e => setMainHoehe(e.target.value)} />
             </div>
           </div>
           <div className="np-row">
@@ -257,10 +343,10 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
           <div className="np-group-label" style={{ marginTop: 24 }}>ANBAUTEN</div>
           <label className="np-field-label">Verbreiterung</label>
           <div className="np-segmented">
-            <button className={!verbreiterung ? 'active' : ''} onClick={() => setVerbreiterung(false)}>nein</button>
-            <button className={verbreiterung ? 'active' : ''} onClick={() => setVerbreiterung(true)}>ja</button>
+            <button className={!aktiv.verbreiterung ? 'active' : ''} onClick={() => updAktiv({ verbreiterung: false })}>nein</button>
+            <button className={aktiv.verbreiterung ? 'active' : ''} onClick={() => updAktiv({ verbreiterung: true })}>ja</button>
           </div>
-          {verbreiterung && (
+          {aktiv.verbreiterung && (
             <div className="np-verb">
               {[['oben', 'oben'], ['unten', 'unten'], ['links', 'links'], ['rechts', 'rechts']].map(([key, label]) => (
                 <div key={key}>
@@ -269,8 +355,8 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
                     className="np-input"
                     type="number"
                     min="0"
-                    value={verb[key]}
-                    onChange={e => setVerb({ ...verb, [key]: e.target.value })}
+                    value={aktiv.verb[key]}
+                    onChange={e => updAktiv({ verb: { ...aktiv.verb, [key]: e.target.value } })}
                   />
                 </div>
               ))}
@@ -278,42 +364,42 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
           )}
           <label className="np-field-label">Aufsatzkasten</label>
           <div className="np-segmented">
-            <button className={!aufsatzkasten ? 'active' : ''} onClick={() => setAufsatzkasten(false)}>nein</button>
-            <button className={aufsatzkasten ? 'active' : ''} onClick={() => setAufsatzkasten(true)}>ja</button>
+            <button className={!aktiv.aufsatzkasten ? 'active' : ''} onClick={() => updAktiv({ aufsatzkasten: false })}>nein</button>
+            <button className={aktiv.aufsatzkasten ? 'active' : ''} onClick={() => updAktiv({ aufsatzkasten: true })}>ja</button>
           </div>
-          {aufsatzkasten && (
+          {aktiv.aufsatzkasten && (
             <div className="np-sub">
               <label className="np-field-label">Kastenhöhe (mm)</label>
-              <input className="np-input" type="number" min="0" value={kasten.kastenhoehe}
-                     onChange={e => setKasten({ ...kasten, kastenhoehe: e.target.value })} />
+              <input className="np-input" type="number" min="0" value={aktiv.kasten.kastenhoehe}
+                     onChange={e => updAktiv({ kasten: { ...aktiv.kasten, kastenhoehe: e.target.value } })} />
 
               <label className="np-field-label">Bedienung</label>
               <div className="np-segmented">
-                <button className={kasten.bedienung === 'Gurt' ? 'active' : ''} onClick={() => setKasten({ ...kasten, bedienung: 'Gurt' })}>Gurt</button>
-                <button className={kasten.bedienung === 'Motor' ? 'active' : ''} onClick={() => setKasten({ ...kasten, bedienung: 'Motor' })}>Motor</button>
+                <button className={aktiv.kasten.bedienung === 'Gurt' ? 'active' : ''} onClick={() => updAktiv({ kasten: { ...aktiv.kasten, bedienung: 'Gurt' } })}>Gurt</button>
+                <button className={aktiv.kasten.bedienung === 'Motor' ? 'active' : ''} onClick={() => updAktiv({ kasten: { ...aktiv.kasten, bedienung: 'Motor' } })}>Motor</button>
               </div>
 
               <label className="np-field-label">Bedienungsseite</label>
               <div className="np-segmented">
-                <button className={kasten.bedienungsseite === 'links' ? 'active' : ''} onClick={() => setKasten({ ...kasten, bedienungsseite: 'links' })}>links</button>
-                <button className={kasten.bedienungsseite === 'rechts' ? 'active' : ''} onClick={() => setKasten({ ...kasten, bedienungsseite: 'rechts' })}>rechts</button>
+                <button className={aktiv.kasten.bedienungsseite === 'links' ? 'active' : ''} onClick={() => updAktiv({ kasten: { ...aktiv.kasten, bedienungsseite: 'links' } })}>links</button>
+                <button className={aktiv.kasten.bedienungsseite === 'rechts' ? 'active' : ''} onClick={() => updAktiv({ kasten: { ...aktiv.kasten, bedienungsseite: 'rechts' } })}>rechts</button>
               </div>
 
               <label className="np-field-label">Lamellenfarbe</label>
-              <input className="np-input" value={kasten.lamellenfarbe}
-                     onChange={e => setKasten({ ...kasten, lamellenfarbe: e.target.value })} />
+              <input className="np-input" value={aktiv.kasten.lamellenfarbe}
+                     onChange={e => updAktiv({ kasten: { ...aktiv.kasten, lamellenfarbe: e.target.value } })} />
 
               <label className="np-field-label">Lamellentyp</label>
-              <input className="np-input" value={kasten.lamellentyp}
-                     onChange={e => setKasten({ ...kasten, lamellentyp: e.target.value })} />
+              <input className="np-input" value={aktiv.kasten.lamellentyp}
+                     onChange={e => updAktiv({ kasten: { ...aktiv.kasten, lamellentyp: e.target.value } })} />
             </div>
           )}
           <label className="np-field-label">Rollladenführung</label>
           <input
             className="np-input"
             list="rollladen-liste"
-            value={rollladen}
-            onChange={e => setRollladen(e.target.value)}
+            value={aktiv.rollladen}
+            onChange={e => updAktiv({ rollladen: e.target.value })}
             placeholder="z.B. 42x42mm"
           />
           <datalist id="rollladen-liste">
@@ -325,19 +411,46 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
         <section className="np-col np-col--center">
           <div className="np-chips">
             <span className="np-chip"><span className="np-dot" /> {systemLabel}</span>
-            <span className="np-chip">Maß <b>{Number(breite).toLocaleString('de-DE')} × {Number(hoehe).toLocaleString('de-DE')} mm</b></span>
+            <span className="np-chip">Maß <b>{Math.round(breiteGes).toLocaleString('de-DE')} × {Math.round(hoeheGes).toLocaleString('de-DE')} mm</b></span>
             <span className="np-chip">Fläche <b>{flaeche.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} m²</b></span>
           </div>
           <div className="np-canvas">
-            <FensterZeichnung geometrie={geometrie} breite={breite} hoehe={hoehe}
-              verbreiterung={verbreiterung ? verb : null}
-              aufsatzkasten={aufsatzkasten ? kasten : null}
-              glasFarbe={ornament ? '#7fb0cc' : undefined}
-              onBreite={setMainBreite} onHoehe={setMainHoehe}
-              panes={panes} cols={cols}
-              colWidths={colWidths} rowHeights={rowHeights}
-              onColWidth={setColWidth} onRowHeight={setRowHeight}
-              onPaneClick={setSelectedPane} selectedPane={selectedPane} />
+            {istKombi ? (
+              <KombinationsZeichnung elemente={elemente} activeId={activeId}
+                onUnitClick={switchActive} onPaneClick={setSelectedPane} selectedPane={selectedPane} />
+            ) : (
+              <FensterZeichnung geometrie={geometrie} breite={aktiv.breite} hoehe={aktiv.hoehe}
+                verbreiterung={aktiv.verbreiterung ? aktiv.verb : null}
+                aufsatzkasten={aktiv.aufsatzkasten ? aktiv.kasten : null}
+                glasFarbe={aktiv.ornament ? '#7fb0cc' : undefined}
+                onBreite={setMainBreite} onHoehe={setMainHoehe}
+                panes={aktiv.panes} cols={aktiv.cols}
+                colWidths={aktiv.colWidths} rowHeights={aktiv.rowHeights}
+                onColWidth={setColWidth} onRowHeight={setRowHeight}
+                onPaneClick={setSelectedPane} selectedPane={selectedPane} />
+            )}
+
+            {/* + Element hinzufügen (unten links) */}
+            <button className="np-add-fab" onClick={() => setAddMenu(v => !v)} title="Element hinzufügen">+</button>
+            {addMenu && (
+              <div className="pane-menu-backdrop" onClick={() => setAddMenu(false)} />
+            )}
+            {addMenu && (
+              <div className="np-add-menu">
+                <div className="pane-menu-head">
+                  <span>Element hinzufügen</span>
+                  <button className="pane-menu-close" onClick={() => setAddMenu(false)}>✕</button>
+                </div>
+                <button className="pane-option" onClick={() => addElement('fenster')}>
+                  <span className="pane-option-thumb"><GeometrieThumb geometrie={geometrieByCode('F01')} /></span>
+                  <span className="pane-option-label">Fenster hinzufügen</span>
+                </button>
+                <button className="pane-option" onClick={() => addElement('tuer')}>
+                  <span className="pane-option-thumb"><GeometrieThumb geometrie={geometrieByCode('T01')} /></span>
+                  <span className="pane-option-label">Tür hinzufügen</span>
+                </button>
+              </div>
+            )}
 
             {selectedPane != null && (
               <div className="pane-menu-backdrop" onClick={() => setSelectedPane(null)} />
@@ -349,9 +462,9 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
                   <button className="pane-menu-close" onClick={() => setSelectedPane(null)}>✕</button>
                 </div>
                 {PANE_OPTIONEN.map(opt => {
-                  const aktiv = JSON.stringify(panes[selectedPane]) === JSON.stringify(opt.cfg);
+                  const ja = JSON.stringify(aktiv.panes[selectedPane]) === JSON.stringify(opt.cfg);
                   return (
-                    <button key={opt.label} className={'pane-option' + (aktiv ? ' aktiv' : '')} onClick={() => setzePane(opt.cfg)}>
+                    <button key={opt.label} className={'pane-option' + (ja ? ' aktiv' : '')} onClick={() => setzePane(opt.cfg)}>
                       <span className="pane-option-thumb">
                         <GeometrieThumb geometrie={opt.cfg.fest ? { open: 'fest' } : opt.cfg} />
                       </span>
@@ -363,8 +476,10 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
             )}
           </div>
           <div className="np-canvas-caption">
-            <div className="np-canvas-title">{fensterBezeichnung(geometrie, panes, cols)}</div>
-            <span className="np-canvas-badge">{code}</span>
+            <div className="np-canvas-title">
+              {istKombi ? `Fensterkombination · ${elemente.length} Elemente` : fensterBezeichnung(geometrie, aktiv.panes, aktiv.cols)}
+            </div>
+            <span className="np-canvas-badge">{istKombi ? `aktiv: ${aktiv.code}` : aktiv.code}</span>
           </div>
         </section>
 
@@ -372,28 +487,28 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
         <aside className="np-col np-col--right">
           <div className="np-group-label">FARBEN</div>
           <label className="np-field-label">Innenfarbe</label>
-          <select className="np-select np-select--block np-select--tall" value={innenfarbe} onChange={e => setInnenfarbe(e.target.value)}>
+          <select className="np-select np-select--block np-select--tall" value={aktiv.innenfarbe} onChange={e => updAktiv({ innenfarbe: e.target.value })}>
             {farbOptionen.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
           <label className="np-field-label">Außenfarbe</label>
-          <select className="np-select np-select--block np-select--tall" value={aussenfarbe} onChange={e => setAussenfarbe(e.target.value)}>
+          <select className="np-select np-select--block np-select--tall" value={aktiv.aussenfarbe} onChange={e => updAktiv({ aussenfarbe: e.target.value })}>
             {farbOptionen.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
 
           <div className="np-group-label" style={{ marginTop: 24 }}>VERGLASUNG</div>
           <label className="np-field-label">Verglasung</label>
-          <select className="np-select np-select--block" value={verglasung} onChange={e => setVerglasung(e.target.value)}>
+          <select className="np-select np-select--block" value={aktiv.verglasung} onChange={e => updAktiv({ verglasung: e.target.value })}>
             {VERGLASUNGEN.map(v => <option key={v} value={v}>{v}</option>)}
           </select>
-          <label className="np-check"><input type="checkbox" checked={vsg} onChange={e => setVsg(e.target.checked)} /> VSG-Sicherheitsverglasung</label>
-          <label className="np-check"><input type="checkbox" checked={ornament} onChange={e => setOrnament(e.target.checked)} /> Ornament</label>
-          {ornament && (
+          <label className="np-check"><input type="checkbox" checked={aktiv.vsg} onChange={e => updAktiv({ vsg: e.target.checked })} /> VSG-Sicherheitsverglasung</label>
+          <label className="np-check"><input type="checkbox" checked={aktiv.ornament} onChange={e => updAktiv({ ornament: e.target.checked })} /> Ornament</label>
+          {aktiv.ornament && (
             <>
               <label className="np-field-label">Art des Glases</label>
               <input
                 className="np-input np-input--rot"
-                value={ornamentArt}
-                onChange={e => setOrnamentArt(e.target.value)}
+                value={aktiv.ornamentArt}
+                onChange={e => updAktiv({ ornamentArt: e.target.value })}
                 placeholder="z.B. Mastercarré, Chinchilla"
               />
             </>
@@ -403,20 +518,20 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
           <div className="np-row">
             <div>
               <label className="np-field-label">Dichtung innen</label>
-              <select className="np-select np-select--block" value={dichtungInnen} onChange={e => setDichtungInnen(e.target.value)}>
+              <select className="np-select np-select--block" value={aktiv.dichtungInnen} onChange={e => updAktiv({ dichtungInnen: e.target.value })}>
                 {DICHTUNGEN.map(d => <option key={d} value={d}>{d}</option>)}
               </select>
             </div>
             <div>
               <label className="np-field-label">Dichtung außen</label>
-              <select className="np-select np-select--block" value={dichtungAussen} onChange={e => setDichtungAussen(e.target.value)}>
+              <select className="np-select np-select--block" value={aktiv.dichtungAussen} onChange={e => updAktiv({ dichtungAussen: e.target.value })}>
                 {DICHTUNGEN.map(d => <option key={d} value={d}>{d}</option>)}
               </select>
             </div>
           </div>
 
           <div className="np-group-label" style={{ marginTop: 24 }}>PRODUKTIONSKOMMENTAR</div>
-          <RichTextEditor initialHtml={initial?.kommentar} onChange={setKommentar} placeholder="Kommentar für die Produktion…" minHeight={110} />
+          <RichTextEditor key={activeId} initialHtml={aktiv.kommentar} onChange={html => updAktiv({ kommentar: html })} placeholder="Kommentar für die Produktion…" minHeight={110} />
         </aside>
       </div>
 
@@ -440,10 +555,11 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
 
         <div className="np-footer-preis">
           <div className="np-netto">
-            <label>NETTOPREIS JE STÜCK</label>
+            <label>{istKombi ? `NETTO ${istMain ? 'HAUPTELEMENT' : 'ELEMENT ' + (elemente.findIndex(e => e.id === activeId) + 1)}` : 'NETTOPREIS JE STÜCK'}</label>
             <div className="np-euro-input np-euro-input--lg"><span>€</span>
-              <input type="number" value={nettoJeStueck} onChange={e => setNettoJeStueck(e.target.value)} />
+              <input type="number" value={aktiv.nettoJeStueck} onChange={e => updAktiv({ nettoJeStueck: e.target.value })} />
             </div>
+            {istKombi && <span className="np-netto-summe">Σ alle Elemente: {summeNetto.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}</span>}
           </div>
           <div className="np-footer-actions">
             <button className="btn btn-outline" onClick={onClose}>Abbrechen</button>
