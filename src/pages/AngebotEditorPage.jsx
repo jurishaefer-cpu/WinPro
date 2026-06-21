@@ -104,6 +104,21 @@ function AngebotEditorPage() {
     setZeigeBeleg('Rechnung');
   }
 
+  // Klick auf eine Stufe im Stepper: Stufe setzen UND passenden Beleg erzeugen/öffnen
+  async function klickStufe(index) {
+    const art = STUFEN[index];
+    if (art !== angebot.status) {
+      await supabase.from('angebote').update({ status: art }).eq('id', angebotId);
+      setAngebot(a => ({ ...a, status: art }));
+    }
+    if (art === 'Rechnung' && !angebot.ausfuehrungsdatum) {
+      setDatumPrompt(true);
+      return;
+    }
+    await sichereBelegnummer();
+    setZeigeBeleg(art);
+  }
+
   const summe = positionen.reduce((s, p) => s + Number(p.nettopreis || 0) * Number(p.menge || 1), 0);
   const stueck = positionen.reduce((s, p) => s + Number(p.menge || 1), 0);
   const stufeIndex = angebot ? Math.max(0, STUFEN.indexOf(angebot.status)) : 0;
@@ -190,10 +205,15 @@ function AngebotEditorPage() {
           {STUFEN.map((stufe, i) => (
             <div key={stufe} style={{ display: 'contents' }}>
               {i > 0 && <div className={'stepper-line' + (i <= stufeIndex ? ' done' : '')} />}
-              <div className={'stepper-step' + (i === stufeIndex ? ' active' : i < stufeIndex ? ' done' : '')}>
+              <button
+                type="button"
+                className={'stepper-step stepper-step--klick' + (i === stufeIndex ? ' active' : i < stufeIndex ? ' done' : '')}
+                onClick={() => klickStufe(i)}
+                title={`${stufe} erstellen`}
+              >
                 <div className="stepper-dot">{i + 1}</div>
                 <div className="stepper-label">{stufe}</div>
-              </div>
+              </button>
             </div>
           ))}
         </div>
