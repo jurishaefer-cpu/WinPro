@@ -56,19 +56,20 @@ export function GeometrieThumb({ geometrie, glasFarbe = '#cfe3ef' }) {
   const g = geometrie;
   const W = 120, H = 92, m = 7;
   const r0 = { x: m, y: m, w: W - 2 * m, h: H - 2 * m };
+  const istFest = g?.open === 'fest';
   const blendIn = inset(r0, 6);           // Blendrahmen breit (äußerer Rahmen)
   const sashOut = inset(r0, 8);           // schmaler Zwischenraum → Flügelrahmen außen
-  const glas = inset(sashOut, 4.5);       // Glas
+  const glas = istFest ? inset(blendIn, 2.5) : inset(sashOut, 4.5); // Glas
   const linien = g ? oeffnungsLinien(g, glas) : [];
   const miterBlend = gehrung(r0, blendIn);
-  const miterSash = gehrung(sashOut, glas);
+  const miterSash = istFest ? [] : gehrung(sashOut, glas);
   const istTuer = g?.open === 'tuer';
   return (
     <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="100%">
       <rect x={r0.x} y={r0.y} width={r0.w} height={r0.h} fill="#fff" stroke="#0f1f3d" strokeWidth="1.6" />
       <rect x={blendIn.x} y={blendIn.y} width={blendIn.w} height={blendIn.h} fill="#fff" stroke="#0f1f3d" strokeWidth="1.1" />
       {miterBlend.map((l, i) => <line key={'mb' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="0.8" />)}
-      <rect x={sashOut.x} y={sashOut.y} width={sashOut.w} height={sashOut.h} fill="#fff" stroke="#0f1f3d" strokeWidth="1.1" />
+      {!istFest && <rect x={sashOut.x} y={sashOut.y} width={sashOut.w} height={sashOut.h} fill="#fff" stroke="#0f1f3d" strokeWidth="1.1" />}
       {miterSash.map((l, i) => <line key={'ms' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="0.8" />)}
       <rect x={glas.x} y={glas.y} width={glas.w} height={glas.h} fill={istTuer ? '#e7edf2' : glasFarbe} stroke="#0f1f3d" strokeWidth="0.9" />
       {linien.map((l, i) => (
@@ -109,12 +110,15 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
   const blendW = Math.max(12, u * 0.052);              // Blendrahmen-Breite (äußerer Rahmen)
   const gap = Math.max(2.5, u * 0.011);                // schmaler Zwischenraum Blend ↔ Flügel
   const sashW = Math.max(10, u * 0.045);               // Flügelrahmen-Breite
+  const istFest = g?.open === 'fest';                  // Festverglasung: kein Flügelrahmen
   const blendIn = inset(win, blendW);                  // Blendrahmen-Innenkante
   const sashOut = inset(win, blendW + gap);            // Flügelrahmen außen
-  const glas = inset(sashOut, sashW);                  // Glas / Flügelrahmen innen
+  const glas = istFest
+    ? inset(blendIn, Math.max(6, u * 0.02))            // Glas direkt im Blendrahmen (Glasleiste)
+    : inset(sashOut, sashW);                           // Glas / Flügelrahmen innen
 
   const miterBlend = gehrung(win, blendIn);            // 45°-Gehrung am Blendrahmen
-  const miterSash = gehrung(sashOut, glas);            // 45°-Gehrung am Flügelrahmen
+  const miterSash = istFest ? [] : gehrung(sashOut, glas); // 45°-Gehrung am Flügelrahmen
   const linien = g ? oeffnungsLinien(g, glas) : [];
   const istTuer = g?.open === 'tuer';
 
@@ -168,8 +172,10 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
         <line key={'mb' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="1.4" />
       ))}
 
-      {/* Flügelrahmen + Glas, ebenfalls mit 45°-Gehrung */}
-      <rect x={sashOut.x} y={sashOut.y} width={sashOut.w} height={sashOut.h} fill="#fff" stroke="#0f1f3d" strokeWidth="2" />
+      {/* Flügelrahmen (entfällt bei Festverglasung) + Glas */}
+      {!istFest && (
+        <rect x={sashOut.x} y={sashOut.y} width={sashOut.w} height={sashOut.h} fill="#fff" stroke="#0f1f3d" strokeWidth="2" />
+      )}
       {miterSash.map((l, i) => (
         <line key={'ms' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="1.4" />
       ))}
