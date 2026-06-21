@@ -1408,7 +1408,6 @@ body {
   font-variant-numeric: tabular-nums;
 }
 .pos-card-canvas {
-  display: flex; align-items: center; justify-content: center;
   width: 100%; max-width: 440px; aspect-ratio: 1 / 1;
   margin: 0 auto;
   box-sizing: border-box;
@@ -1419,7 +1418,7 @@ body {
     linear-gradient(90deg, #f2f4f6 1px, transparent 1px) 0 0 / 22px 22px,
     #fbfcfd;
 }
-.pos-card-canvas .fz-svg { width: 100%; height: 100%; }
+.pos-card-canvas .fz-svg { display: block; width: 100%; height: 100%; }
 .pos-card-text {
   width: 100%; max-width: 440px; aspect-ratio: 1 / 1;
   margin: 0 auto;
