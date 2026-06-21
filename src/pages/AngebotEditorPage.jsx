@@ -232,6 +232,8 @@ function AngebotEditorPage() {
                       hoehe={c.hoehe}
                       panes={c.panes}
                       cols={c.cols}
+                      colWidths={c.colWidths}
+                      rowHeights={c.rowHeights}
                       verbreiterung={c.verbreiterung ? c.verb : null}
                       aufsatzkasten={c.aufsatzkasten ? c.kasten : null}
                       glasFarbe={c.ornament ? '#7fb0cc' : undefined}

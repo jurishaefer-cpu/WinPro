@@ -1757,6 +1757,7 @@ body {
 .fz-massinput::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .fz-massinput:hover { border-color: #0f1f3d; }
 .fz-massinput:focus { border-color: #0f1f3d; box-shadow: 0 0 0 3px rgba(15,31,61,0.12); }
+.fz-massinput--sub { font-size: 15px; font-weight: 600; border-radius: 6px; padding: 0 2px; }
 .np-canvas { flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; position: relative; }
 .np-canvas .fz-svg { height: 56vh; width: auto; max-width: 100%; }
 

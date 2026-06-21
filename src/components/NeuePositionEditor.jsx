@@ -41,11 +41,18 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
   const [kategorie, setKategorie] = useState(initial?.kategorie ?? 'fenster');
   const [code, setCode] = useState(initial?.code ?? 'F01');
   const initGeo = geometrieByCode(initial?.code ?? 'F01');
-  const [panes, setPanes] = useState(initial?.panes ?? panesFromGeo(initGeo));
-  const [cols, setCols] = useState(initial?.cols ?? (initGeo?.cols || (initial?.panes ?? panesFromGeo(initGeo)).length));
+  const initPanes = initial?.panes ?? panesFromGeo(initGeo);
+  const initCols = initial?.cols ?? (initGeo?.cols || initPanes.length);
+  const initRows = Math.ceil(initPanes.length / initCols);
+  const initBreite = initial?.breite ?? 1000;
+  const initHoehe = initial?.hoehe ?? 1200;
+  const [panes, setPanes] = useState(initPanes);
+  const [cols, setCols] = useState(initCols);
   const [selectedPane, setSelectedPane] = useState(null);
-  const [breite, setBreite] = useState(initial?.breite ?? 1000);
-  const [hoehe, setHoehe] = useState(initial?.hoehe ?? 1200);
+  const [breite, setBreite] = useState(initBreite);
+  const [hoehe, setHoehe] = useState(initHoehe);
+  const [colWidths, setColWidths] = useState(initial?.colWidths ?? Array(initCols).fill(Math.round(initBreite / initCols)));
+  const [rowHeights, setRowHeights] = useState(initial?.rowHeights ?? Array(initRows).fill(Math.round(initHoehe / initRows)));
   const [stueckzahl, setStueckzahl] = useState(initial?.stueckzahl ?? 1);
   const [standort, setStandort] = useState(initial?.standort ?? '');
 
@@ -100,9 +107,34 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
     setCode(neuCode);
     const geo = geometrieByCode(neuCode);
     const np = panesFromGeo(geo);
+    const c = geo?.cols || np.length;
+    const r = Math.ceil(np.length / c);
     setPanes(np);
-    setCols(geo?.cols || np.length);
+    setCols(c);
+    setColWidths(Array(c).fill(Math.round((Number(breite) || 1000) / c)));
+    setRowHeights(Array(r).fill(Math.round((Number(hoehe) || 1200) / r)));
     setSelectedPane(null);
+  }
+
+  function setMainBreite(val) {
+    setBreite(val);
+    const n = cols;
+    setColWidths(Array(n).fill(Math.round((Number(val) || 0) / n)));
+  }
+  function setMainHoehe(val) {
+    setHoehe(val);
+    const n = Math.ceil(panes.length / cols);
+    setRowHeights(Array(n).fill(Math.round((Number(val) || 0) / n)));
+  }
+  function setColWidth(i, val) {
+    const next = colWidths.map((c, idx) => (idx === i ? (Number(val) || 0) : c));
+    setColWidths(next);
+    setBreite(next.reduce((a, c) => a + c, 0));
+  }
+  function setRowHeight(i, val) {
+    const next = rowHeights.map((rr, idx) => (idx === i ? (Number(val) || 0) : rr));
+    setRowHeights(next);
+    setHoehe(next.reduce((a, c) => a + c, 0));
   }
 
   function wechselKategorie(k) {
@@ -154,7 +186,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
 
   function handleSave() {
     const config = {
-      profilId, kategorie, code, panes, cols, breite: Number(breite), hoehe: Number(hoehe),
+      profilId, kategorie, code, panes, cols, colWidths, rowHeights, breite: Number(breite), hoehe: Number(hoehe),
       stueckzahl: Number(stueckzahl), standort, verbreiterung, verb, aufsatzkasten, kasten, rollladen,
       innenfarbe, aussenfarbe, verglasung, vsg, ornament, ornamentArt, dichtungInnen, dichtungAussen,
       kommentar, montage: Number(montage), ausbau: Number(ausbau), entsorgung: Number(entsorgung),
@@ -204,11 +236,11 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
           <div className="np-row">
             <div>
               <label className="np-field-label">Breite (mm)</label>
-              <input className="np-input" type="number" value={breite} onChange={e => setBreite(e.target.value)} />
+              <input className="np-input" type="number" value={breite} onChange={e => setMainBreite(e.target.value)} />
             </div>
             <div>
               <label className="np-field-label">Höhe (mm)</label>
-              <input className="np-input" type="number" value={hoehe} onChange={e => setHoehe(e.target.value)} />
+              <input className="np-input" type="number" value={hoehe} onChange={e => setMainHoehe(e.target.value)} />
             </div>
           </div>
           <div className="np-row">
@@ -301,8 +333,10 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
               verbreiterung={verbreiterung ? verb : null}
               aufsatzkasten={aufsatzkasten ? kasten : null}
               glasFarbe={ornament ? '#7fb0cc' : undefined}
-              onBreite={setBreite} onHoehe={setHoehe}
+              onBreite={setMainBreite} onHoehe={setMainHoehe}
               panes={panes} cols={cols}
+              colWidths={colWidths} rowHeights={rowHeights}
+              onColWidth={setColWidth} onRowHeight={setRowHeight}
               onPaneClick={setSelectedPane} selectedPane={selectedPane} />
 
             {selectedPane != null && (

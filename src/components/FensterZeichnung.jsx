@@ -137,17 +137,17 @@ export function GeometrieThumb({ geometrie, glasFarbe = '#cfe3ef' }) {
   );
 }
 
-function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkasten, glasFarbe = '#cfe3ef', onBreite, onHoehe, panes: panesProp, cols: colsProp, onPaneClick, selectedPane }) {
+function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkasten, glasFarbe = '#cfe3ef', onBreite, onHoehe, panes: panesProp, cols: colsProp, colWidths, rowHeights, onColWidth, onRowHeight, onPaneClick, selectedPane }) {
   const g = geometrie;
   const b = Math.max(200, Number(breite) || 1000);
   const hh = Math.max(200, Number(hoehe) || 1200);
 
   // Zeichenfläche
-  const VB_W = 760, VB_H = 660;
+  const VB_W = 780, VB_H = 720;
   const maxW = 360, maxH = 430;
   const scale = Math.min(maxW / b, maxH / hh);
   const rw = b * scale, rh = hh * scale;
-  const cx = VB_W / 2 + 20, cy = VB_H / 2 + 10;
+  const cx = VB_W / 2 + 24, cy = VB_H / 2 + 14;
   const x = cx - rw / 2, y = cy - rh / 2;
 
   // Verbreiterungen (mm) als Streifen außen am Fenster, innerhalb des Gesamtmaßes
@@ -192,20 +192,27 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
     const rows = Math.ceil(anz / cols);
     const dW = g?.teilung === 'stulp' ? Math.max(8, blendW * 0.6) : blendW;
     const dH = blendW;
-    const colW = (inner.w - dW * (cols - 1)) / cols;
-    const rowH = (inner.h - dH * (rows - 1)) / rows;
-    const colX = []; for (let c = 0; c < cols; c++) colX.push(inner.x + c * (colW + dW));
-    const rowY = []; for (let r = 0; r < rows; r++) rowY.push(inner.y + r * (rowH + dH));
+    // einzelne Spaltenbreiten / Zeilenhöhen (mm) – sonst gleichmäßig
+    const cwMM = colWidths && colWidths.length === cols ? colWidths.map(v => Math.max(1, Number(v) || 0)) : Array(cols).fill((Number(breite) || b) / cols);
+    const rhMM = rowHeights && rowHeights.length === rows ? rowHeights.map(v => Math.max(1, Number(v) || 0)) : Array(rows).fill((Number(hoehe) || hh) / rows);
+    const sumW = cwMM.reduce((a, c) => a + c, 0) || 1;
+    const sumH = rhMM.reduce((a, c) => a + c, 0) || 1;
+    const availW = inner.w - dW * (cols - 1);
+    const availH = inner.h - dH * (rows - 1);
+    const colWpx = cwMM.map(c => availW * c / sumW);
+    const rowHpx = rhMM.map(r => availH * r / sumH);
+    const colX = []; { let xa = inner.x; for (let c = 0; c < cols; c++) { colX.push(xa); xa += colWpx[c] + dW; } }
+    const rowY = []; { let ya = inner.y; for (let r = 0; r < rows; r++) { rowY.push(ya); ya += rowHpx[r] + dH; } }
     effPanes.forEach((p, idx) => {
       const c = idx % cols, r = Math.floor(idx / cols);
-      const rect = { x: colX[c], y: rowY[r], w: colW, h: rowH };
+      const rect = { x: colX[c], y: rowY[r], w: colWpx[c], h: rowHpx[r] };
       if (p.fest) leaves.push({ sash: null, rect, glas: inset(rect, Math.max(4, sashW * 0.5)), miter: [], lines: [] });
       else leaves.push(machFluegel(rect, { open: p.open, din: p.din }));
     });
     for (let c = 1; c < cols; c++) pfostenList.push({ x: colX[c] - dW, y: inner.y, w: dW, h: inner.h, fest: g?.teilung !== 'stulp' });
     for (let r = 1; r < rows; r++) pfostenList.push({ x: inner.x, y: rowY[r] - dH, w: inner.w, h: dH, fest: true });
-    if (cols > 1) subCols = colX.map(cx0 => ({ x0: cx0, x1: cx0 + colW, mm: Math.round((Number(breite) || b) / cols) }));
-    if (rows > 1) subRows = rowY.map(ry0 => ({ y0: ry0, y1: ry0 + rowH, mm: Math.round((Number(hoehe) || hh) / rows) }));
+    if (cols > 1) subCols = colX.map((cx0, c) => ({ x0: cx0, x1: cx0 + colWpx[c], mm: Math.round(cwMM[c]), idx: c }));
+    if (rows > 1) subRows = rowY.map((ry0, r) => ({ y0: ry0, y1: ry0 + rowHpx[r], mm: Math.round(rhMM[r]), idx: r }));
   } else {
     leaves = [machFluegel(inner, g)];
   }
@@ -234,10 +241,10 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
   } : null;
 
   // Maß-Positionen: Hauptmaß weiter außen, wenn Zwischenmaße vorhanden
-  const mainTopY = hatSubB ? y - 64 : y - 34;
-  const subTopY = y - 30;
-  const mainLeftX = hatSubH ? x - 64 : x - 34;
-  const subLeftX = x - 30;
+  const mainTopY = hatSubB ? y - 78 : y - 34;
+  const subTopY = y - 32;
+  const mainLeftX = hatSubH ? x - 86 : x - 34;
+  const subLeftX = x - 34;
 
   return (
     <svg viewBox={`0 0 ${VB_W} ${VB_H}`} preserveAspectRatio="xMidYMid meet" className="fz-svg">
@@ -254,13 +261,20 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
         <text x={cx} y={mainTopY - 10} textAnchor="middle" fontSize="22" fill="#0f1f3d" fontWeight="600">{Math.round(b)}</text>
       )}
 
-      {/* Zwischenmaße Breite (je Spalte) */}
+      {/* Zwischenmaße Breite (je Spalte) – editierbar */}
       {subCols.map((s, i) => (
         <g key={'sb' + i}>
           <line x1={s.x0} y1={subTopY} x2={s.x1} y2={subTopY} stroke="#0f1f3d" strokeWidth="1" />
           <line x1={s.x0} y1={subTopY - 5} x2={s.x0} y2={subTopY + 5} stroke="#0f1f3d" strokeWidth="1" />
           <line x1={s.x1} y1={subTopY - 5} x2={s.x1} y2={subTopY + 5} stroke="#0f1f3d" strokeWidth="1" />
-          <text x={(s.x0 + s.x1) / 2} y={subTopY - 7} textAnchor="middle" fontSize="15" fill="#0f1f3d" fontWeight="600">{s.mm}</text>
+          {onColWidth ? (
+            <foreignObject x={(s.x0 + s.x1) / 2 - 42} y={subTopY - 38} width={84} height={30}>
+              <input className="fz-massinput fz-massinput--sub" type="number" value={(colWidths && colWidths[s.idx]) ?? s.mm}
+                     onChange={e => onColWidth(s.idx, e.target.value)} />
+            </foreignObject>
+          ) : (
+            <text x={(s.x0 + s.x1) / 2} y={subTopY - 7} textAnchor="middle" fontSize="15" fill="#0f1f3d" fontWeight="600">{s.mm}</text>
+          )}
         </g>
       ))}
 
@@ -278,16 +292,24 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
               transform={`rotate(-90 ${mainLeftX - 10} ${cy})`}>{Math.round(hh)}</text>
       )}
 
-      {/* Zwischenmaße Höhe (je Zeile) */}
+      {/* Zwischenmaße Höhe (je Zeile) – editierbar */}
       {subRows.map((s, i) => {
         const mid = (s.y0 + s.y1) / 2;
+        const cxr = subLeftX - 22;
         return (
           <g key={'sh' + i}>
             <line x1={subLeftX} y1={s.y0} x2={subLeftX} y2={s.y1} stroke="#0f1f3d" strokeWidth="1" />
             <line x1={subLeftX - 5} y1={s.y0} x2={subLeftX + 5} y2={s.y0} stroke="#0f1f3d" strokeWidth="1" />
             <line x1={subLeftX - 5} y1={s.y1} x2={subLeftX + 5} y2={s.y1} stroke="#0f1f3d" strokeWidth="1" />
-            <text x={subLeftX - 7} y={mid} textAnchor="middle" fontSize="15" fill="#0f1f3d" fontWeight="600"
-                  transform={`rotate(-90 ${subLeftX - 7} ${mid})`}>{s.mm}</text>
+            {onRowHeight ? (
+              <foreignObject x={cxr - 42} y={mid - 15} width={84} height={30} transform={`rotate(-90 ${cxr} ${mid})`}>
+                <input className="fz-massinput fz-massinput--sub" type="number" value={(rowHeights && rowHeights[s.idx]) ?? s.mm}
+                       onChange={e => onRowHeight(s.idx, e.target.value)} />
+              </foreignObject>
+            ) : (
+              <text x={subLeftX - 7} y={mid} textAnchor="middle" fontSize="15" fill="#0f1f3d" fontWeight="600"
+                    transform={`rotate(-90 ${subLeftX - 7} ${mid})`}>{s.mm}</text>
+            )}
           </g>
         );
       })}
