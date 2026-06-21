@@ -2024,6 +2024,9 @@ body {
 .np-canvas .fz-svg { height: 56vh; width: auto; max-width: 100%; }
 
 /* Pane-Auswahlmenü (Öffnungsart je Feld) – oben links über der Zeichnung */
+.pane-menu-backdrop {
+  position: fixed; inset: 0; z-index: 9; background: transparent;
+}
 .pane-menu {
   position: absolute; top: 16px; left: 16px; z-index: 10;
   width: 270px;

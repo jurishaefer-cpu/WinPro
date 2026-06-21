@@ -340,6 +340,9 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
               onPaneClick={setSelectedPane} selectedPane={selectedPane} />
 
             {selectedPane != null && (
+              <div className="pane-menu-backdrop" onClick={() => setSelectedPane(null)} />
+            )}
+            {selectedPane != null && (
               <div className="pane-menu">
                 <div className="pane-menu-head">
                   <span>Feld {selectedPane + 1} – Öffnungsart</span>
