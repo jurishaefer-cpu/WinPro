@@ -45,6 +45,19 @@ export function geometrieByCode(code) {
 function istKippbar(p) {
   return !!p && !p.fest && (p.open === 'drehkipp' || p.open === 'kipp');
 }
+
+const TEIL_WORT = { 2: 'Zweiteiliges', 3: 'Dreiteiliges', 4: 'Vierteiliges', 5: 'Fünfteiliges', 6: 'Sechsteiliges' };
+// Anzeigename des Fensters: ein Stulp-Element mit mind. einer nicht-kippbaren Seite
+// heisst „Zweiteiliges/Dreiteiliges … Stulpfenster" – sonst das Katalog-Label.
+export function fensterBezeichnung(geometrie, panes) {
+  const g = geometrie;
+  if (!g) return '';
+  const ps = panes || g.panes;
+  if (g.teilung === 'stulp' && Array.isArray(ps) && ps.length >= 2 && ps.some(p => !istKippbar(p))) {
+    return `${TEIL_WORT[ps.length] || `${ps.length}-teiliges`} Stulpfenster`;
+  }
+  return g.label;
+}
 // Stulpfenster: der mittlere Pfosten (kein fester Pfosten, sondern Stulp) entfällt,
 // sobald mind. einer der beiden angrenzenden Flügel nicht kippbar ist.
 function stulpPfostenZeigen(panes, cols, c) {

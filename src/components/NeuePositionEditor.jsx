@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
-import FensterZeichnung, { GEOMETRIEN, geometrieByCode, GeometrieThumb } from './FensterZeichnung';
+import FensterZeichnung, { GEOMETRIEN, geometrieByCode, GeometrieThumb, fensterBezeichnung } from './FensterZeichnung';
 import GeometrieSelect from './GeometrieSelect';
 import RichTextEditor from './RichTextEditor';
 
@@ -158,7 +158,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
   function buildBeschreibung() {
     const farbe = (name) => katalog[name] ? `${katalog[name]} ${name}` : name;
     const teile = [
-      `<strong>${geometrie?.label ?? ''} (${code})</strong>`,
+      `<strong>${fensterBezeichnung(geometrie, panes)} (${code})</strong>`,
       `${Math.round(breite)} × ${Math.round(hoehe)} mm · ${flaeche.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} m²`,
       systemLabel,
       `Innen ${farbe(innenfarbe)} / Außen ${farbe(aussenfarbe)}`,
@@ -360,7 +360,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
             )}
           </div>
           <div className="np-canvas-caption">
-            <div className="np-canvas-title">{geometrie?.label}</div>
+            <div className="np-canvas-title">{fensterBezeichnung(geometrie, panes)}</div>
             <span className="np-canvas-badge">{code}</span>
           </div>
         </section>
