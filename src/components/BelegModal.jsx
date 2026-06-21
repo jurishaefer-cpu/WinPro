@@ -65,7 +65,7 @@ function BelegModal({ onClose, ...docProps }) {
     try {
       const [{ jsPDF }, html2canvasMod] = await Promise.all([import('jspdf'), import('html2canvas')]);
       const html2canvas = html2canvasMod.default;
-      const scale = 3;
+      const scale = 4;                 // höhere Auflösung -> schärferer Ausdruck
       const pxProMm = A4_BREITE / 210;
       const opts = { scale, backgroundColor: '#ffffff', useCORS: true, windowWidth: A4_BREITE };
 
@@ -110,7 +110,7 @@ function BelegModal({ onClose, ...docProps }) {
         quelle.onload = () => {
           try {
             const c = document.createElement('canvas');
-            c.width = w * 3; c.height = h * 3;
+            c.width = w * scale; c.height = h * scale;
             c.getContext('2d').drawImage(quelle, 0, 0, c.width, c.height);
             const out = document.createElement('img');
             out.style.cssText = `width:${w}px;height:${h}px;display:block`;
@@ -145,7 +145,7 @@ function BelegModal({ onClose, ...docProps }) {
         const teil = document.createElement('canvas');
         teil.width = canvas.width; teil.height = hpx;
         teil.getContext('2d').drawImage(canvas, 0, startFull, canvas.width, hpx, 0, 0, canvas.width, hpx);
-        pdf.addImage(teil.toDataURL('image/jpeg', 0.92), 'JPEG', 0, yMm, 210, (hpx / scale) / pxProMm);
+        pdf.addImage(teil.toDataURL('image/jpeg', 0.96), 'JPEG', 0, yMm, 210, (hpx / scale) / pxProMm);
       };
 
       // Body-Seiten ermitteln (Umbruch nur an weißen Lücken)
@@ -168,7 +168,7 @@ function BelegModal({ onClose, ...docProps }) {
       seiten.forEach(([s, c], i) => {
         if (i > 0) pdf.addPage();
         zeichne(bodyCanvas, body, s, c, RAND_MM);
-        if (i === seiten.length - 1 && hatFuss) pdf.addImage(fussCanvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, fussYmm, 210, fussHmm);
+        if (i === seiten.length - 1 && hatFuss) pdf.addImage(fussCanvas.toDataURL('image/jpeg', 0.96), 'JPEG', 0, fussYmm, 210, fussHmm);
       });
 
       // Direkt drucken: PDF im Tab öffnen (kein Download nötig)

@@ -1238,7 +1238,7 @@ body {
 }
 
 .beleg-zahlung {
-  margin-top: 26px; background: #f7f8fa; border: 1px solid #eceef1; border-radius: 8px; padding: 16px 18px;
+  margin-top: 26px; background: #e9edf2; border: 1px solid #cfd6df; border-radius: 8px; padding: 16px 18px;
 }
 .beleg-zahlung strong { display: block; margin-bottom: 6px; }
 .beleg-zahlung p { margin: 0 0 4px; }
