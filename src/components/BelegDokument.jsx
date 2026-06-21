@@ -38,10 +38,14 @@ function BelegDokument({ art, angebot, kunde, positionen, profileMap, einstellun
       {/* Empfänger + Datum/Ansprechpartner */}
       <div className="beleg-adressen">
         <div className="beleg-empfaenger">
-          <div>{empfName}</div>
-          {empfAP && <div>{empfAP}</div>}
-          <div>{kunde?.strasse}</div>
-          <div>{[kunde?.plz, kunde?.ort].filter(Boolean).join(' ')}</div>
+          {meta.empfaenger && (
+            <>
+              <div>{empfName}</div>
+              {empfAP && <div>{empfAP}</div>}
+              <div>{kunde?.strasse}</div>
+              <div>{[kunde?.plz, kunde?.ort].filter(Boolean).join(' ')}</div>
+            </>
+          )}
         </div>
         <div className="beleg-meta">
           <div>{firma.ort ? `${firma.ort} , ` : ''}{datumDE(new Date())}</div>
@@ -58,6 +62,10 @@ function BelegDokument({ art, angebot, kunde, positionen, profileMap, einstellun
       <h2 className="beleg-titel">{meta.titel} {nummer}</h2>
       <p className="beleg-anrede">Sehr geehrte Damen und Herren,</p>
       <p className="beleg-intro">{meta.intro}</p>
+
+      {meta.bauvorhaben && angebot?.bezeichnung?.trim() && (
+        <p className="beleg-bauvorhaben"><strong>{angebot.bezeichnung}</strong></p>
+      )}
 
       {/* Positionen */}
       <table className="beleg-tabelle">

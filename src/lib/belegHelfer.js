@@ -57,24 +57,24 @@ export const BELEG_ART = {
     titel: 'Angebot',
     intro: 'vielen Dank für Ihre Anfrage. Wir freuen uns, Ihnen das nachfolgende Angebot unterbreiten zu dürfen:',
     zahlung: 'Wir bitten um Ihre Zahlung innerhalb von 10 Tagen ab Rechnungsdatum, ohne Abzug.',
-    preise: true, anzahlung: true,
+    preise: true, anzahlung: true, empfaenger: true, bauvorhaben: true,
   },
   'Auftragsbestätigung': {
     titel: 'Auftragsbestätigung',
     intro: 'vielen Dank für Ihren Auftrag. Wir bestätigen Ihnen hiermit die nachfolgenden Positionen:',
     zahlung: 'Bei Erteilung des Auftrags werden 40 % des Auftragswertes als Anzahlung fällig.',
-    preise: true, anzahlung: true,
+    preise: true, anzahlung: true, empfaenger: true, bauvorhaben: true,
   },
   Bestellung: {
     titel: 'Bestellung',
     intro: 'hiermit bestellen wir die nachfolgenden Positionen:',
     zahlung: null,
-    preise: false, anzahlung: false,
+    preise: false, anzahlung: false, empfaenger: false, bauvorhaben: false,
   },
   Rechnung: {
     titel: 'Rechnung',
     intro: 'vielen Dank für Ihren Auftrag. Wir berechnen Ihnen hiermit die nachfolgenden Positionen:',
     zahlung: 'Mit Erhalt dieser Schlussrechnung gilt das Werk als abgenommen, sofern Sie nicht innerhalb von 6 Werktagen nach Erhalt schriftlich wesentliche Mängel anzeigen (§ 640 Abs. 2 BGB).',
-    preise: true, anzahlung: false, schluss: true,
+    preise: true, anzahlung: false, schluss: true, empfaenger: true, bauvorhaben: true,
   },
 };

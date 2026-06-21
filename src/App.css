@@ -1205,6 +1205,7 @@ body {
 .beleg-titel { font-size: 17px; font-weight: 700; margin: 0 0 14px; }
 .beleg-anrede { margin: 0 0 10px; }
 .beleg-intro { margin: 0 0 18px; }
+.beleg-bauvorhaben { margin: 0 0 14px; font-size: 14px; font-weight: 700; color: #1a1a1a; }
 
 .beleg-tabelle { width: 100%; border-collapse: collapse; }
 .beleg-tabelle thead th {
