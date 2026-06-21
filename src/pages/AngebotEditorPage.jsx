@@ -348,9 +348,6 @@ function AngebotEditorPage() {
         </div>
         <div className="footer-actions">
           <button className="btn btn-outline" onClick={() => navigate(`/kunden/${kundeId}`)}>Fertig</button>
-          <button className="btn btn-outline" disabled={stufeIndex === 0} onClick={() => setzeStufe(stufeIndex - 1)}>
-            Stufe zurück
-          </button>
           {naechste && (
             <button className="btn btn-primary btn-red" onClick={() => setzeStufe(stufeIndex + 1)}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: '-2px', marginRight: 8 }}>
