@@ -1,3 +1,5 @@
+import { useRef, useState } from 'react';
+
 // Katalog der Fenster-/Tür-Geometrien.
 // open: Öffnungsart, din: Anschlag (Bänder), apex = Griffseite (gegenüber den Bändern).
 export const GEOMETRIEN = [
@@ -464,7 +466,18 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
 }
 
 // Kombination mehrerer gekoppelter Einheiten (eigener Rahmen je Element), im Raster (row/col).
-export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', onUnitClick, activeId, onPaneClick, selectedPane }) {
+export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', onUnitClick, activeId, onPaneClick, selectedPane, onDock }) {
+  const svgRef = useRef(null);
+  const [drag, setDrag] = useState(null); // { id, side }
+  function svgPoint(clientX, clientY) {
+    const svg = svgRef.current;
+    if (!svg || !svg.getScreenCTM) return { x: 0, y: 0 };
+    const pt = svg.createSVGPoint(); pt.x = clientX; pt.y = clientY;
+    const ctm = svg.getScreenCTM();
+    if (!ctm) return { x: 0, y: 0 };
+    const p = pt.matrixTransform(ctm.inverse());
+    return { x: p.x, y: p.y };
+  }
   const els = (elemente || []).map((e, i) => ({ ...e, _key: e.id ?? i }));
   if (!els.length) return null;
   const colsSet = [...new Set(els.map(e => e.col ?? 0))].sort((a, b) => a - b);
@@ -498,9 +511,39 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', onUnitC
 
   const topY = oy - 34, leftX = ox - 34;          // Gesamtmaße ganz außen
   const interaktiv = !!onUnitClick;
+  const mainKey = els[0]._key;
+
+  // Andock-Seite aus Zeigerposition relativ zur Kombi-Mitte (Drag-Richtung)
+  function sideFromPoint(p) {
+    const cxA = ox + totalWpx / 2, cyA = oy + totalHpx / 2;
+    const dx = (p.x - cxA) / (totalWpx / 2 || 1);
+    const dy = (p.y - cyA) / (totalHpx / 2 || 1);
+    if (Math.abs(dx) >= Math.abs(dy)) return dx >= 0 ? 'rechts' : 'links';
+    return dy >= 0 ? 'unten' : 'oben';
+  }
+  function handleDown(e, id) {
+    e.stopPropagation();
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+    setDrag({ id, side: null });
+  }
+  function handleMove(e, id) {
+    if (!drag || drag.id !== id) return;
+    const side = sideFromPoint(svgPoint(e.clientX, e.clientY));
+    setDrag(d => (d ? { ...d, side } : d));
+  }
+  function handleUp(e, id) {
+    if (drag && drag.id === id && drag.side && onDock) onDock(id, drag.side);
+    setDrag(null);
+  }
+  const dropZonen = [
+    ['links', 2, oy, ox - 4, totalHpx],
+    ['rechts', ox + totalWpx + 2, oy, MR - 4, totalHpx],
+    ['oben', ox, 2, totalWpx, oy - 4],
+    ['unten', ox, oy + totalHpx + 2, totalWpx, MB - 4],
+  ];
 
   return (
-    <svg viewBox={`0 0 ${VB_W} ${VB_H}`} preserveAspectRatio="xMidYMid meet" className="fz-svg">
+    <svg ref={svgRef} viewBox={`0 0 ${VB_W} ${VB_H}`} preserveAspectRatio="xMidYMid meet" className="fz-svg">
       {/* Gesamtmaß Breite (oben) */}
       <line x1={ox} y1={topY} x2={ox + totalWpx} y2={topY} stroke="#0f1f3d" strokeWidth="1.2" />
       <line x1={ox} y1={topY - 6} x2={ox} y2={topY + 6} stroke="#0f1f3d" strokeWidth="1.2" />
@@ -541,9 +584,20 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', onUnitC
         );
       })}
 
+      {/* Andock-Zonen während des Ziehens */}
+      {drag && dropZonen.map(([side, zx, zy, zw, zh]) => (
+        <g key={'dz' + side} pointerEvents="none">
+          <rect x={zx} y={zy} width={Math.max(0, zw)} height={Math.max(0, zh)} rx="6"
+                fill={drag.side === side ? 'rgba(192,21,46,0.16)' : 'rgba(15,31,61,0.05)'}
+                stroke={drag.side === side ? '#c0152e' : '#aeb7c6'} strokeWidth="1.5" strokeDasharray="5 4" />
+        </g>
+      ))}
+
       {/* Einheiten */}
       {units.map((u) => {
         const aktiv = activeId != null && u.e._key === activeId;
+        const istMainUnit = u.e._key === mainKey;
+        const hw = Math.min(54, u.r0.w * 0.55);
         return (
           <g key={'u' + u.e._key}>
             <UnitBody c={u.c} glasFarbe={u.e.ornament ? '#7fb0cc' : glasFarbe} keyPrefix={'u' + u.e._key + '-'}
@@ -555,6 +609,18 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', onUnitC
             {interaktiv && !aktiv && (
               <rect x={u.r0.x} y={u.r0.y} width={u.r0.w} height={u.r0.h} fill="transparent"
                     style={{ cursor: 'pointer' }} onClick={() => onUnitClick(u.e._key)} />
+            )}
+            {/* Verschiebe-Griff (nicht am Hauptelement) */}
+            {interaktiv && !istMainUnit && (
+              <g style={{ cursor: 'move' }}
+                 onPointerDown={e => handleDown(e, u.e._key)}
+                 onPointerMove={e => handleMove(e, u.e._key)}
+                 onPointerUp={e => handleUp(e, u.e._key)}>
+                <rect x={u.r0.x + u.r0.w / 2 - hw / 2} y={u.r0.y + 6} width={hw} height={18} rx="9"
+                      fill="#0f1f3d" opacity={drag && drag.id === u.e._key ? 1 : 0.82} />
+                <text x={u.r0.x + u.r0.w / 2} y={u.r0.y + 6 + 9} textAnchor="middle" dominantBaseline="central"
+                      fontSize="11" fontWeight="700" fill="#fff" style={{ pointerEvents: 'none' }}>↔ ziehen</text>
+              </g>
             )}
           </g>
         );

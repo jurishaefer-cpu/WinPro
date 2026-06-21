@@ -202,6 +202,38 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
     if (activeId === id) setActiveId(rest[0].id);
     setSelectedPane(null);
   }
+  // Element an eine Seite des Hauptfensters andocken (Drag im Canvas)
+  function dockElement(id, side) {
+    setElemente(prev => {
+      const main = prev[0];
+      const cols = prev.map(e => e.col ?? 0);
+      const rows = prev.map(e => e.row ?? 0);
+      let row = main.row ?? 0, col = main.col ?? 0;
+      if (side === 'rechts') col = Math.max(...cols) + 1;
+      else if (side === 'links') col = Math.min(...cols) - 1;
+      else if (side === 'unten') row = Math.max(...rows) + 1;
+      else if (side === 'oben') row = Math.min(...rows) - 1;
+      let next = prev.map(e => {
+        if (e.id !== id) return e;
+        const patch = { ...e, row, col };
+        if (side === 'links' || side === 'rechts') {       // Höhe an Hauptfenster angleichen → kein Spalt
+          const h = Number(main.hoehe) || e.hoehe;
+          const r = Math.ceil(e.panes.length / e.cols);
+          patch.hoehe = h;
+          patch.rowHeights = Array(r).fill(Math.round(h / r));
+        } else {                                            // Breite angleichen
+          const w = Number(main.breite) || e.breite;
+          patch.breite = w;
+          patch.colWidths = Array(e.cols).fill(Math.round(w / e.cols));
+        }
+        return patch;
+      });
+      const minR = Math.min(...next.map(e => e.row ?? 0));
+      const minC = Math.min(...next.map(e => e.col ?? 0));
+      next = next.map(e => ({ ...e, row: (e.row ?? 0) - minR, col: (e.col ?? 0) - minC }));
+      return next;
+    });
+  }
 
   // --- Maße / Preis ---
   const kombi = kombiMass(elemente);
@@ -417,7 +449,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
           <div className="np-canvas">
             {istKombi ? (
               <KombinationsZeichnung elemente={elemente} activeId={activeId}
-                onUnitClick={switchActive} onPaneClick={setSelectedPane} selectedPane={selectedPane} />
+                onUnitClick={switchActive} onPaneClick={setSelectedPane} selectedPane={selectedPane} onDock={dockElement} />
             ) : (
               <FensterZeichnung geometrie={geometrie} breite={aktiv.breite} hoehe={aktiv.hoehe}
                 verbreiterung={aktiv.verbreiterung ? aktiv.verb : null}
