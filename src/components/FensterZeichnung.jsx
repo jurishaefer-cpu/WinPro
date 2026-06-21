@@ -490,7 +490,7 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', onUnitC
   const maxW = 600, maxH = 440;
   const scale = Math.min(maxW / Math.max(200, totalWmm), maxH / Math.max(200, totalHmm));
   const totalWpx = totalWmm * scale, totalHpx = totalHmm * scale;
-  const ML = 92, MT = 84, MR = 44, MB = 40;
+  const ML = 92, MT = 84, MR = 74, MB = 40;
   const VB_W = totalWpx + ML + MR;
   const VB_H = totalHpx + MT + MB;
   const ox = ML, oy = MT;
@@ -500,13 +500,19 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', onUnitC
 
   const units = els.map(e => {
     const cc = e.col ?? 0, rr = e.row ?? 0;
-    const r0 = { x: colXpx[cc], y: rowYpx[rr], w: colWmm[cc] * scale, h: rowHmm[rr] * scale };
+    const elBmm = Math.max(200, Number(e.breite) || colWmm[cc]);
+    const elHmm = Math.max(200, Number(e.hoehe) || rowHmm[rr]);
+    // Höhen bleiben unabhängig: jedes Element in eigener Höhe, unten bündig in seiner Zeile.
+    const rowBottom = rowYpx[rr] + rowHmm[rr] * scale;
+    const r0 = { x: colXpx[cc], y: rowBottom - elHmm * scale, w: colWmm[cc] * scale, h: elHmm * scale };
     const c = computeUnit(r0, scale, {
-      geometrie: geometrieByCode(e.code), breite: colWmm[cc], hoehe: rowHmm[rr],
+      geometrie: geometrieByCode(e.code), breite: colWmm[cc], hoehe: elHmm,
       panes: e.panes, cols: e.cols, colWidths: e.colWidths, rowHeights: e.rowHeights,
       verbreiterung: e.verbreiterung ? e.verb : null, aufsatzkasten: e.aufsatzkasten ? e.kasten : null,
     });
-    return { e, c, r0 };
+    // rechtsbündig letztes Element seiner Zeile? → Höhenbemaßung rechts
+    const rightmost = !els.some(o => (o.row ?? 0) === rr && (o.col ?? 0) > cc);
+    return { e, c, r0, elHmm, rightmost };
   });
 
   const topY = oy - 34, leftX = ox - 34;          // Gesamtmaße ganz außen
@@ -622,6 +628,21 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', onUnitC
                       fontSize="11" fontWeight="700" fill="#fff" style={{ pointerEvents: 'none' }}>↔ ziehen</text>
               </g>
             )}
+          </g>
+        );
+      })}
+
+      {/* Höhenbemaßung je Element (rechts) – nur wenn mehrere unterschiedliche Höhen sinnvoll */}
+      {units.filter(u => u.rightmost).map(u => {
+        const dx = u.r0.x + u.r0.w + 16;
+        const mid = u.r0.y + u.r0.h / 2;
+        return (
+          <g key={'eh' + u.e._key}>
+            <line x1={dx} y1={u.r0.y} x2={dx} y2={u.r0.y + u.r0.h} stroke="#0f1f3d" strokeWidth="1" />
+            <line x1={dx - 5} y1={u.r0.y} x2={dx + 5} y2={u.r0.y} stroke="#0f1f3d" strokeWidth="1" />
+            <line x1={dx - 5} y1={u.r0.y + u.r0.h} x2={dx + 5} y2={u.r0.y + u.r0.h} stroke="#0f1f3d" strokeWidth="1" />
+            <text x={dx + 16} y={mid} textAnchor="middle" fontSize="15" fill="#0f1f3d" fontWeight="600"
+                  transform={`rotate(-90 ${dx + 16} ${mid})`}>{Math.round(u.elHmm)}</text>
           </g>
         );
       })}

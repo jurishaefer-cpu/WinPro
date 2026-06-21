@@ -34,13 +34,14 @@ const DEFAULT_KASTEN = { kastenhoehe: 165, bedienung: 'Gurt', bedienungsseite: '
 
 // Baut ein einzelnes Element aus (Teil-)Konfig oder Defaults.
 function makeElement(src, id) {
+  const toNum = (v, d) => { const n = Number(v); return Number.isFinite(n) && n > 0 ? n : d; };
   const code = src?.code ?? 'F01';
   const geo = geometrieByCode(code);
   const panes = src?.panes ?? panesFromGeo(geo);
   const cols = src?.cols ?? (geo?.cols || panes.length);
   const rows = Math.ceil(panes.length / cols);
-  const breite = src?.breite ?? 1000;
-  const hoehe = src?.hoehe ?? 1200;
+  const breite = toNum(src?.breite, 1000);
+  const hoehe = toNum(src?.hoehe, 1200);
   return {
     id,
     row: src?.row ?? 0,
@@ -213,21 +214,8 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
       else if (side === 'links') col = Math.min(...cols) - 1;
       else if (side === 'unten') row = Math.max(...rows) + 1;
       else if (side === 'oben') row = Math.min(...rows) - 1;
-      let next = prev.map(e => {
-        if (e.id !== id) return e;
-        const patch = { ...e, row, col };
-        if (side === 'links' || side === 'rechts') {       // Höhe an Hauptfenster angleichen → kein Spalt
-          const h = Number(main.hoehe) || e.hoehe;
-          const r = Math.ceil(e.panes.length / e.cols);
-          patch.hoehe = h;
-          patch.rowHeights = Array(r).fill(Math.round(h / r));
-        } else {                                            // Breite angleichen
-          const w = Number(main.breite) || e.breite;
-          patch.breite = w;
-          patch.colWidths = Array(e.cols).fill(Math.round(w / e.cols));
-        }
-        return patch;
-      });
+      // Maße bleiben unabhängig – nur die Rasterposition ändert sich.
+      let next = prev.map(e => (e.id === id ? { ...e, row, col } : e));
       const minR = Math.min(...next.map(e => e.row ?? 0));
       const minC = Math.min(...next.map(e => e.col ?? 0));
       next = next.map(e => ({ ...e, row: (e.row ?? 0) - minR, col: (e.col ?? 0) - minC }));
@@ -283,7 +271,14 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
   }
 
   function handleSave() {
-    const main = elemente[0];
+    // Maße/Preise auf saubere Zahlen normieren (keine leeren/ungültigen Werte speichern)
+    const elementeClean = elemente.map(e => ({
+      ...e,
+      breite: Number(e.breite) || 1000,
+      hoehe: Number(e.hoehe) || 1200,
+      nettoJeStueck: Number(e.nettoJeStueck) || 0,
+    }));
+    const main = elementeClean[0];
     const config = {
       profilId,
       // Positions-Ebene
@@ -300,7 +295,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
       dichtungInnen: main.dichtungInnen, dichtungAussen: main.dichtungAussen,
       kommentar: main.kommentar, nettoJeStueck: Number(main.nettoJeStueck),
       // Mehrteilig (immer mitgespeichert)
-      elemente,
+      elemente: elementeClean,
     };
     onSave({
       typ: 'fenster',
