@@ -10,6 +10,7 @@ import ProfilePage from './pages/ProfilePage';
 import NeuesProfilPage from './pages/NeuesProfilPage';
 import ProfilBearbeitenPage from './pages/ProfilBearbeitenPage';
 import EinstellungenPage from './pages/EinstellungenPage';
+import EinstellungDetailPage from './pages/EinstellungDetailPage';
 import LoginPage from './pages/LoginPage';
 import NameSetupModal from './components/NameSetupModal';
 import { useAuth } from './auth/AuthContext';
@@ -43,6 +44,7 @@ function App() {
         <Route path="/profile/neu" element={<NeuesProfilPage />} />
         <Route path="/profile/:id/bearbeiten" element={<ProfilBearbeitenPage />} />
         <Route path="/einstellungen" element={<EinstellungenPage />} />
+        <Route path="/einstellungen/:bereich" element={<EinstellungDetailPage />} />
       </Routes>
       {nameFehlt && <NameSetupModal />}
     </div>
