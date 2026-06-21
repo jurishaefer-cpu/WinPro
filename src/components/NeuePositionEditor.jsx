@@ -255,7 +255,8 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
           <div className="np-canvas">
             <FensterZeichnung geometrie={geometrie} breite={breite} hoehe={hoehe}
               verbreiterung={verbreiterung ? verb : null}
-              aufsatzkasten={aufsatzkasten ? kasten : null} />
+              aufsatzkasten={aufsatzkasten ? kasten : null}
+              glasFarbe={ornament ? '#a6cbe0' : undefined} />
           </div>
           <div className="np-canvas-caption">
             <div className="np-canvas-title">{geometrie?.label}</div>
