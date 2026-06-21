@@ -1247,11 +1247,21 @@ body {
 .beleg-fuss strong { color: #1a1a1a; }
 
 @media print {
+  /* margin: 0 entfernt die Browser-Kopf-/Fusszeilen (Titel, Datum, URL, Seitenzahl) */
+  @page { size: A4; margin: 0; }
   body * { visibility: hidden !important; }
   #beleg-druck, #beleg-druck * { visibility: visible !important; }
   .beleg-buehne { transform: none !important; height: auto !important; width: 100% !important; margin: 0 !important; }
   #beleg-druck { position: absolute; left: 0; top: 0; width: 100%; }
-  .beleg { box-shadow: none; width: 100%; padding: 0; min-height: 0; }
+  /* Im Druck normaler Blockfluss: Flexbox/min-height brechen den mehrseitigen Umbruch */
+  .beleg {
+    box-shadow: none;
+    width: 100%;
+    min-height: 0;
+    display: block;
+    padding: 14mm 16mm;        /* Seitenrand, da @page jetzt randlos ist */
+  }
+  .beleg-akzentlinie--fuss { margin-top: 30px; }
   .beleg-overlay { background: #fff; }
 }
 
