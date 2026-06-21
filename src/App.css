@@ -1629,6 +1629,9 @@ body {
 .np-input:focus, .np-select:focus, .np-textarea:focus { border-color: #0f1f3d; }
 .np-textarea { resize: vertical; min-height: 96px; padding: 12px 14px; }
 .np-input { height: 50px; }
+.np-input--rot { color: #c0152e; border-color: #e3a3ab; }
+.np-input--rot::placeholder { color: #d98b94; }
+.np-input--rot:focus { border-color: #c0152e; }
 .np-select {
   cursor: pointer;
   height: 50px;

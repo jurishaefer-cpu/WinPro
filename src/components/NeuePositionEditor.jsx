@@ -41,6 +41,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
   const [verglasung, setVerglasung] = useState(initial?.verglasung ?? VERGLASUNGEN[0]);
   const [vsg, setVsg] = useState(initial?.vsg ?? false);
   const [ornament, setOrnament] = useState(initial?.ornament ?? false);
+  const [ornamentArt, setOrnamentArt] = useState(initial?.ornamentArt ?? '');
   const [dichtungInnen, setDichtungInnen] = useState(initial?.dichtungInnen ?? 'Grau');
   const [dichtungAussen, setDichtungAussen] = useState(initial?.dichtungAussen ?? 'Grau');
   const [kommentar, setKommentar] = useState(initial?.kommentar ?? '');
@@ -93,7 +94,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
       `${Math.round(breite)} × ${Math.round(hoehe)} mm · ${flaeche.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} m²`,
       systemLabel,
       `Innen ${farbe(innenfarbe)} / Außen ${farbe(aussenfarbe)}`,
-      verglasung + (vsg ? ', VSG' : '') + (ornament ? ', Ornament' : ''),
+      verglasung + (vsg ? ', VSG' : '') + (ornament ? `, Ornament${ornamentArt ? ` (${ornamentArt})` : ''}` : ''),
       `Dichtung innen/außen: ${dichtungInnen}/${dichtungAussen}`,
     ];
     if (verbreiterung) {
@@ -118,7 +119,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
     const config = {
       profilId, kategorie, code, breite: Number(breite), hoehe: Number(hoehe),
       stueckzahl: Number(stueckzahl), standort, verbreiterung, verb, aufsatzkasten, kasten, rollladen,
-      innenfarbe, aussenfarbe, verglasung, vsg, ornament, dichtungInnen, dichtungAussen,
+      innenfarbe, aussenfarbe, verglasung, vsg, ornament, ornamentArt, dichtungInnen, dichtungAussen,
       kommentar, montage: Number(montage), ausbau: Number(ausbau), entsorgung: Number(entsorgung),
       ohneMontage, nettoJeStueck: Number(nettoJeStueck),
     };
@@ -281,6 +282,17 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
           </select>
           <label className="np-check"><input type="checkbox" checked={vsg} onChange={e => setVsg(e.target.checked)} /> VSG-Sicherheitsverglasung</label>
           <label className="np-check"><input type="checkbox" checked={ornament} onChange={e => setOrnament(e.target.checked)} /> Ornament</label>
+          {ornament && (
+            <>
+              <label className="np-field-label">Art des Glases</label>
+              <input
+                className="np-input np-input--rot"
+                value={ornamentArt}
+                onChange={e => setOrnamentArt(e.target.value)}
+                placeholder="z.B. Mastercarré, Chinchilla"
+              />
+            </>
+          )}
 
           <div className="np-group-label" style={{ marginTop: 24 }}>DICHTUNGEN</div>
           <div className="np-row">
