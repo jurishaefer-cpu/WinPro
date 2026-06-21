@@ -212,44 +212,30 @@ export function GeometrieThumb({ geometrie, glasFarbe = '#cfe3ef' }) {
   );
 }
 
-function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkasten, glasFarbe = '#cfe3ef', onBreite, onHoehe, panes: panesProp, cols: colsProp, colWidths, rowHeights, onColWidth, onRowHeight, onPaneClick, selectedPane }) {
+// Berechnet die Pixel-Geometrie EINER Einheit (Rahmen, Flügel, Glas, Pfosten, Sub-Maße)
+// in das vorgegebene Gesamt-Rechteck r0 (px) bei Maßstab scale (px pro mm).
+export function computeUnit(r0, scale, { geometrie, breite, hoehe, panes: panesProp, cols: colsProp, colWidths, rowHeights, verbreiterung, aufsatzkasten }) {
   const g = geometrie;
-  const b = Math.max(200, Number(breite) || 1000);
-  const hh = Math.max(200, Number(hoehe) || 1200);
-
-  // Zeichenfläche
-  const VB_W = 780, VB_H = 720;
-  const maxW = 360, maxH = 430;
-  const scale = Math.min(maxW / b, maxH / hh);
-  const rw = b * scale, rh = hh * scale;
-  const cx = VB_W / 2 + 24, cy = VB_H / 2 + 14;
-  const x = cx - rw / 2, y = cy - rh / 2;
-
-  // Verbreiterungen (mm) als Streifen außen am Fenster, innerhalb des Gesamtmaßes
   const vo = Math.max(0, Number(verbreiterung?.oben) || 0) * scale;
   const vu = Math.max(0, Number(verbreiterung?.unten) || 0) * scale;
   const vl = Math.max(0, Number(verbreiterung?.links) || 0) * scale;
   const vr = Math.max(0, Number(verbreiterung?.rechts) || 0) * scale;
-  // Aufsatzkasten (Rollladenkasten oben), Höhe innerhalb des Gesamtmaßes
   const kh = aufsatzkasten ? Math.max(0, Number(aufsatzkasten.kastenhoehe) || 0) * scale : 0;
   const hatKasten = !!aufsatzkasten && kh > 0;
-
-  const hatVerb = vo || vu || vl || vr;
-  const r0 = { x, y, w: rw, h: rh };                            // Gesamtmaß (mit Verbreiterung/Kasten)
-  const kasten = { x, y, w: rw, h: kh };
-  const win = { x: x + vl, y: y + vo + kh, w: rw - vl - vr, h: rh - vo - vu - kh }; // eigentliches Fenster
+  const hatVerb = !!(vo || vu || vl || vr);
+  const kasten = { x: r0.x, y: r0.y, w: r0.w, h: kh };
+  const win = { x: r0.x + vl, y: r0.y + vo + kh, w: r0.w - vl - vr, h: r0.h - vo - vu - kh };
 
   const u = Math.min(win.w, win.h);
-  const blendW = Math.max(12, u * 0.052);              // Blendrahmen-Breite (äußerer Rahmen)
-  const gap = Math.max(2.5, u * 0.011);                // schmaler Zwischenraum Blend ↔ Flügel
-  const sashW = Math.max(10, u * 0.045);               // Flügelrahmen-Breite
-  const istFest = g?.open === 'fest';                  // Festverglasung: kein Flügelrahmen
-  const blendIn = inset(win, blendW);                  // Blendrahmen-Innenkante
-  const miterBlend = gehrung(win, blendIn);            // 45°-Gehrung am Blendrahmen
-  const inner = inset(win, blendW + gap);              // Bereich innerhalb des Blendrahmens
+  const blendW = Math.max(12, u * 0.052);
+  const gap = Math.max(2.5, u * 0.011);
+  const sashW = Math.max(10, u * 0.045);
+  const istFest = g?.open === 'fest';
+  const blendIn = inset(win, blendW);
+  const miterBlend = gehrung(win, blendIn);
+  const inner = inset(win, blendW + gap);
   const istTuer = g?.open === 'tuer' || g?.kategorie === 'tuer';
 
-  // Flügel (1, 2 oder Festverglasung)
   const machFluegel = (rect, geo) => {
     const gl = inset(rect, sashW);
     return { sash: rect, rect, glas: gl, miter: gehrung(rect, gl), lines: geo ? oeffnungsLinien(geo, gl) : [], tuer: geo?.open === 'tuer' };
@@ -257,8 +243,8 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
   const effPanes = panesProp || g?.panes;
   let leaves = [];
   const pfostenList = [];
-  let subCols = [];   // Zwischenmaße Spalten (Breite)
-  let subRows = [];   // Zwischenmaße Zeilen (Höhe)
+  let subCols = [];
+  let subRows = [];
   if (istFest && !effPanes) {
     leaves = [{ sash: null, rect: blendIn, glas: inset(blendIn, Math.max(6, u * 0.02)), miter: [], lines: [], tuer: false }];
   } else if (effPanes) {
@@ -267,9 +253,8 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
     const rows = Math.ceil(anz / cols);
     const dW = g?.teilung === 'stulp' ? Math.max(8, blendW * 0.6) : blendW;
     const dH = blendW;
-    // einzelne Spaltenbreiten / Zeilenhöhen (mm) – sonst gleichmäßig
-    const cwMM = colWidths && colWidths.length === cols ? colWidths.map(v => Math.max(1, Number(v) || 0)) : Array(cols).fill((Number(breite) || b) / cols);
-    const rhMM = rowHeights && rowHeights.length === rows ? rowHeights.map(v => Math.max(1, Number(v) || 0)) : Array(rows).fill((Number(hoehe) || hh) / rows);
+    const cwMM = colWidths && colWidths.length === cols ? colWidths.map(v => Math.max(1, Number(v) || 0)) : Array(cols).fill((Number(breite) || 1000) / cols);
+    const rhMM = rowHeights && rowHeights.length === rows ? rowHeights.map(v => Math.max(1, Number(v) || 0)) : Array(rows).fill((Number(hoehe) || 1200) / rows);
     const sumW = cwMM.reduce((a, c) => a + c, 0) || 1;
     const sumH = rhMM.reduce((a, c) => a + c, 0) || 1;
     const availW = inner.w - dW * (cols - 1);
@@ -286,7 +271,6 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
     });
     const istStulp = g?.teilung === 'stulp';
     for (let c = 1; c < cols; c++) {
-      // Stulp: Mittelpfosten verschwindet, wenn ein angrenzender Flügel nicht kippbar ist
       if (istStulp && !stulpPfostenZeigen(effPanes, cols, c)) continue;
       pfostenList.push({ x: colX[c] - dW, y: inner.y, w: dW, h: inner.h, fest: !istStulp });
     }
@@ -296,29 +280,108 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
   } else {
     leaves = [machFluegel(inner, g)];
   }
-  const hatSubB = subCols.length > 0;
-  const hatSubH = subRows.length > 0;
-
-  // Glas-Gesamtbereich (für Lamellen)
   const glasMinX = Math.min(...leaves.map(l => l.glas.x));
   const glasMaxX = Math.max(...leaves.map(l => l.glas.x + l.glas.w));
   const glasTopY = leaves[0].glas.y;
   const glasH = leaves[0].glas.h;
-
-  // Lamellen (Rollladen) im oberen Drittel der Glasfläche
   const lamellen = [];
   if (hatKasten) {
     const anz = 7;
     const bereich = glasH * 0.32;
     for (let i = 1; i <= anz; i++) lamellen.push(glasTopY + (bereich / anz) * i);
   }
-  // Bedien-Badge (G = Gurt, M = Motor) an der Bedienungsseite
   const badge = hatKasten ? {
     cx: aufsatzkasten.bedienungsseite === 'rechts' ? win.x + win.w : win.x,
     cy: win.y,
     r: Math.max(16, u * 0.05),
     text: aufsatzkasten.bedienung === 'Motor' ? 'M' : 'G',
   } : null;
+
+  return { g, r0, win, kasten, blendIn, miterBlend, leaves, pfostenList, subCols, subRows, lamellen, badge, glasMinX, glasMaxX, hatVerb, hatKasten, istTuer, effPanes };
+}
+
+// Zeichnet den Körper EINER Einheit (ohne Maßketten) aus dem computeUnit-Ergebnis.
+export function UnitBody({ c, glasFarbe = '#cfe3ef', onPaneClick, selectedPane, keyPrefix = '' }) {
+  const { r0, win, kasten, blendIn, miterBlend, leaves, pfostenList, lamellen, badge, glasMinX, glasMaxX, hatVerb, hatKasten, istTuer, effPanes, g } = c;
+  return (
+    <g>
+      {(hatVerb || hatKasten) && (
+        <rect x={r0.x} y={r0.y} width={r0.w} height={r0.h} fill="#fff" stroke="#0f1f3d" strokeWidth="2.5" />
+      )}
+      {hatKasten && (
+        <rect x={kasten.x} y={kasten.y} width={kasten.w} height={kasten.h} fill="#fff" stroke="#0f1f3d" strokeWidth="2.5" />
+      )}
+      <rect x={win.x} y={win.y} width={win.w} height={win.h} fill="#fff" stroke="#0f1f3d" strokeWidth="2.5" />
+      <rect x={blendIn.x} y={blendIn.y} width={blendIn.w} height={blendIn.h} fill="#fff" stroke="#0f1f3d" strokeWidth="1.6" />
+      {miterBlend.map((l, i) => (
+        <line key={keyPrefix + 'mb' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="1.4" />
+      ))}
+      {pfostenList.map((pf, i) => (
+        <rect key={keyPrefix + 'pf' + i} x={pf.x} y={pf.y} width={pf.w} height={pf.h}
+              fill="#fff" stroke="#0f1f3d" strokeWidth={pf.fest ? 2 : 1.6} />
+      ))}
+      {leaves.map((lf, li) => (
+        <g key={keyPrefix + 'lf' + li}>
+          {lf.sash && (
+            <rect x={lf.sash.x} y={lf.sash.y} width={lf.sash.w} height={lf.sash.h} fill="#fff" stroke="#0f1f3d" strokeWidth="2" />
+          )}
+          {lf.miter.map((l, i) => (
+            <line key={keyPrefix + 'ms' + li + '-' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="1.4" />
+          ))}
+          <rect x={lf.glas.x} y={lf.glas.y} width={lf.glas.w} height={lf.glas.h}
+                fill={lf.tuer ? '#e7edf2' : glasFarbe} stroke="#0f1f3d" strokeWidth="1.4" opacity="0.95" />
+        </g>
+      ))}
+      {lamellen.map((ly, i) => (
+        <line key={keyPrefix + 'lam' + i} x1={glasMinX} y1={ly} x2={glasMaxX} y2={ly} stroke="#0f1f3d" strokeWidth="1" opacity="0.7" />
+      ))}
+      {leaves.map((lf, li) => lf.lines.map((l, i) => (
+        <line key={keyPrefix + 'op' + li + '-' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]}
+              stroke="#0f1f3d" strokeWidth="1.4" />
+      )))}
+      {badge && (
+        <g>
+          <circle cx={badge.cx} cy={badge.cy} r={badge.r} fill="#fff" stroke="#0f1f3d" strokeWidth="2" />
+          <text x={badge.cx} y={badge.cy} textAnchor="middle" dominantBaseline="central"
+                fontSize={badge.r * 1.1} fontWeight="700" fill="#0f1f3d">{badge.text}</text>
+        </g>
+      )}
+      {istTuer && leaves.map((lf, li) => {
+        const p = effPanes ? effPanes[li] : g;
+        if (!p || p.fest) return null;
+        const din = p.din || g.din || 'links';
+        const hx = din === 'links' ? lf.glas.x + lf.glas.w - 12 : lf.glas.x + 6;
+        return (
+          <rect key={keyPrefix + 'griff' + li} x={hx} y={lf.glas.y + lf.glas.h / 2 - 18}
+                width="6" height="36" rx="3" fill="#0f1f3d" />
+        );
+      })}
+      {onPaneClick && leaves.map((lf, li) => (
+        <rect key={keyPrefix + 'hit' + li} x={lf.rect.x} y={lf.rect.y} width={lf.rect.w} height={lf.rect.h}
+              fill={selectedPane === li ? 'rgba(192,21,46,0.12)' : 'transparent'}
+              stroke={selectedPane === li ? '#c0152e' : 'transparent'} strokeWidth="2.5"
+              style={{ cursor: 'pointer' }} onClick={() => onPaneClick(li)} />
+      ))}
+    </g>
+  );
+}
+
+function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkasten, glasFarbe = '#cfe3ef', onBreite, onHoehe, panes: panesProp, cols: colsProp, colWidths, rowHeights, onColWidth, onRowHeight, onPaneClick, selectedPane }) {
+  const b = Math.max(200, Number(breite) || 1000);
+  const hh = Math.max(200, Number(hoehe) || 1200);
+
+  // Zeichenfläche
+  const VB_W = 780, VB_H = 720;
+  const maxW = 360, maxH = 430;
+  const scale = Math.min(maxW / b, maxH / hh);
+  const rw = b * scale, rh = hh * scale;
+  const cx = VB_W / 2 + 24, cy = VB_H / 2 + 14;
+  const x = cx - rw / 2, y = cy - rh / 2;
+
+  const r0 = { x, y, w: rw, h: rh };                            // Gesamtmaß (mit Verbreiterung/Kasten)
+  const c = computeUnit(r0, scale, { geometrie, breite, hoehe, panes: panesProp, cols: colsProp, colWidths, rowHeights, verbreiterung, aufsatzkasten });
+  const hatSubB = c.subCols.length > 0;
+  const hatSubH = c.subRows.length > 0;
 
   // Maß-Positionen: Hauptmaß weiter außen, wenn Zwischenmaße vorhanden
   const mainTopY = hatSubB ? y - 78 : y - 34;
@@ -342,7 +405,7 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
       )}
 
       {/* Zwischenmaße Breite (je Spalte) – editierbar */}
-      {subCols.map((s, i) => (
+      {c.subCols.map((s, i) => (
         <g key={'sb' + i}>
           <line x1={s.x0} y1={subTopY} x2={s.x1} y2={subTopY} stroke="#0f1f3d" strokeWidth="1" />
           <line x1={s.x0} y1={subTopY - 5} x2={s.x0} y2={subTopY + 5} stroke="#0f1f3d" strokeWidth="1" />
@@ -373,7 +436,7 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
       )}
 
       {/* Zwischenmaße Höhe (je Zeile) – editierbar */}
-      {subRows.map((s, i) => {
+      {c.subRows.map((s, i) => {
         const mid = (s.y0 + s.y1) / 2;
         const cxr = subLeftX - 22;
         return (
@@ -394,82 +457,108 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
         );
       })}
 
-      {/* Gesamtmaß-Rahmen außen herum (bei Verbreiterung/Aufsatzkasten) */}
-      {(hatVerb || hatKasten) && (
-        <rect x={r0.x} y={r0.y} width={r0.w} height={r0.h} fill="#fff" stroke="#0f1f3d" strokeWidth="2.5" />
-      )}
+      {/* Fensterkörper (Rahmen, Flügel, Glas, Pfosten, Lamellen, Griffe, Klickflächen) */}
+      <UnitBody c={c} glasFarbe={glasFarbe} onPaneClick={onPaneClick} selectedPane={selectedPane} />
+    </svg>
+  );
+}
 
-      {/* Aufsatzkasten oben */}
-      {hatKasten && (
-        <rect x={kasten.x} y={kasten.y} width={kasten.w} height={kasten.h} fill="#fff" stroke="#0f1f3d" strokeWidth="2.5" />
-      )}
+// Kombination mehrerer gekoppelter Einheiten (eigener Rahmen je Element), im Raster (row/col).
+export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', onUnitClick, activeId, onPaneClick, selectedPane }) {
+  const els = (elemente || []).map((e, i) => ({ ...e, _key: e.id ?? i }));
+  if (!els.length) return null;
+  const colsSet = [...new Set(els.map(e => e.col ?? 0))].sort((a, b) => a - b);
+  const rowsSet = [...new Set(els.map(e => e.row ?? 0))].sort((a, b) => a - b);
+  const colWmm = {}; colsSet.forEach(cc => { colWmm[cc] = Math.max(...els.filter(e => (e.col ?? 0) === cc).map(e => Math.max(200, Number(e.breite) || 1000))); });
+  const rowHmm = {}; rowsSet.forEach(rr => { rowHmm[rr] = Math.max(...els.filter(e => (e.row ?? 0) === rr).map(e => Math.max(200, Number(e.hoehe) || 1200))); });
+  const totalWmm = colsSet.reduce((a, cc) => a + colWmm[cc], 0);
+  const totalHmm = rowsSet.reduce((a, rr) => a + rowHmm[rr], 0);
 
-      {/* Blendrahmen (Außenring) + Zwischenrahmen mit 45°-Gehrung */}
-      <rect x={win.x} y={win.y} width={win.w} height={win.h} fill="#fff" stroke="#0f1f3d" strokeWidth="2.5" />
-      <rect x={blendIn.x} y={blendIn.y} width={blendIn.w} height={blendIn.h} fill="#fff" stroke="#0f1f3d" strokeWidth="1.6" />
-      {miterBlend.map((l, i) => (
-        <line key={'mb' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="1.4" />
-      ))}
+  const maxW = 600, maxH = 440;
+  const scale = Math.min(maxW / Math.max(200, totalWmm), maxH / Math.max(200, totalHmm));
+  const totalWpx = totalWmm * scale, totalHpx = totalHmm * scale;
+  const ML = 92, MT = 84, MR = 44, MB = 40;
+  const VB_W = totalWpx + ML + MR;
+  const VB_H = totalHpx + MT + MB;
+  const ox = ML, oy = MT;
 
-      {/* Mittelpfosten bzw. Stulp (mehrteilig) */}
-      {pfostenList.map((pf, i) => (
-        <rect key={'pf' + i} x={pf.x} y={pf.y} width={pf.w} height={pf.h}
-              fill="#fff" stroke="#0f1f3d" strokeWidth={pf.fest ? 2 : 1.6} />
-      ))}
+  const colXpx = {}; { let xa = ox; colsSet.forEach(cc => { colXpx[cc] = xa; xa += colWmm[cc] * scale; }); }
+  const rowYpx = {}; { let ya = oy; rowsSet.forEach(rr => { rowYpx[rr] = ya; ya += rowHmm[rr] * scale; }); }
 
-      {/* Flügelrahmen + Glas je Flügel */}
-      {leaves.map((lf, li) => (
-        <g key={'lf' + li}>
-          {lf.sash && (
-            <rect x={lf.sash.x} y={lf.sash.y} width={lf.sash.w} height={lf.sash.h} fill="#fff" stroke="#0f1f3d" strokeWidth="2" />
-          )}
-          {lf.miter.map((l, i) => (
-            <line key={'ms' + li + '-' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="1.4" />
-          ))}
-          <rect x={lf.glas.x} y={lf.glas.y} width={lf.glas.w} height={lf.glas.h}
-                fill={lf.tuer ? '#e7edf2' : glasFarbe} stroke="#0f1f3d" strokeWidth="1.4" opacity="0.95" />
-        </g>
-      ))}
+  const units = els.map(e => {
+    const cc = e.col ?? 0, rr = e.row ?? 0;
+    const r0 = { x: colXpx[cc], y: rowYpx[rr], w: colWmm[cc] * scale, h: rowHmm[rr] * scale };
+    const c = computeUnit(r0, scale, {
+      geometrie: geometrieByCode(e.code), breite: colWmm[cc], hoehe: rowHmm[rr],
+      panes: e.panes, cols: e.cols, colWidths: e.colWidths, rowHeights: e.rowHeights,
+      verbreiterung: e.verbreiterung ? e.verb : null, aufsatzkasten: e.aufsatzkasten ? e.kasten : null,
+    });
+    return { e, c, r0 };
+  });
 
-      {/* Rollladen-Lamellen im oberen Glasbereich (über die gesamte Breite) */}
-      {lamellen.map((ly, i) => (
-        <line key={'lam' + i} x1={glasMinX} y1={ly} x2={glasMaxX} y2={ly} stroke="#0f1f3d" strokeWidth="1" opacity="0.7" />
-      ))}
+  const topY = oy - 34, leftX = ox - 34;          // Gesamtmaße ganz außen
+  const interaktiv = !!onUnitClick;
 
-      {/* Öffnungssymbole je Flügel */}
-      {leaves.map((lf, li) => lf.lines.map((l, i) => (
-        <line key={'op' + li + '-' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]}
-              stroke="#0f1f3d" strokeWidth="1.4" />
-      )))}
+  return (
+    <svg viewBox={`0 0 ${VB_W} ${VB_H}`} preserveAspectRatio="xMidYMid meet" className="fz-svg">
+      {/* Gesamtmaß Breite (oben) */}
+      <line x1={ox} y1={topY} x2={ox + totalWpx} y2={topY} stroke="#0f1f3d" strokeWidth="1.2" />
+      <line x1={ox} y1={topY - 6} x2={ox} y2={topY + 6} stroke="#0f1f3d" strokeWidth="1.2" />
+      <line x1={ox + totalWpx} y1={topY - 6} x2={ox + totalWpx} y2={topY + 6} stroke="#0f1f3d" strokeWidth="1.2" />
+      <text x={ox + totalWpx / 2} y={topY - 10} textAnchor="middle" fontSize="20" fill="#0f1f3d" fontWeight="600">{Math.round(totalWmm)}</text>
 
-      {/* Bedien-Badge (Gurt/Motor) */}
-      {badge && (
-        <g>
-          <circle cx={badge.cx} cy={badge.cy} r={badge.r} fill="#fff" stroke="#0f1f3d" strokeWidth="2" />
-          <text x={badge.cx} y={badge.cy} textAnchor="middle" dominantBaseline="central"
-                fontSize={badge.r * 1.1} fontWeight="700" fill="#0f1f3d">{badge.text}</text>
-        </g>
-      )}
-
-      {/* Türgriff-Andeutung – je öffnendem Türflügel */}
-      {istTuer && leaves.map((lf, li) => {
-        const p = effPanes ? effPanes[li] : g;
-        if (!p || p.fest) return null;            // Standflügel/Festfeld: kein Griff
-        const din = p.din || g.din || 'links';
-        const hx = din === 'links' ? lf.glas.x + lf.glas.w - 12 : lf.glas.x + 6;
+      {/* Spaltenbreiten (oben, innen) */}
+      {colsSet.length > 1 && colsSet.map(cc => {
+        const x0 = colXpx[cc], x1 = colXpx[cc] + colWmm[cc] * scale;
         return (
-          <rect key={'griff' + li} x={hx} y={lf.glas.y + lf.glas.h / 2 - 18}
-                width="6" height="36" rx="3" fill="#0f1f3d" />
+          <g key={'cw' + cc}>
+            <line x1={x0} y1={oy - 14} x2={x1} y2={oy - 14} stroke="#0f1f3d" strokeWidth="1" />
+            <line x1={x0} y1={oy - 19} x2={x0} y2={oy - 9} stroke="#0f1f3d" strokeWidth="1" />
+            <line x1={x1} y1={oy - 19} x2={x1} y2={oy - 9} stroke="#0f1f3d" strokeWidth="1" />
+            <text x={(x0 + x1) / 2} y={oy - 22} textAnchor="middle" fontSize="13" fill="#0f1f3d" fontWeight="600">{Math.round(colWmm[cc])}</text>
+          </g>
         );
       })}
 
-      {/* Anklickbare Flügel-Flächen (nur im Editor) */}
-      {onPaneClick && leaves.map((lf, li) => (
-        <rect key={'hit' + li} x={lf.rect.x} y={lf.rect.y} width={lf.rect.w} height={lf.rect.h}
-              fill={selectedPane === li ? 'rgba(192,21,46,0.12)' : 'transparent'}
-              stroke={selectedPane === li ? '#c0152e' : 'transparent'} strokeWidth="2.5"
-              style={{ cursor: 'pointer' }} onClick={() => onPaneClick(li)} />
-      ))}
+      {/* Gesamtmaß Höhe (links) */}
+      <line x1={leftX} y1={oy} x2={leftX} y2={oy + totalHpx} stroke="#0f1f3d" strokeWidth="1.2" />
+      <line x1={leftX - 6} y1={oy} x2={leftX + 6} y2={oy} stroke="#0f1f3d" strokeWidth="1.2" />
+      <line x1={leftX - 6} y1={oy + totalHpx} x2={leftX + 6} y2={oy + totalHpx} stroke="#0f1f3d" strokeWidth="1.2" />
+      <text x={leftX - 10} y={oy + totalHpx / 2} textAnchor="middle" fontSize="20" fill="#0f1f3d" fontWeight="600"
+            transform={`rotate(-90 ${leftX - 10} ${oy + totalHpx / 2})`}>{Math.round(totalHmm)}</text>
+
+      {/* Zeilenhöhen (links, innen) */}
+      {rowsSet.length > 1 && rowsSet.map(rr => {
+        const y0 = rowYpx[rr], y1 = rowYpx[rr] + rowHmm[rr] * scale, mid = (y0 + y1) / 2;
+        return (
+          <g key={'rh' + rr}>
+            <line x1={ox - 14} y1={y0} x2={ox - 14} y2={y1} stroke="#0f1f3d" strokeWidth="1" />
+            <line x1={ox - 19} y1={y0} x2={ox - 9} y2={y0} stroke="#0f1f3d" strokeWidth="1" />
+            <line x1={ox - 19} y1={y1} x2={ox - 9} y2={y1} stroke="#0f1f3d" strokeWidth="1" />
+            <text x={ox - 22} y={mid} textAnchor="middle" fontSize="13" fill="#0f1f3d" fontWeight="600"
+                  transform={`rotate(-90 ${ox - 22} ${mid})`}>{Math.round(rowHmm[rr])}</text>
+          </g>
+        );
+      })}
+
+      {/* Einheiten */}
+      {units.map((u) => {
+        const aktiv = activeId != null && u.e._key === activeId;
+        return (
+          <g key={'u' + u.e._key}>
+            <UnitBody c={u.c} glasFarbe={u.e.ornament ? '#7fb0cc' : glasFarbe} keyPrefix={'u' + u.e._key + '-'}
+              onPaneClick={interaktiv && aktiv ? onPaneClick : undefined} selectedPane={aktiv ? selectedPane : null} />
+            {aktiv && (
+              <rect x={u.r0.x} y={u.r0.y} width={u.r0.w} height={u.r0.h} fill="none"
+                    stroke="#c0152e" strokeWidth="2.5" strokeDasharray="6 4" pointerEvents="none" />
+            )}
+            {interaktiv && !aktiv && (
+              <rect x={u.r0.x} y={u.r0.y} width={u.r0.w} height={u.r0.h} fill="transparent"
+                    style={{ cursor: 'pointer' }} onClick={() => onUnitClick(u.e._key)} />
+            )}
+          </g>
+        );
+      })}
     </svg>
   );
 }

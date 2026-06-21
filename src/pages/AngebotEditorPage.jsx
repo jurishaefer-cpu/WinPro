@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../auth/AuthContext';
 import ManuellePositionModal from '../components/ManuellePositionModal';
 import NeuePositionEditor from '../components/NeuePositionEditor';
-import FensterZeichnung, { geometrieByCode } from '../components/FensterZeichnung';
+import FensterZeichnung, { geometrieByCode, KombinationsZeichnung } from '../components/FensterZeichnung';
 import BelegModal from '../components/BelegModal';
 import { ladeEinstellungen } from '../lib/einstellungen';
 
@@ -306,18 +306,22 @@ function AngebotEditorPage() {
                     <span className="pos-card-menge">{menge}×</span>
                   </div>
                   <div className="pos-card-canvas" onClick={oeffne} title="Zum Bearbeiten klicken">
-                    <FensterZeichnung
-                      geometrie={geometrieByCode(c.code)}
-                      breite={c.breite}
-                      hoehe={c.hoehe}
-                      panes={c.panes}
-                      cols={c.cols}
-                      colWidths={c.colWidths}
-                      rowHeights={c.rowHeights}
-                      verbreiterung={c.verbreiterung ? c.verb : null}
-                      aufsatzkasten={c.aufsatzkasten ? c.kasten : null}
-                      glasFarbe={c.ornament ? '#7fb0cc' : undefined}
-                    />
+                    {c.elemente?.length > 1 ? (
+                      <KombinationsZeichnung elemente={c.elemente} />
+                    ) : (
+                      <FensterZeichnung
+                        geometrie={geometrieByCode(c.code)}
+                        breite={c.breite}
+                        hoehe={c.hoehe}
+                        panes={c.panes}
+                        cols={c.cols}
+                        colWidths={c.colWidths}
+                        rowHeights={c.rowHeights}
+                        verbreiterung={c.verbreiterung ? c.verb : null}
+                        aufsatzkasten={c.aufsatzkasten ? c.kasten : null}
+                        glasFarbe={c.ornament ? '#7fb0cc' : undefined}
+                      />
+                    )}
                   </div>
                   {foot}
                 </div>

@@ -1,4 +1,4 @@
-import FensterZeichnung, { geometrieByCode } from './FensterZeichnung';
+import FensterZeichnung, { geometrieByCode, KombinationsZeichnung } from './FensterZeichnung';
 import { euro, datumDE, positionZeilen, BELEG_ART } from '../lib/belegHelfer';
 
 const MWST = 0.19;
@@ -91,13 +91,17 @@ function BelegDokument({ art, angebot, kunde, positionen, profileMap, einstellun
                 <td className="pos-skizze">
                   {istFenster && (
                     <div className="beleg-zeichnung">
-                      <FensterZeichnung
-                        geometrie={geometrieByCode(c.code)} breite={c.breite} hoehe={c.hoehe}
-                        panes={c.panes} cols={c.cols} colWidths={c.colWidths} rowHeights={c.rowHeights}
-                        verbreiterung={c.verbreiterung ? c.verb : null}
-                        aufsatzkasten={c.aufsatzkasten ? c.kasten : null}
-                        glasFarbe={c.ornament ? '#7fb0cc' : undefined}
-                      />
+                      {c.elemente?.length > 1 ? (
+                        <KombinationsZeichnung elemente={c.elemente} />
+                      ) : (
+                        <FensterZeichnung
+                          geometrie={geometrieByCode(c.code)} breite={c.breite} hoehe={c.hoehe}
+                          panes={c.panes} cols={c.cols} colWidths={c.colWidths} rowHeights={c.rowHeights}
+                          verbreiterung={c.verbreiterung ? c.verb : null}
+                          aufsatzkasten={c.aufsatzkasten ? c.kasten : null}
+                          glasFarbe={c.ornament ? '#7fb0cc' : undefined}
+                        />
+                      )}
                     </div>
                   )}
                 </td>
