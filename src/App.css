@@ -1195,7 +1195,7 @@ body {
   box-sizing: border-box;
 }
 .beleg-kopf { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; }
-.beleg-logo img { max-height: 70px; max-width: 220px; object-fit: contain; }
+.beleg-logo img { max-height: 92px; max-width: 265px; object-fit: contain; }
 .beleg-firma { text-align: right; font-size: 11px; line-height: 1.5; }
 .beleg-firma strong { font-size: 12px; }
 .beleg-akzentlinie { height: 2px; background: var(--akzent, #c0152e); margin: 10px 0 26px; }
@@ -1234,7 +1234,7 @@ body {
 .beleg-summen { margin: 16px 0 0; margin-left: auto; width: 320px; }
 .beleg-summen-zeile { display: flex; justify-content: space-between; padding: 5px 0; }
 .beleg-summen-zeile--gesamt {
-  font-weight: 700; border-top: 2px solid var(--akzent, #c0152e); margin-top: 4px; padding-top: 8px;
+  font-weight: 700; border-top: 2px solid #1a1a1a; margin-top: 4px; padding-top: 8px;
 }
 
 .beleg-zahlung {
