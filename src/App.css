@@ -1398,7 +1398,7 @@ body {
 }
 .pos-card-titel {
   flex: 1; text-align: center;
-  font-size: 16px; color: #6b7280;
+  font-size: 16px; font-weight: 700; color: #1a1a1a;
   min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .pos-card-menge {
@@ -1408,6 +1408,8 @@ body {
 }
 .pos-card-canvas {
   display: flex; align-items: center; justify-content: center;
+  width: 100%; max-width: 440px; aspect-ratio: 1 / 1;
+  margin: 0 auto;
   padding: 18px;
   cursor: pointer;
   background:
@@ -1415,7 +1417,7 @@ body {
     linear-gradient(90deg, #f2f4f6 1px, transparent 1px) 0 0 / 22px 22px,
     #fbfcfd;
 }
-.pos-card-canvas .fz-svg { width: 240px; height: 240px; max-width: 100%; }
+.pos-card-canvas .fz-svg { width: 100%; height: 100%; }
 .pos-card-foot {
   display: flex; align-items: center; gap: 6px;
   padding: 12px 18px;
@@ -1887,8 +1889,7 @@ body {
   .editor-pos-buttons .btn { flex: 1; text-align: center; }
 
   /* Fenster-Positions-Karte kompakter */
-  .pos-card-canvas { padding: 12px; }
-  .pos-card-canvas .fz-svg { width: 200px; height: 200px; }
+  .pos-card-canvas { padding: 12px; max-width: 320px; }
   .pos-card-preis { font-size: 18px; }
 
   /* Sticky-Summenleiste gestapelt */
