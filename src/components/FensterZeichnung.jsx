@@ -27,10 +27,10 @@ export const GEOMETRIEN = [
     panes: [{ open: 'drehkipp', din: 'links' }, { fest: true }, { open: 'drehkipp', din: 'rechts' }] },
   { code: 'F16', kategorie: 'fenster', gruppe: 'Mehrteilig', label: 'Dreiteilig Drehkipp mit Festfeldern',
     panes: [{ fest: true }, { open: 'drehkipp', din: 'links' }, { fest: true }] },
-  { code: 'F17', kategorie: 'fenster', gruppe: 'Mehrteilig', label: 'Vierteiliges Drehkippfenster',
+  { code: 'F17', kategorie: 'fenster', gruppe: 'Mehrteilig', label: 'Vierteiliges Drehkippfenster', cols: 2,
     panes: [{ open: 'drehkipp', din: 'links' }, { open: 'drehkipp', din: 'rechts' }, { open: 'drehkipp', din: 'links' }, { open: 'drehkipp', din: 'rechts' }] },
-  { code: 'F18', kategorie: 'fenster', gruppe: 'Mehrteilig', label: 'Vierteiliges Drehkippfenster (2 Fest)',
-    panes: [{ open: 'drehkipp', din: 'links' }, { fest: true }, { fest: true }, { open: 'drehkipp', din: 'rechts' }] },
+  { code: 'F18', kategorie: 'fenster', gruppe: 'Mehrteilig', label: 'Vierteiliges Drehkippfenster (Variante)', cols: 2,
+    panes: [{ open: 'drehkipp', din: 'links' }, { open: 'drehkipp', din: 'rechts' }, { open: 'drehkipp', din: 'links' }, { open: 'drehkipp', din: 'rechts' }] },
   { code: 'T01', kategorie: 'tuer', gruppe: 'Türen', label: 'Haustür DIN Links', open: 'tuer', din: 'links' },
   { code: 'T02', kategorie: 'tuer', gruppe: 'Türen', label: 'Haustür DIN Rechts', open: 'tuer', din: 'rechts' },
   { code: 'T03', kategorie: 'tuer', gruppe: 'Türen', label: 'Balkontür Dreh-Kipp DIN Links', open: 'drehkipp', din: 'links', tuer: true },
@@ -97,16 +97,22 @@ export function GeometrieThumb({ geometrie, glasFarbe = '#cfe3ef' }) {
     leaves = [{ sash: null, glas: inset(blendIn, 2.5), miter: [], lines: [] }];
   } else if (g?.panes) {
     const anz = g.panes.length;
+    const cols = g.cols || anz;
+    const rows = Math.ceil(anz / cols);
     const dW = g.teilung === 'stulp' ? 3.5 : 5;
-    const paneW = (inner.w - dW * (anz - 1)) / anz;
-    let px = inner.x;
+    const dH = 5;
+    const colW = (inner.w - dW * (cols - 1)) / cols;
+    const rowH = (inner.h - dH * (rows - 1)) / rows;
+    const colX = []; for (let c = 0; c < cols; c++) colX.push(inner.x + c * (colW + dW));
+    const rowY = []; for (let r = 0; r < rows; r++) rowY.push(inner.y + r * (rowH + dH));
     g.panes.forEach((p, idx) => {
-      const rect = { x: px, y: inner.y, w: paneW, h: inner.h };
+      const c = idx % cols, r = Math.floor(idx / cols);
+      const rect = { x: colX[c], y: rowY[r], w: colW, h: rowH };
       if (p.fest) leaves.push({ sash: null, glas: inset(rect, 2.5), miter: [], lines: [] });
       else leaves.push(mk(rect, { open: p.open, din: p.din }));
-      px += paneW;
-      if (idx < anz - 1) { pfostenList.push({ x: px, y: inner.y, w: dW, h: inner.h }); px += dW; }
     });
+    for (let c = 1; c < cols; c++) pfostenList.push({ x: colX[c] - dW, y: inner.y, w: dW, h: inner.h });
+    for (let r = 1; r < rows; r++) pfostenList.push({ x: inner.x, y: rowY[r] - dH, w: inner.w, h: dH });
   } else {
     leaves = [mk(inner, g)];
   }
@@ -175,29 +181,35 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
   };
   let leaves = [];
   const pfostenList = [];
+  let subCols = [];   // Zwischenmaße Spalten (Breite)
+  let subRows = [];   // Zwischenmaße Zeilen (Höhe)
   if (istFest) {
     leaves = [{ sash: null, glas: inset(blendIn, Math.max(6, u * 0.02)), miter: [], lines: [] }];
   } else if (g?.panes) {
     const anz = g.panes.length;
+    const cols = g.cols || anz;
+    const rows = Math.ceil(anz / cols);
     const dW = g.teilung === 'stulp' ? Math.max(8, blendW * 0.6) : blendW;
-    const paneW = (inner.w - dW * (anz - 1)) / anz;
-    let px = inner.x;
+    const dH = blendW;
+    const colW = (inner.w - dW * (cols - 1)) / cols;
+    const rowH = (inner.h - dH * (rows - 1)) / rows;
+    const colX = []; for (let c = 0; c < cols; c++) colX.push(inner.x + c * (colW + dW));
+    const rowY = []; for (let r = 0; r < rows; r++) rowY.push(inner.y + r * (rowH + dH));
     g.panes.forEach((p, idx) => {
-      const rect = { x: px, y: inner.y, w: paneW, h: inner.h };
-      if (p.fest) {
-        leaves.push({ sash: null, glas: inset(rect, Math.max(4, sashW * 0.5)), miter: [], lines: [] });
-      } else {
-        leaves.push(machFluegel(rect, { open: p.open, din: p.din }));
-      }
-      px += paneW;
-      if (idx < anz - 1) {
-        pfostenList.push({ x: px, y: inner.y, w: dW, h: inner.h, fest: g.teilung !== 'stulp' });
-        px += dW;
-      }
+      const c = idx % cols, r = Math.floor(idx / cols);
+      const rect = { x: colX[c], y: rowY[r], w: colW, h: rowH };
+      if (p.fest) leaves.push({ sash: null, glas: inset(rect, Math.max(4, sashW * 0.5)), miter: [], lines: [] });
+      else leaves.push(machFluegel(rect, { open: p.open, din: p.din }));
     });
+    for (let c = 1; c < cols; c++) pfostenList.push({ x: colX[c] - dW, y: inner.y, w: dW, h: inner.h, fest: g.teilung !== 'stulp' });
+    for (let r = 1; r < rows; r++) pfostenList.push({ x: inner.x, y: rowY[r] - dH, w: inner.w, h: dH, fest: true });
+    if (cols > 1) subCols = colX.map(cx0 => ({ x0: cx0, x1: cx0 + colW, mm: Math.round((Number(breite) || b) / cols) }));
+    if (rows > 1) subRows = rowY.map(ry0 => ({ y0: ry0, y1: ry0 + rowH, mm: Math.round((Number(hoehe) || hh) / rows) }));
   } else {
     leaves = [machFluegel(inner, g)];
   }
+  const hatSubB = subCols.length > 0;
+  const hatSubH = subRows.length > 0;
 
   // Glas-Gesamtbereich (für Lamellen)
   const glasMinX = Math.min(...leaves.map(l => l.glas.x));
@@ -220,34 +232,64 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
     text: aufsatzkasten.bedienung === 'Motor' ? 'M' : 'G',
   } : null;
 
+  // Maß-Positionen: Hauptmaß weiter außen, wenn Zwischenmaße vorhanden
+  const mainTopY = hatSubB ? y - 64 : y - 34;
+  const subTopY = y - 30;
+  const mainLeftX = hatSubH ? x - 64 : x - 34;
+  const subLeftX = x - 30;
+
   return (
     <svg viewBox={`0 0 ${VB_W} ${VB_H}`} preserveAspectRatio="xMidYMid meet" className="fz-svg">
-      {/* Maßlinie oben */}
-      <line x1={x} y1={y - 34} x2={x + rw} y2={y - 34} stroke="#0f1f3d" strokeWidth="1.2" />
-      <line x1={x} y1={y - 40} x2={x} y2={y - 14} stroke="#0f1f3d" strokeWidth="1.2" />
-      <line x1={x + rw} y1={y - 40} x2={x + rw} y2={y - 14} stroke="#0f1f3d" strokeWidth="1.2" />
+      {/* Hauptmaß Breite (oben) */}
+      <line x1={x} y1={mainTopY} x2={x + rw} y2={mainTopY} stroke="#0f1f3d" strokeWidth="1.2" />
+      <line x1={x} y1={mainTopY - 6} x2={x} y2={mainTopY + 6} stroke="#0f1f3d" strokeWidth="1.2" />
+      <line x1={x + rw} y1={mainTopY - 6} x2={x + rw} y2={mainTopY + 6} stroke="#0f1f3d" strokeWidth="1.2" />
       {onBreite ? (
-        <foreignObject x={cx - 70} y={y - 80} width={140} height={38}>
+        <foreignObject x={cx - 70} y={mainTopY - 46} width={140} height={38}>
           <input className="fz-massinput" type="number" value={breite}
                  onChange={e => onBreite(e.target.value)} />
         </foreignObject>
       ) : (
-        <text x={cx} y={y - 44} textAnchor="middle" fontSize="22" fill="#0f1f3d" fontWeight="600">{Math.round(b)}</text>
+        <text x={cx} y={mainTopY - 10} textAnchor="middle" fontSize="22" fill="#0f1f3d" fontWeight="600">{Math.round(b)}</text>
       )}
 
-      {/* Maßlinie links */}
-      <line x1={x - 34} y1={y} x2={x - 34} y2={y + rh} stroke="#0f1f3d" strokeWidth="1.2" />
-      <line x1={x - 40} y1={y} x2={x - 14} y2={y} stroke="#0f1f3d" strokeWidth="1.2" />
-      <line x1={x - 40} y1={y + rh} x2={x - 14} y2={y + rh} stroke="#0f1f3d" strokeWidth="1.2" />
+      {/* Zwischenmaße Breite (je Spalte) */}
+      {subCols.map((s, i) => (
+        <g key={'sb' + i}>
+          <line x1={s.x0} y1={subTopY} x2={s.x1} y2={subTopY} stroke="#0f1f3d" strokeWidth="1" />
+          <line x1={s.x0} y1={subTopY - 5} x2={s.x0} y2={subTopY + 5} stroke="#0f1f3d" strokeWidth="1" />
+          <line x1={s.x1} y1={subTopY - 5} x2={s.x1} y2={subTopY + 5} stroke="#0f1f3d" strokeWidth="1" />
+          <text x={(s.x0 + s.x1) / 2} y={subTopY - 7} textAnchor="middle" fontSize="15" fill="#0f1f3d" fontWeight="600">{s.mm}</text>
+        </g>
+      ))}
+
+      {/* Hauptmaß Höhe (links) */}
+      <line x1={mainLeftX} y1={y} x2={mainLeftX} y2={y + rh} stroke="#0f1f3d" strokeWidth="1.2" />
+      <line x1={mainLeftX - 6} y1={y} x2={mainLeftX + 6} y2={y} stroke="#0f1f3d" strokeWidth="1.2" />
+      <line x1={mainLeftX - 6} y1={y + rh} x2={mainLeftX + 6} y2={y + rh} stroke="#0f1f3d" strokeWidth="1.2" />
       {onHoehe ? (
-        <foreignObject x={x - 124} y={cy - 19} width={92} height={38}>
+        <foreignObject x={mainLeftX - 76} y={cy - 19} width={70} height={38}>
           <input className="fz-massinput" type="number" value={hoehe}
                  onChange={e => onHoehe(e.target.value)} />
         </foreignObject>
       ) : (
-        <text x={x - 44} y={cy} textAnchor="middle" fontSize="22" fill="#0f1f3d" fontWeight="600"
-              transform={`rotate(-90 ${x - 44} ${cy})`}>{Math.round(hh)}</text>
+        <text x={mainLeftX - 10} y={cy} textAnchor="middle" fontSize="22" fill="#0f1f3d" fontWeight="600"
+              transform={`rotate(-90 ${mainLeftX - 10} ${cy})`}>{Math.round(hh)}</text>
       )}
+
+      {/* Zwischenmaße Höhe (je Zeile) */}
+      {subRows.map((s, i) => {
+        const mid = (s.y0 + s.y1) / 2;
+        return (
+          <g key={'sh' + i}>
+            <line x1={subLeftX} y1={s.y0} x2={subLeftX} y2={s.y1} stroke="#0f1f3d" strokeWidth="1" />
+            <line x1={subLeftX - 5} y1={s.y0} x2={subLeftX + 5} y2={s.y0} stroke="#0f1f3d" strokeWidth="1" />
+            <line x1={subLeftX - 5} y1={s.y1} x2={subLeftX + 5} y2={s.y1} stroke="#0f1f3d" strokeWidth="1" />
+            <text x={subLeftX - 7} y={mid} textAnchor="middle" fontSize="15" fill="#0f1f3d" fontWeight="600"
+                  transform={`rotate(-90 ${subLeftX - 7} ${mid})`}>{s.mm}</text>
+          </g>
+        );
+      })}
 
       {/* Gesamtmaß-Rahmen außen herum (bei Verbreiterung/Aufsatzkasten) */}
       {(hatVerb || hatKasten) && (
