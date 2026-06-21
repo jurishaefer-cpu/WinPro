@@ -1184,7 +1184,10 @@ body {
 .beleg-buehne { width: 794px; margin: 0; transform-origin: top left; }
 
 .beleg {
-  width: 794px;
+  width: 794px;            /* DIN A4 Breite (210 mm @ 96 dpi) */
+  min-height: 1123px;      /* DIN A4 Hoehe (297 mm @ 96 dpi) -> volles A4-Blatt */
+  display: flex;
+  flex-direction: column;
   background: #fff;
   box-shadow: 0 4px 24px rgba(0,0,0,0.3);
   padding: 48px 54px;
@@ -1196,7 +1199,7 @@ body {
 .beleg-firma { text-align: right; font-size: 11px; line-height: 1.5; }
 .beleg-firma strong { font-size: 12px; }
 .beleg-akzentlinie { height: 2px; background: var(--akzent, #c0152e); margin: 10px 0 26px; }
-.beleg-akzentlinie--fuss { margin: 30px 0 12px; }
+.beleg-akzentlinie--fuss { margin: 30px 0 12px; margin-top: auto; }
 
 .beleg-adressen { display: flex; justify-content: space-between; gap: 24px; margin-bottom: 26px; }
 .beleg-empfaenger { line-height: 1.55; }
@@ -1248,7 +1251,7 @@ body {
   #beleg-druck, #beleg-druck * { visibility: visible !important; }
   .beleg-buehne { transform: none !important; height: auto !important; width: 100% !important; margin: 0 !important; }
   #beleg-druck { position: absolute; left: 0; top: 0; width: 100%; }
-  .beleg { box-shadow: none; width: 100%; padding: 0; }
+  .beleg { box-shadow: none; width: 100%; padding: 0; min-height: 0; }
   .beleg-overlay { background: #fff; }
 }
 
