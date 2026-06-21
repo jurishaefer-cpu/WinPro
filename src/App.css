@@ -1180,11 +1180,11 @@ body {
 }
 .beleg-toolbar-titel { font-size: 16px; font-weight: 700; color: #1a1a1a; }
 .beleg-toolbar-actions { display: flex; gap: 12px; }
-.beleg-scroll { flex: 1; overflow-y: auto; padding: 28px 16px; }
+.beleg-scroll { flex: 1; overflow-y: auto; padding: 28px 12px; }
+.beleg-buehne { width: 794px; margin: 0; transform-origin: top left; }
 
 .beleg {
-  width: 794px; max-width: 100%;
-  margin: 0 auto;
+  width: 794px;
   background: #fff;
   box-shadow: 0 4px 24px rgba(0,0,0,0.3);
   padding: 48px 54px;
@@ -1246,6 +1246,7 @@ body {
 @media print {
   body * { visibility: hidden !important; }
   #beleg-druck, #beleg-druck * { visibility: visible !important; }
+  .beleg-buehne { transform: none !important; height: auto !important; width: 100% !important; margin: 0 !important; }
   #beleg-druck { position: absolute; left: 0; top: 0; width: 100%; }
   .beleg { box-shadow: none; width: 100%; padding: 0; }
   .beleg-overlay { background: #fff; }
@@ -2104,6 +2105,23 @@ body {
   .app-main {
     padding: 20px 16px;
   }
+
+  /* Belege: Toolbar kompakt, Dokument wird per JS auf Breite skaliert */
+  .beleg-toolbar { padding: 10px 12px; gap: 10px; }
+  .beleg-toolbar-titel { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .beleg-toolbar-actions { gap: 8px; flex-shrink: 0; }
+  .beleg-toolbar-actions .btn { padding: 9px 12px; font-size: 14px; }
+  .beleg-scroll { padding: 16px 12px; }
+
+  /* Einstellungen-Detailseiten kompakter */
+  .einst-section { padding: 18px 16px; }
+  .einst-footer { padding: 14px 16px; }
+  .settings-subtitle { font-size: 15px; }
+  .settings-card { padding: 18px 16px; gap: 14px; }
+  .settings-title { font-size: 18px; }
+  .settings-desc { font-size: 14px; }
+  .logo-vorschau { flex-direction: column; gap: 12px; align-items: flex-start; }
+  .logo-vorschau .btn { margin-left: 0; }
   .app-main h1 {
     font-size: 24px;
   }
