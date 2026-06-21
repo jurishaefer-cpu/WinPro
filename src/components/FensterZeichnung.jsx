@@ -7,9 +7,30 @@ export const GEOMETRIEN = [
   { code: 'F04', kategorie: 'fenster', gruppe: 'Einflügelig', label: 'Drehfenster DIN Rechts', open: 'dreh', din: 'rechts' },
   { code: 'F05', kategorie: 'fenster', gruppe: 'Einflügelig', label: 'Kippfenster', open: 'kipp' },
   { code: 'F06', kategorie: 'fenster', gruppe: 'Einflügelig', label: 'Festverglasung', open: 'fest' },
-  { code: 'F07', kategorie: 'fenster', gruppe: 'Zweiflügelig', label: 'Zweiteiliges Drehkippfenster', fluegel: 2, teilung: 'pfosten', leafOpen: 'drehkipp' },
-  { code: 'F08', kategorie: 'fenster', gruppe: 'Zweiflügelig', label: 'Stulpfenster Drehkipp', fluegel: 2, teilung: 'stulp', leafOpen: 'drehkipp' },
-  { code: 'F09', kategorie: 'fenster', gruppe: 'Zweiflügelig', label: 'Stulpfenster Dreh', fluegel: 2, teilung: 'stulp', leafOpen: 'dreh' },
+  { code: 'F07', kategorie: 'fenster', gruppe: 'Zweiflügelig', label: 'Zweiteiliges Drehkippfenster', teilung: 'pfosten',
+    panes: [{ open: 'drehkipp', din: 'links' }, { open: 'drehkipp', din: 'rechts' }] },
+  { code: 'F08', kategorie: 'fenster', gruppe: 'Zweiflügelig', label: 'Stulpfenster Drehkipp', teilung: 'stulp',
+    panes: [{ open: 'drehkipp', din: 'links' }, { open: 'drehkipp', din: 'rechts' }] },
+  { code: 'F09', kategorie: 'fenster', gruppe: 'Zweiflügelig', label: 'Stulpfenster Dreh', teilung: 'stulp',
+    panes: [{ open: 'dreh', din: 'links' }, { open: 'dreh', din: 'rechts' }] },
+  { code: 'F10', kategorie: 'fenster', gruppe: 'Mehrteilig', label: 'Zweiteilig: Drehkipp links, Fest rechts',
+    panes: [{ open: 'drehkipp', din: 'links' }, { fest: true }] },
+  { code: 'F11', kategorie: 'fenster', gruppe: 'Mehrteilig', label: 'Zweiteilig: Fest links, Drehkipp rechts',
+    panes: [{ fest: true }, { open: 'drehkipp', din: 'rechts' }] },
+  { code: 'F12', kategorie: 'fenster', gruppe: 'Mehrteilig', label: 'Zweiteilig: Dreh links, Fest rechts',
+    panes: [{ open: 'dreh', din: 'links' }, { fest: true }] },
+  { code: 'F13', kategorie: 'fenster', gruppe: 'Mehrteilig', label: 'Zweiteilig: Fest links, Dreh rechts',
+    panes: [{ fest: true }, { open: 'dreh', din: 'rechts' }] },
+  { code: 'F14', kategorie: 'fenster', gruppe: 'Mehrteilig', label: 'Dreiteiliges Drehkippfenster',
+    panes: [{ open: 'drehkipp', din: 'links' }, { open: 'drehkipp', din: 'rechts' }, { open: 'drehkipp', din: 'rechts' }] },
+  { code: 'F15', kategorie: 'fenster', gruppe: 'Mehrteilig', label: 'Dreiteiliges Drehkippfenster (Fest Mitte)',
+    panes: [{ open: 'drehkipp', din: 'links' }, { fest: true }, { open: 'drehkipp', din: 'rechts' }] },
+  { code: 'F16', kategorie: 'fenster', gruppe: 'Mehrteilig', label: 'Dreiteilig Drehkipp mit Festfeldern',
+    panes: [{ fest: true }, { open: 'drehkipp', din: 'links' }, { fest: true }] },
+  { code: 'F17', kategorie: 'fenster', gruppe: 'Mehrteilig', label: 'Vierteiliges Drehkippfenster',
+    panes: [{ open: 'drehkipp', din: 'links' }, { open: 'drehkipp', din: 'rechts' }, { open: 'drehkipp', din: 'links' }, { open: 'drehkipp', din: 'rechts' }] },
+  { code: 'F18', kategorie: 'fenster', gruppe: 'Mehrteilig', label: 'Vierteiliges Drehkippfenster (2 Fest)',
+    panes: [{ open: 'drehkipp', din: 'links' }, { fest: true }, { fest: true }, { open: 'drehkipp', din: 'rechts' }] },
   { code: 'T01', kategorie: 'tuer', gruppe: 'Türen', label: 'Haustür DIN Links', open: 'tuer', din: 'links' },
   { code: 'T02', kategorie: 'tuer', gruppe: 'Türen', label: 'Haustür DIN Rechts', open: 'tuer', din: 'rechts' },
   { code: 'T03', kategorie: 'tuer', gruppe: 'Türen', label: 'Balkontür Dreh-Kipp DIN Links', open: 'drehkipp', din: 'links', tuer: true },
@@ -71,17 +92,21 @@ export function GeometrieThumb({ geometrie, glasFarbe = '#cfe3ef' }) {
     return { sash: rect, glas: gl, miter: gehrung(rect, gl), lines: geo ? oeffnungsLinien(geo, gl) : [] };
   };
   let leaves = [];
-  let pfosten = null;
+  const pfostenList = [];
   if (istFest) {
     leaves = [{ sash: null, glas: inset(blendIn, 2.5), miter: [], lines: [] }];
-  } else if (g?.fluegel === 2) {
-    const dW = g.teilung === 'pfosten' ? 6 : 4;
-    const halfW = (inner.w - dW) / 2;
-    pfosten = { x: inner.x + halfW, y: inner.y, w: dW, h: inner.h };
-    leaves = [
-      mk({ x: inner.x, y: inner.y, w: halfW, h: inner.h }, { open: g.leafOpen, din: 'links' }),
-      mk({ x: inner.x + halfW + dW, y: inner.y, w: halfW, h: inner.h }, { open: g.leafOpen, din: 'rechts' }),
-    ];
+  } else if (g?.panes) {
+    const anz = g.panes.length;
+    const dW = g.teilung === 'stulp' ? 3.5 : 5;
+    const paneW = (inner.w - dW * (anz - 1)) / anz;
+    let px = inner.x;
+    g.panes.forEach((p, idx) => {
+      const rect = { x: px, y: inner.y, w: paneW, h: inner.h };
+      if (p.fest) leaves.push({ sash: null, glas: inset(rect, 2.5), miter: [], lines: [] });
+      else leaves.push(mk(rect, { open: p.open, din: p.din }));
+      px += paneW;
+      if (idx < anz - 1) { pfostenList.push({ x: px, y: inner.y, w: dW, h: inner.h }); px += dW; }
+    });
   } else {
     leaves = [mk(inner, g)];
   }
@@ -91,7 +116,7 @@ export function GeometrieThumb({ geometrie, glasFarbe = '#cfe3ef' }) {
       <rect x={r0.x} y={r0.y} width={r0.w} height={r0.h} fill="#fff" stroke="#0f1f3d" strokeWidth="1.6" />
       <rect x={blendIn.x} y={blendIn.y} width={blendIn.w} height={blendIn.h} fill="#fff" stroke="#0f1f3d" strokeWidth="1.1" />
       {miterBlend.map((l, i) => <line key={'mb' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="0.8" />)}
-      {pfosten && <rect x={pfosten.x} y={pfosten.y} width={pfosten.w} height={pfosten.h} fill="#fff" stroke="#0f1f3d" strokeWidth="1.1" />}
+      {pfostenList.map((pf, i) => <rect key={'pf' + i} x={pf.x} y={pf.y} width={pf.w} height={pf.h} fill="#fff" stroke="#0f1f3d" strokeWidth="1.1" />)}
       {leaves.map((lf, li) => (
         <g key={'lf' + li}>
           {lf.sash && <rect x={lf.sash.x} y={lf.sash.y} width={lf.sash.w} height={lf.sash.h} fill="#fff" stroke="#0f1f3d" strokeWidth="1.1" />}
@@ -149,16 +174,27 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
     return { sash: rect, glas: gl, miter: gehrung(rect, gl), lines: geo ? oeffnungsLinien(geo, gl) : [] };
   };
   let leaves = [];
-  let pfosten = null;
+  const pfostenList = [];
   if (istFest) {
     leaves = [{ sash: null, glas: inset(blendIn, Math.max(6, u * 0.02)), miter: [], lines: [] }];
-  } else if (g?.fluegel === 2) {
-    const dW = g.teilung === 'pfosten' ? blendW : Math.max(8, blendW * 0.6);
-    const halfW = (inner.w - dW) / 2;
-    const left = { x: inner.x, y: inner.y, w: halfW, h: inner.h };
-    const right = { x: inner.x + halfW + dW, y: inner.y, w: halfW, h: inner.h };
-    pfosten = { x: inner.x + halfW, y: inner.y, w: dW, h: inner.h, fest: g.teilung === 'pfosten' };
-    leaves = [machFluegel(left, { open: g.leafOpen, din: 'links' }), machFluegel(right, { open: g.leafOpen, din: 'rechts' })];
+  } else if (g?.panes) {
+    const anz = g.panes.length;
+    const dW = g.teilung === 'stulp' ? Math.max(8, blendW * 0.6) : blendW;
+    const paneW = (inner.w - dW * (anz - 1)) / anz;
+    let px = inner.x;
+    g.panes.forEach((p, idx) => {
+      const rect = { x: px, y: inner.y, w: paneW, h: inner.h };
+      if (p.fest) {
+        leaves.push({ sash: null, glas: inset(rect, Math.max(4, sashW * 0.5)), miter: [], lines: [] });
+      } else {
+        leaves.push(machFluegel(rect, { open: p.open, din: p.din }));
+      }
+      px += paneW;
+      if (idx < anz - 1) {
+        pfostenList.push({ x: px, y: inner.y, w: dW, h: inner.h, fest: g.teilung !== 'stulp' });
+        px += dW;
+      }
+    });
   } else {
     leaves = [machFluegel(inner, g)];
   }
@@ -230,11 +266,11 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
         <line key={'mb' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="1.4" />
       ))}
 
-      {/* Mittelpfosten bzw. Stulp (zweiflügelig) */}
-      {pfosten && (
-        <rect x={pfosten.x} y={pfosten.y} width={pfosten.w} height={pfosten.h}
-              fill="#fff" stroke="#0f1f3d" strokeWidth={pfosten.fest ? 2 : 1.6} />
-      )}
+      {/* Mittelpfosten bzw. Stulp (mehrteilig) */}
+      {pfostenList.map((pf, i) => (
+        <rect key={'pf' + i} x={pf.x} y={pf.y} width={pf.w} height={pf.h}
+              fill="#fff" stroke="#0f1f3d" strokeWidth={pf.fest ? 2 : 1.6} />
+      ))}
 
       {/* Flügelrahmen + Glas je Flügel */}
       {leaves.map((lf, li) => (
