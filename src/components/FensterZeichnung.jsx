@@ -66,8 +66,9 @@ export function fensterBezeichnung(geometrie, panes) {
   const adj = TEIL_ADJ[n] || `${n}-teiliges`;
   const nomen = TEIL_NOMEN[n] || `${n}-teilig`;
 
-  // Stulp mit mind. einer nicht-kippbaren Seite
-  if (g.teilung === 'stulp' && ps.some(p => !istKippbar(p))) return `${adj} Stulpfenster`;
+  // Stulpfenster: mehrteilig + mind. ein ÖFFENBARER Flügel (Dreh/Tür) ohne Kippfunktion.
+  // (Festfelder zählen nicht – das ist eine feste Verglasung, kein Stulp.) Name beginnt mit „Stulpfenster".
+  if (ps.some(p => !p.fest && !istKippbar(p))) return `Stulpfenster ${nomen.toLowerCase()}`;
 
   // Unverändert gegenüber Katalog -> kuratierten Namen behalten
   if (Array.isArray(g.panes) && JSON.stringify(ps) === JSON.stringify(g.panes)) return g.label;
