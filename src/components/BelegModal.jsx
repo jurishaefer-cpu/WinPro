@@ -84,7 +84,7 @@ function BelegModal({ onClose, ...docProps }) {
       const fussBlock = clone.querySelector('.beleg-fuss');
       const fussWrap = document.createElement('div');
       fussWrap.className = 'beleg';
-      fussWrap.style.cssText = `width:${A4_BREITE}px; display:block; box-shadow:none; padding:0 54px; background:#fff;`;
+      fussWrap.style.cssText = `width:${A4_BREITE}px; min-height:0; display:block; box-shadow:none; padding:0 54px; background:#fff;`;
       if (fussLinie) { fussLinie.style.marginTop = '0'; fussWrap.appendChild(fussLinie); }
       if (fussBlock) fussWrap.appendChild(fussBlock);
       const hatFuss = fussWrap.childElementCount > 0;
@@ -96,14 +96,41 @@ function BelegModal({ onClose, ...docProps }) {
       await Promise.all(Array.from(holder.querySelectorAll('img')).map(img =>
         img.complete ? Promise.resolve() : new Promise(res => { img.onload = img.onerror = res; })));
 
+      // Fenster-SVGs vorab in feste Pixelbilder umwandeln – html2canvas rendert inline-SVG
+      // je nach Browser (v.a. Safari) falsch (riesig/leer), das beseitigt es zuverlässig.
+      await Promise.all(Array.from(clone.querySelectorAll('svg')).map(svg => new Promise(resolve => {
+        const r = svg.getBoundingClientRect();
+        const w = Math.max(1, Math.round(r.width));
+        const h = Math.max(1, Math.round(r.height));
+        const masz = svg.cloneNode(true);
+        masz.setAttribute('width', String(w));
+        masz.setAttribute('height', String(h));
+        const xml = new XMLSerializer().serializeToString(masz);
+        const quelle = new Image();
+        quelle.onload = () => {
+          try {
+            const c = document.createElement('canvas');
+            c.width = w * 3; c.height = h * 3;
+            c.getContext('2d').drawImage(quelle, 0, 0, c.width, c.height);
+            const out = document.createElement('img');
+            out.style.cssText = `width:${w}px;height:${h}px;display:block`;
+            out.onload = out.onerror = () => resolve();
+            out.src = c.toDataURL('image/png');
+            svg.parentNode.replaceChild(out, svg);
+          } catch { resolve(); }   // im Zweifel SVG belassen
+        };
+        quelle.onerror = () => resolve();
+        quelle.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(xml);
+      })));
+
       const bodyCanvas = await html2canvas(clone, opts);
       const body = scanInfo(bodyCanvas);
 
-      let fussCanvas = null, fussInfo = null, fussHmm = 0;
+      // Ganzen Fuß (inkl. roter Linie) erfassen – NICHT trimmen, sonst verschwindet die 2px-Linie
+      let fussCanvas = null, fussHmm = 0;
       if (hatFuss) {
         fussCanvas = await html2canvas(fussWrap, opts);
-        fussInfo = scanInfo(fussCanvas);
-        fussHmm = ((fussInfo.unten - fussInfo.oben) * fussInfo.ratio / scale) / pxProMm;
+        fussHmm = (fussCanvas.height / scale) / pxProMm;
       }
 
       const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
@@ -141,7 +168,7 @@ function BelegModal({ onClose, ...docProps }) {
       seiten.forEach(([s, c], i) => {
         if (i > 0) pdf.addPage();
         zeichne(bodyCanvas, body, s, c, RAND_MM);
-        if (i === seiten.length - 1 && hatFuss) zeichne(fussCanvas, fussInfo, fussInfo.oben, fussInfo.unten, fussYmm);
+        if (i === seiten.length - 1 && hatFuss) pdf.addImage(fussCanvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, fussYmm, 210, fussHmm);
       });
 
       // Direkt drucken: PDF im Tab öffnen (kein Download nötig)
