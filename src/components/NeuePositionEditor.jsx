@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
-import FensterZeichnung, { GEOMETRIEN, geometrieByCode } from './FensterZeichnung';
+import FensterZeichnung, { GEOMETRIEN, geometrieByCode, GeometrieThumb } from './FensterZeichnung';
 import GeometrieSelect from './GeometrieSelect';
 import RichTextEditor from './RichTextEditor';
 
@@ -10,6 +10,24 @@ const VERGLASUNGEN = [
 ];
 const DICHTUNGEN = ['Grau', 'Schwarz'];
 const ROLLLADEN = ['42x42mm'];
+
+// Öffnungsarten je Flügel (Auswahlmenü)
+const PANE_OPTIONEN = [
+  { label: 'Drehkipp DIN Links', cfg: { open: 'drehkipp', din: 'links' } },
+  { label: 'Drehkipp DIN Rechts', cfg: { open: 'drehkipp', din: 'rechts' } },
+  { label: 'Dreh DIN Links', cfg: { open: 'dreh', din: 'links' } },
+  { label: 'Dreh DIN Rechts', cfg: { open: 'dreh', din: 'rechts' } },
+  { label: 'Kippfenster', cfg: { open: 'kipp' } },
+  { label: 'Festverglasung', cfg: { fest: true } },
+];
+
+function panesFromGeo(geo) {
+  if (!geo) return [{ open: 'drehkipp', din: 'links' }];
+  if (geo.panes) return geo.panes.map(p => ({ ...p }));
+  if (geo.open === 'fest') return [{ fest: true }];
+  if (geo.open === 'tuer') return [{ open: 'tuer', din: geo.din }];
+  return [{ open: geo.open, din: geo.din }];
+}
 
 function euro(n) {
   return Number(n || 0).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
@@ -22,6 +40,10 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
 
   const [kategorie, setKategorie] = useState(initial?.kategorie ?? 'fenster');
   const [code, setCode] = useState(initial?.code ?? 'F01');
+  const initGeo = geometrieByCode(initial?.code ?? 'F01');
+  const [panes, setPanes] = useState(initial?.panes ?? panesFromGeo(initGeo));
+  const [cols, setCols] = useState(initial?.cols ?? (initGeo?.cols || (initial?.panes ?? panesFromGeo(initGeo)).length));
+  const [selectedPane, setSelectedPane] = useState(null);
   const [breite, setBreite] = useState(initial?.breite ?? 1000);
   const [hoehe, setHoehe] = useState(initial?.hoehe ?? 1200);
   const [stueckzahl, setStueckzahl] = useState(initial?.stueckzahl ?? 1);
@@ -74,10 +96,25 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
     return namen.map(name => ({ value: name, label: katalog[name] ? `${katalog[name]} -- ${name}` : name }));
   }, [profil, katalog]);
 
+  function waehleGeometrie(neuCode) {
+    setCode(neuCode);
+    const geo = geometrieByCode(neuCode);
+    const np = panesFromGeo(geo);
+    setPanes(np);
+    setCols(geo?.cols || np.length);
+    setSelectedPane(null);
+  }
+
   function wechselKategorie(k) {
     setKategorie(k);
     const erste = GEOMETRIEN.find(g => g.kategorie === k);
-    if (erste) setCode(erste.code);
+    if (erste) waehleGeometrie(erste.code);
+  }
+
+  function setzePane(cfg) {
+    if (selectedPane == null) return;
+    setPanes(panes.map((p, i) => (i === selectedPane ? { ...cfg } : p)));
+    setSelectedPane(null);
   }
 
   const flaeche = (Number(breite) * Number(hoehe)) / 1_000_000; // m²
@@ -117,7 +154,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
 
   function handleSave() {
     const config = {
-      profilId, kategorie, code, breite: Number(breite), hoehe: Number(hoehe),
+      profilId, kategorie, code, panes, cols, breite: Number(breite), hoehe: Number(hoehe),
       stueckzahl: Number(stueckzahl), standort, verbreiterung, verb, aufsatzkasten, kasten, rollladen,
       innenfarbe, aussenfarbe, verglasung, vsg, ornament, ornamentArt, dichtungInnen, dichtungAussen,
       kommentar, montage: Number(montage), ausbau: Number(ausbau), entsorgung: Number(entsorgung),
@@ -161,7 +198,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
           </div>
 
           <label className="np-field-label">Geometrie</label>
-          <GeometrieSelect optionen={geomOptionen} value={code} onChange={setCode} />
+          <GeometrieSelect optionen={geomOptionen} value={code} onChange={waehleGeometrie} />
 
           <div className="np-group-label" style={{ marginTop: 24 }}>MASSE</div>
           <div className="np-row">
@@ -264,7 +301,29 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
               verbreiterung={verbreiterung ? verb : null}
               aufsatzkasten={aufsatzkasten ? kasten : null}
               glasFarbe={ornament ? '#7fb0cc' : undefined}
-              onBreite={setBreite} onHoehe={setHoehe} />
+              onBreite={setBreite} onHoehe={setHoehe}
+              panes={panes} cols={cols}
+              onPaneClick={setSelectedPane} selectedPane={selectedPane} />
+
+            {selectedPane != null && (
+              <div className="pane-menu">
+                <div className="pane-menu-head">
+                  <span>Feld {selectedPane + 1} – Öffnungsart</span>
+                  <button className="pane-menu-close" onClick={() => setSelectedPane(null)}>✕</button>
+                </div>
+                {PANE_OPTIONEN.map(opt => {
+                  const aktiv = JSON.stringify(panes[selectedPane]) === JSON.stringify(opt.cfg);
+                  return (
+                    <button key={opt.label} className={'pane-option' + (aktiv ? ' aktiv' : '')} onClick={() => setzePane(opt.cfg)}>
+                      <span className="pane-option-thumb">
+                        <GeometrieThumb geometrie={opt.cfg.fest ? { open: 'fest' } : opt.cfg} />
+                      </span>
+                      <span className="pane-option-label">{opt.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
           <div className="np-canvas-caption">
             <div className="np-canvas-title">{geometrie?.label}</div>

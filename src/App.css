@@ -1757,8 +1757,40 @@ body {
 .fz-massinput::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .fz-massinput:hover { border-color: #0f1f3d; }
 .fz-massinput:focus { border-color: #0f1f3d; box-shadow: 0 0 0 3px rgba(15,31,61,0.12); }
-.np-canvas { flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; }
+.np-canvas { flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; position: relative; }
 .np-canvas .fz-svg { height: 56vh; width: auto; max-width: 100%; }
+
+/* Pane-Auswahlmenü (Öffnungsart je Feld) – oben links über der Zeichnung */
+.pane-menu {
+  position: absolute; top: 16px; left: 16px; z-index: 10;
+  width: 270px;
+  background: #fff; border: 1px solid #e5e7eb; border-radius: 12px;
+  box-shadow: 0 14px 34px rgba(15, 31, 61, 0.16);
+  padding: 8px;
+}
+.pane-menu-head {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 13px; font-weight: 700; color: #6b7280;
+  padding: 6px 8px 10px;
+}
+.pane-menu-close {
+  border: none; background: none; cursor: pointer; font-size: 14px; color: #9aa0a8;
+  padding: 2px 6px; border-radius: 6px;
+}
+.pane-menu-close:hover { background: #f0f2f5; color: #1a1a1a; }
+.pane-option {
+  width: 100%; display: flex; align-items: center; gap: 12px;
+  background: none; border: 1px solid transparent; border-radius: 9px;
+  padding: 8px; cursor: pointer; text-align: left;
+}
+.pane-option:hover { background: #fafbfc; border-color: #eef0f2; }
+.pane-option.aktiv { background: #eef2fb; border-color: #d6e0f7; }
+.pane-option-thumb {
+  flex-shrink: 0; width: 48px; height: 38px;
+  background: #f3f5f7; border: 1px solid #e5e7eb; border-radius: 7px;
+  display: flex; align-items: center; justify-content: center; padding: 2px;
+}
+.pane-option-label { font-size: 14px; font-weight: 600; color: #1a1a1a; }
 .np-canvas-caption { text-align: center; padding: 8px 0 16px; }
 .np-canvas-title { font-size: 17px; font-weight: 700; color: #1a1a1a; }
 .np-canvas-badge {

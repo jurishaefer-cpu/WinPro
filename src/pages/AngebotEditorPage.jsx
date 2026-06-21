@@ -230,6 +230,8 @@ function AngebotEditorPage() {
                       geometrie={geometrieByCode(c.code)}
                       breite={c.breite}
                       hoehe={c.hoehe}
+                      panes={c.panes}
+                      cols={c.cols}
                       verbreiterung={c.verbreiterung ? c.verb : null}
                       aufsatzkasten={c.aufsatzkasten ? c.kasten : null}
                       glasFarbe={c.ornament ? '#7fb0cc' : undefined}

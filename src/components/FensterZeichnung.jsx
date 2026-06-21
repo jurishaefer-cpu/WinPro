@@ -137,7 +137,7 @@ export function GeometrieThumb({ geometrie, glasFarbe = '#cfe3ef' }) {
   );
 }
 
-function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkasten, glasFarbe = '#cfe3ef', onBreite, onHoehe }) {
+function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkasten, glasFarbe = '#cfe3ef', onBreite, onHoehe, panes: panesProp, cols: colsProp, onPaneClick, selectedPane }) {
   const g = geometrie;
   const b = Math.max(200, Number(breite) || 1000);
   const hh = Math.max(200, Number(hoehe) || 1200);
@@ -177,31 +177,32 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
   // Flügel (1, 2 oder Festverglasung)
   const machFluegel = (rect, geo) => {
     const gl = inset(rect, sashW);
-    return { sash: rect, glas: gl, miter: gehrung(rect, gl), lines: geo ? oeffnungsLinien(geo, gl) : [] };
+    return { sash: rect, rect, glas: gl, miter: gehrung(rect, gl), lines: geo ? oeffnungsLinien(geo, gl) : [] };
   };
+  const effPanes = panesProp || g?.panes;
   let leaves = [];
   const pfostenList = [];
   let subCols = [];   // Zwischenmaße Spalten (Breite)
   let subRows = [];   // Zwischenmaße Zeilen (Höhe)
-  if (istFest) {
-    leaves = [{ sash: null, glas: inset(blendIn, Math.max(6, u * 0.02)), miter: [], lines: [] }];
-  } else if (g?.panes) {
-    const anz = g.panes.length;
-    const cols = g.cols || anz;
+  if (istFest && !effPanes) {
+    leaves = [{ sash: null, rect: blendIn, glas: inset(blendIn, Math.max(6, u * 0.02)), miter: [], lines: [] }];
+  } else if (effPanes) {
+    const anz = effPanes.length;
+    const cols = colsProp || g?.cols || anz;
     const rows = Math.ceil(anz / cols);
-    const dW = g.teilung === 'stulp' ? Math.max(8, blendW * 0.6) : blendW;
+    const dW = g?.teilung === 'stulp' ? Math.max(8, blendW * 0.6) : blendW;
     const dH = blendW;
     const colW = (inner.w - dW * (cols - 1)) / cols;
     const rowH = (inner.h - dH * (rows - 1)) / rows;
     const colX = []; for (let c = 0; c < cols; c++) colX.push(inner.x + c * (colW + dW));
     const rowY = []; for (let r = 0; r < rows; r++) rowY.push(inner.y + r * (rowH + dH));
-    g.panes.forEach((p, idx) => {
+    effPanes.forEach((p, idx) => {
       const c = idx % cols, r = Math.floor(idx / cols);
       const rect = { x: colX[c], y: rowY[r], w: colW, h: rowH };
-      if (p.fest) leaves.push({ sash: null, glas: inset(rect, Math.max(4, sashW * 0.5)), miter: [], lines: [] });
+      if (p.fest) leaves.push({ sash: null, rect, glas: inset(rect, Math.max(4, sashW * 0.5)), miter: [], lines: [] });
       else leaves.push(machFluegel(rect, { open: p.open, din: p.din }));
     });
-    for (let c = 1; c < cols; c++) pfostenList.push({ x: colX[c] - dW, y: inner.y, w: dW, h: inner.h, fest: g.teilung !== 'stulp' });
+    for (let c = 1; c < cols; c++) pfostenList.push({ x: colX[c] - dW, y: inner.y, w: dW, h: inner.h, fest: g?.teilung !== 'stulp' });
     for (let r = 1; r < rows; r++) pfostenList.push({ x: inner.x, y: rowY[r] - dH, w: inner.w, h: dH, fest: true });
     if (cols > 1) subCols = colX.map(cx0 => ({ x0: cx0, x1: cx0 + colW, mm: Math.round((Number(breite) || b) / cols) }));
     if (rows > 1) subRows = rowY.map(ry0 => ({ y0: ry0, y1: ry0 + rowH, mm: Math.round((Number(hoehe) || hh) / rows) }));
@@ -349,11 +350,19 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
       )}
 
       {/* Türgriff-Andeutung */}
-      {istTuer && (
+      {istTuer && leaves[0] && (
         <rect
-          x={g.din === 'links' ? glas.x + glas.w - 12 : glas.x + 6}
-          y={glas.y + glas.h / 2 - 18} width="6" height="36" rx="3" fill="#0f1f3d" />
+          x={g.din === 'links' ? leaves[0].glas.x + leaves[0].glas.w - 12 : leaves[0].glas.x + 6}
+          y={leaves[0].glas.y + leaves[0].glas.h / 2 - 18} width="6" height="36" rx="3" fill="#0f1f3d" />
       )}
+
+      {/* Anklickbare Flügel-Flächen (nur im Editor) */}
+      {onPaneClick && leaves.map((lf, li) => (
+        <rect key={'hit' + li} x={lf.rect.x} y={lf.rect.y} width={lf.rect.w} height={lf.rect.h}
+              fill={selectedPane === li ? 'rgba(192,21,46,0.12)' : 'transparent'}
+              stroke={selectedPane === li ? '#c0152e' : 'transparent'} strokeWidth="2.5"
+              style={{ cursor: 'pointer' }} onClick={() => onPaneClick(li)} />
+      ))}
     </svg>
   );
 }
