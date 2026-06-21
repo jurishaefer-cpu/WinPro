@@ -79,7 +79,7 @@ export function GeometrieThumb({ geometrie, glasFarbe = '#cfe3ef' }) {
   );
 }
 
-function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkasten, glasFarbe = '#cfe3ef' }) {
+function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkasten, glasFarbe = '#cfe3ef', onBreite, onHoehe }) {
   const g = geometrie;
   const b = Math.max(200, Number(breite) || 1000);
   const hh = Math.max(200, Number(hoehe) || 1200);
@@ -146,14 +146,28 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
       <line x1={x} y1={y - 34} x2={x + rw} y2={y - 34} stroke="#0f1f3d" strokeWidth="1.2" />
       <line x1={x} y1={y - 40} x2={x} y2={y - 14} stroke="#0f1f3d" strokeWidth="1.2" />
       <line x1={x + rw} y1={y - 40} x2={x + rw} y2={y - 14} stroke="#0f1f3d" strokeWidth="1.2" />
-      <text x={cx} y={y - 44} textAnchor="middle" fontSize="22" fill="#0f1f3d" fontWeight="600">{Math.round(b)}</text>
+      {onBreite ? (
+        <foreignObject x={cx - 70} y={y - 80} width={140} height={38}>
+          <input className="fz-massinput" type="number" value={breite}
+                 onChange={e => onBreite(e.target.value)} />
+        </foreignObject>
+      ) : (
+        <text x={cx} y={y - 44} textAnchor="middle" fontSize="22" fill="#0f1f3d" fontWeight="600">{Math.round(b)}</text>
+      )}
 
       {/* Maßlinie links */}
       <line x1={x - 34} y1={y} x2={x - 34} y2={y + rh} stroke="#0f1f3d" strokeWidth="1.2" />
       <line x1={x - 40} y1={y} x2={x - 14} y2={y} stroke="#0f1f3d" strokeWidth="1.2" />
       <line x1={x - 40} y1={y + rh} x2={x - 14} y2={y + rh} stroke="#0f1f3d" strokeWidth="1.2" />
-      <text x={x - 44} y={cy} textAnchor="middle" fontSize="22" fill="#0f1f3d" fontWeight="600"
-            transform={`rotate(-90 ${x - 44} ${cy})`}>{Math.round(hh)}</text>
+      {onHoehe ? (
+        <foreignObject x={x - 124} y={cy - 19} width={92} height={38}>
+          <input className="fz-massinput" type="number" value={hoehe}
+                 onChange={e => onHoehe(e.target.value)} />
+        </foreignObject>
+      ) : (
+        <text x={x - 44} y={cy} textAnchor="middle" fontSize="22" fill="#0f1f3d" fontWeight="600"
+              transform={`rotate(-90 ${x - 44} ${cy})`}>{Math.round(hh)}</text>
+      )}
 
       {/* Gesamtmaß-Rahmen außen herum (bei Verbreiterung/Aufsatzkasten) */}
       {(hatVerb || hatKasten) && (

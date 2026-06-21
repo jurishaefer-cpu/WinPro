@@ -1734,6 +1734,24 @@ body {
 .np-chip b { color: #1a1a1a; }
 .np-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #c0152e; margin-right: 4px; }
 .fz-svg { display: block; }
+/* Editierbare Maßfelder direkt in der Zeichnung */
+.fz-massinput {
+  width: 100%; height: 100%;
+  box-sizing: border-box;
+  border: 1px solid #cbd0d6;
+  border-radius: 7px;
+  background: #fff;
+  text-align: center;
+  font-size: 22px; font-weight: 600; color: #0f1f3d;
+  font-family: inherit;
+  outline: none;
+  padding: 0 4px;
+  -moz-appearance: textfield;
+}
+.fz-massinput::-webkit-outer-spin-button,
+.fz-massinput::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.fz-massinput:hover { border-color: #0f1f3d; }
+.fz-massinput:focus { border-color: #0f1f3d; box-shadow: 0 0 0 3px rgba(15,31,61,0.12); }
 .np-canvas { flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; }
 .np-canvas .fz-svg { height: 56vh; width: auto; max-width: 100%; }
 .np-canvas-caption { text-align: center; padding: 8px 0 16px; }
