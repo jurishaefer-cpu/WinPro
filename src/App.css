@@ -1159,6 +1159,65 @@ body {
   border-color: #f3c2c2;
 }
 
+/* ── Einstellungen-Detailseiten ── */
+.einst-back { color: #8b1a1a; font-weight: 600; }
+.einst-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  max-width: 760px;
+  overflow: hidden;
+}
+.einst-section { padding: 24px 28px; }
+.einst-section + .einst-section { border-top: 1px solid #eef0f2; }
+.einst-section .section-label { margin-bottom: 18px; }
+.einst-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 18px 28px;
+  background: #f7f8fa;
+  border-top: 1px solid #eef0f2;
+}
+
+/* Logo-Upload */
+.logo-vorschau {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  background: #f7f8fa;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 12px;
+  max-width: 460px;
+}
+.logo-vorschau img {
+  max-height: 80px;
+  max-width: 200px;
+  object-fit: contain;
+  background: #fff;
+  border-radius: 6px;
+  padding: 6px;
+}
+.logo-vorschau .btn { margin-left: auto; align-self: center; }
+.logo-upload { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.logo-dateiname { font-size: 14px; color: #9aa0a8; }
+
+/* Farbauswahl */
+.farbe-wahl { display: flex; align-items: center; gap: 14px; }
+.farbe-wahl input[type="color"] {
+  width: 64px; height: 44px;
+  border: 1px solid #d1d5db; border-radius: 9px;
+  background: #fff; cursor: pointer; padding: 4px;
+}
+.farbe-hex {
+  width: 140px;
+  border: 1px solid #d1d5db; border-radius: 9px;
+  padding: 11px 12px; font-size: 15px; color: #1a1a1a; outline: none;
+}
+.farbe-hex:focus { border-color: #0f1f3d; }
+
 /* ── Einstellungen-Übersicht ── */
 .settings-subtitle {
   font-size: 16px;
