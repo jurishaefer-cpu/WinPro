@@ -97,7 +97,10 @@ function BelegDokument({ art, angebot, kunde, positionen, profileMap, einstellun
                   {istFenster ? (
                     <>
                       {c.standort && <div className="pos-standort">{c.standort}</div>}
-                      {zeilen.map((z, k) => <div key={k}>{z}</div>)}
+                      {zeilen.map((z, k) => <div key={k} dangerouslySetInnerHTML={{ __html: z }} />)}
+                      {c.kommentar && (c.kommentar.replace(/<[^>]*>/g, '').trim()) && (
+                        <div className="pos-kommentar" dangerouslySetInnerHTML={{ __html: c.kommentar }} />
+                      )}
                     </>
                   ) : (
                     <div className="pos-manuell" dangerouslySetInnerHTML={{ __html: p.beschreibung || '' }} />

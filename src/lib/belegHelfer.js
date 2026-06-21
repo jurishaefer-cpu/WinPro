@@ -8,23 +8,32 @@ export function datumDE(d) {
   return dt.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
-// Beschreibungszeilen einer Fenster-Position für den Beleg
+function esc(s) {
+  return String(s ?? '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+}
+
+// Beschreibungszeilen einer Fenster-Position für den Beleg (HTML-Strings)
 export function positionZeilen(config, profil) {
   if (!config) return [];
   const z = [];
-  if (profil?.material) z.push(`Material: ${profil.material.toLowerCase()}`);
+  if (profil?.material) z.push(`Material: ${esc(profil.material.toLowerCase())}`);
   const profilTeile = [profil?.hersteller, profil?.system].filter(Boolean).join(' ');
   if (profilTeile || profil?.bautiefe) {
-    z.push(`Profil: ${profilTeile}${profil?.bautiefe ? ` · ${profil.bautiefe} mm Bautiefe` : ''}`);
+    z.push(`Profil: ${esc(profilTeile)}${profil?.bautiefe ? ` · ${profil.bautiefe} mm Bautiefe` : ''}`);
   }
   z.push(`Maß: ${Math.round(config.breite)} × ${Math.round(config.hoehe)} mm`);
   if (config.innenfarbe && config.innenfarbe === config.aussenfarbe) {
-    z.push(`Farbe: ${config.innenfarbe}`);
+    z.push(`Farbe: ${esc(config.innenfarbe)}`);
   } else if (config.innenfarbe || config.aussenfarbe) {
-    z.push(`Farbe: innen ${config.innenfarbe ?? ''} / außen ${config.aussenfarbe ?? ''}`);
+    z.push(`Farbe: innen ${esc(config.innenfarbe ?? '')} / außen ${esc(config.aussenfarbe ?? '')}`);
   }
   if (config.verglasung) {
-    z.push(`Wärmeschutz: ${config.verglasung}${config.vsg ? ', VSG' : ''}${config.ornament ? `, Ornament${config.ornamentArt ? ` (${config.ornamentArt})` : ''}` : ''}`);
+    let w = `Wärmeschutz: ${esc(config.verglasung)}${config.vsg ? ', VSG' : ''}`;
+    if (config.ornament) {
+      w += ', Ornament';
+      if (config.ornamentArt) w += ` (<span style="color:#c0152e">${esc(config.ornamentArt)}</span>)`;
+    }
+    z.push(w);
   }
   if (config.verbreiterung && config.verb) {
     const seiten = ['oben', 'unten', 'links', 'rechts']
@@ -35,7 +44,7 @@ export function positionZeilen(config, profil) {
   if (config.aufsatzkasten && config.kasten) {
     z.push(`Aufsatzkasten: ${Number(config.kasten.kastenhoehe) || 0} mm, ${config.kasten.bedienung} (${config.kasten.bedienungsseite})`);
   }
-  if (config.rollladen) z.push(`Rollladenführung: ${config.rollladen}`);
+  if (config.rollladen) z.push(`Rollladenführung: ${esc(config.rollladen)}`);
   if (!config.ohneMontage && Number(config.montage) > 0) {
     z.push(`Im Positionspreis enthalten ist die Montage mit ${euro(config.montage)}.`);
   }

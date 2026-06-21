@@ -1223,6 +1223,8 @@ body {
 .pos-standort { font-weight: 700; margin-bottom: 2px; }
 .pos-beschr { font-size: 11px; line-height: 1.5; }
 .pos-manuell p { margin: 0 0 3px; }
+.pos-kommentar { margin-top: 4px; }
+.pos-kommentar p { margin: 0 0 3px; }
 
 .beleg-summen { margin: 16px 0 0; margin-left: auto; width: 320px; }
 .beleg-summen-zeile { display: flex; justify-content: space-between; padding: 5px 0; }
