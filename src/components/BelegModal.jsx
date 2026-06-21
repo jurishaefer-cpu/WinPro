@@ -64,43 +64,56 @@ function BelegModal({ onClose, ...docProps }) {
       await Promise.all(Array.from(clone.querySelectorAll('img')).map(img =>
         img.complete ? Promise.resolve() : new Promise(res => { img.onload = img.onerror = res; })));
 
-      // Sinnvolle Schnittkanten: zwischen Tabellenzeilen und Hauptblöcken, nie mitten durch
-      const belEl = clone.querySelector('.beleg');
-      const top = belEl.getBoundingClientRect().top;
-      const atome = belEl.querySelectorAll(
-        '.beleg-kopf, .beleg-adressen, .beleg-titel, .beleg-anrede, .beleg-intro, .beleg-bauvorhaben, .beleg-tabelle thead, .beleg-tabelle tbody tr, .beleg-summen, .beleg-zahlung, .beleg-fuss');
-      const schnitte = Array.from(atome).map(el => el.getBoundingClientRect().bottom - top);
-
       const scale = 3;
       const canvas = await html2canvas(clone, { scale, backgroundColor: '#ffffff', useCORS: true, windowWidth: A4_BREITE });
-      const gesamtCss = canvas.height / scale;     // Dokumenthöhe in CSS-px
+
+      // Leerzeilen-Erkennung auf verkleinerter Kopie (schnell + speicherschonend)
+      const SW = 120;
+      const SH = Math.max(1, Math.round(canvas.height * SW / canvas.width));
+      const sc = document.createElement('canvas'); sc.width = SW; sc.height = SH;
+      const sctx = sc.getContext('2d');
+      sctx.fillStyle = '#fff'; sctx.fillRect(0, 0, SW, SH);
+      sctx.drawImage(canvas, 0, 0, SW, SH);
+      const sdata = sctx.getImageData(0, 0, SW, SH).data;
+      const leer = (y) => {
+        const b = y * SW * 4;
+        for (let x = 0; x < SW; x++) { const i = b + x * 4; if (sdata[i] < 248 || sdata[i + 1] < 248 || sdata[i + 2] < 248) return false; }
+        return true;
+      };
+      const ratio = canvas.height / SH;   // volle Canvas-px je Scan-Zeile
+
+      // Leere Ränder oben/unten abschneiden -> Inhalt startet immer bündig oben
+      let oben = 0; while (oben < SH && leer(oben)) oben++;
+      let unten = SH - 1; while (unten > oben && leer(unten)) unten--;
+      oben = Math.max(0, oben - 1);          // 1 Scan-Zeile Sicherheit, damit nichts angeschnitten wird
+      unten = Math.min(SH, unten + 2);
 
       const pxProMm = A4_BREITE / 210;
-      const nutzHoeheCss = A4_HOEHE - 2 * RAND_MM * pxProMm;   // nutzbare Höhe je Seite (mit Rand)
+      const usableScan = ((A4_HOEHE - 2 * RAND_MM * pxProMm) * scale) / ratio;  // nutzbare Seitenhöhe in Scan-Zeilen
 
       const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
-
-      let startCss = 0;
+      let start = oben;
       let erste = true;
-      while (startCss < gesamtCss - 1) {
-        const zielEnde = startCss + nutzHoeheCss;
-        // letzte Schnittkante, die noch auf die Seite passt
-        let endeCss = schnitte.filter(s => s > startCss + 1 && s <= zielEnde).pop();
-        if (endeCss == null) endeCss = Math.min(zielEnde, gesamtCss); // Notfall: harter Schnitt
-        if (endeCss >= gesamtCss - 1) endeCss = gesamtCss;
-
-        const sliceTopPx = Math.round(startCss * scale);
-        const sliceHpx = Math.round((endeCss - startCss) * scale);
+      while (start < unten - 0.5) {
+        const ziel = Math.min(start + usableScan, unten);
+        let cut = ziel;
+        if (ziel < unten) {
+          const limit = start + usableScan * 0.6;   // nicht zu früh umbrechen
+          let y = Math.floor(ziel);
+          while (y > limit && !leer(y)) y--;
+          if (y > limit) cut = y;                    // weiße Lücke gefunden -> dort umbrechen
+        }
+        const startFull = Math.round(start * ratio);
+        const hpx = Math.round((cut - start) * ratio);
         const teil = document.createElement('canvas');
-        teil.width = canvas.width;
-        teil.height = sliceHpx;
-        teil.getContext('2d').drawImage(canvas, 0, sliceTopPx, canvas.width, sliceHpx, 0, 0, canvas.width, sliceHpx);
+        teil.width = canvas.width; teil.height = hpx;
+        teil.getContext('2d').drawImage(canvas, 0, startFull, canvas.width, hpx, 0, 0, canvas.width, hpx);
 
-        const bildHmm = (sliceHpx / scale) / pxProMm;
+        const bildHmm = (hpx / scale) / pxProMm;
         if (!erste) pdf.addPage();
         pdf.addImage(teil.toDataURL('image/jpeg', 0.92), 'JPEG', 0, RAND_MM, 210, bildHmm);
         erste = false;
-        startCss = endeCss;
+        start = cut;
       }
 
       pdf.save(dateiName(docProps.art, docProps.angebot?.belegnummer));
