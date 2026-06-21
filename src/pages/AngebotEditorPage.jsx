@@ -6,10 +6,9 @@ import ManuellePositionModal from '../components/ManuellePositionModal';
 import NeuePositionEditor from '../components/NeuePositionEditor';
 import FensterZeichnung, { geometrieByCode } from '../components/FensterZeichnung';
 
-const STUFEN = ['Entwurf', 'Angebot', 'Auftragsbestätigung', 'Bestellung', 'Rechnung'];
+const STUFEN = ['Angebot', 'Auftragsbestätigung', 'Bestellung', 'Rechnung'];
 const SUBTITLE = {
-  Entwurf: 'Positionen werden erfasst. Noch kein Beleg erstellt.',
-  Angebot: 'Angebot erstellt — kann an den Kunden gesendet werden.',
+  Angebot: 'Positionen werden erfasst. Angebot kann an den Kunden gesendet werden.',
   Auftragsbestätigung: 'Auftrag bestätigt.',
   Bestellung: 'Bestellung ausgelöst.',
   Rechnung: 'Rechnung erstellt.',

@@ -77,7 +77,7 @@ function KundeDetailPage() {
     setCreating(true);
     const { data } = await supabase
       .from('angebote')
-      .insert([{ kunde_id: Number(id), owner_id: user.id, status: 'Entwurf', betrag: 0 }])
+      .insert([{ kunde_id: Number(id), owner_id: user.id, status: 'Angebot', betrag: 0 }])
       .select()
       .single();
     if (data) navigate(`/kunden/${id}/angebote/${data.id}`);
@@ -112,12 +112,11 @@ function KundeDetailPage() {
     .forEach((a, i) => { nummerMap[a.id] = i + 1; });
 
   const statusSlug = s => ({
-    'Entwurf': 'entwurf',
     'Angebot': 'angebot',
     'Auftragsbestätigung': 'ab',
     'Bestellung': 'bestellung',
     'Rechnung': 'rechnung',
-  }[s] || 'entwurf');
+  }[s] || 'angebot');
 
   return (
     <main className="app-main kunde-detail">
