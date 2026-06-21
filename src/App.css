@@ -1214,7 +1214,7 @@ body {
 .beleg-tabelle { width: 100%; border-collapse: collapse; }
 .beleg-tabelle thead th {
   text-align: left; font-size: 11px; font-weight: 700; color: #1a1a1a;
-  background: #eef0f2; padding: 8px 10px; border-bottom: 1px solid #d8dce1;
+  background: #fff; padding: 8px 10px; border-bottom: 1px solid #d8dce1;
 }
 .beleg-tabelle td { padding: 12px 10px; vertical-align: top; border-bottom: 1px solid #eceef1; }
 .beleg-tabelle tr { break-inside: avoid; page-break-inside: avoid; }
