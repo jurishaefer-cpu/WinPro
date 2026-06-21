@@ -158,7 +158,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
   function buildBeschreibung() {
     const farbe = (name) => katalog[name] ? `${katalog[name]} ${name}` : name;
     const teile = [
-      `<strong>${fensterBezeichnung(geometrie, panes)} (${code})</strong>`,
+      `<strong>${fensterBezeichnung(geometrie, panes, cols)} (${code})</strong>`,
       `${Math.round(breite)} × ${Math.round(hoehe)} mm · ${flaeche.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} m²`,
       systemLabel,
       `Innen ${farbe(innenfarbe)} / Außen ${farbe(aussenfarbe)}`,
@@ -360,7 +360,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
             )}
           </div>
           <div className="np-canvas-caption">
-            <div className="np-canvas-title">{fensterBezeichnung(geometrie, panes)}</div>
+            <div className="np-canvas-title">{fensterBezeichnung(geometrie, panes, cols)}</div>
             <span className="np-canvas-badge">{code}</span>
           </div>
         </section>

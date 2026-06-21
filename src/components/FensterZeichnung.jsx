@@ -27,6 +27,12 @@ export const GEOMETRIEN = [
     panes: [{ open: 'drehkipp', din: 'links' }, { open: 'drehkipp', din: 'rechts' }, { open: 'drehkipp', din: 'links' }, { open: 'drehkipp', din: 'rechts' }] },
   { code: 'F18', kategorie: 'fenster', gruppe: 'Mehrteilig', label: 'Vierteiliges Drehkippfenster (Variante)', cols: 2,
     panes: [{ open: 'drehkipp', din: 'links' }, { open: 'drehkipp', din: 'rechts' }, { open: 'drehkipp', din: 'links' }, { open: 'drehkipp', din: 'rechts' }] },
+  { code: 'F19', kategorie: 'fenster', gruppe: 'Übereinander', label: 'Zweiteiliges Drehkippfenster (übereinander)', cols: 1,
+    panes: [{ open: 'drehkipp', din: 'links' }, { open: 'drehkipp', din: 'links' }] },
+  { code: 'F20', kategorie: 'fenster', gruppe: 'Übereinander', label: 'Oberlicht Kipp, unten Drehkipp', cols: 1,
+    panes: [{ open: 'kipp' }, { open: 'drehkipp', din: 'links' }] },
+  { code: 'F21', kategorie: 'fenster', gruppe: 'Übereinander', label: 'Oberlicht Fest, unten Drehkipp', cols: 1,
+    panes: [{ fest: true }, { open: 'drehkipp', din: 'links' }] },
   { code: 'T01', kategorie: 'tuer', gruppe: 'Türen', label: 'Haustür DIN Links', open: 'tuer', din: 'links' },
   { code: 'T02', kategorie: 'tuer', gruppe: 'Türen', label: 'Haustür DIN Rechts', open: 'tuer', din: 'rechts' },
   { code: 'T03', kategorie: 'tuer', gruppe: 'Türen', label: 'Balkontür Dreh-Kipp DIN Links', open: 'drehkipp', din: 'links', tuer: true },
@@ -56,7 +62,7 @@ function fluegelArt(p) {
 }
 
 // Anzeigename des Fensters – passt sich an die tatsächliche Flügelkonfiguration an.
-export function fensterBezeichnung(geometrie, panes) {
+export function fensterBezeichnung(geometrie, panes, cols) {
   const g = geometrie;
   if (!g) return '';
   const ps = panes || g.panes;
@@ -65,10 +71,12 @@ export function fensterBezeichnung(geometrie, panes) {
   const n = ps.length;
   const adj = TEIL_ADJ[n] || `${n}-teiliges`;
   const nomen = TEIL_NOMEN[n] || `${n}-teilig`;
+  const spalten = cols || g.cols || n;         // 1 = übereinander gestapelt
+  const gestapelt = spalten <= 1;
 
-  // Stulpfenster: mehrteilig + mind. ein ÖFFENBARER Flügel (Dreh/Tür) ohne Kippfunktion.
-  // (Festfelder zählen nicht – das ist eine feste Verglasung, kein Stulp.) Name beginnt mit „Stulpfenster".
-  if (ps.some(p => !p.fest && !istKippbar(p))) return `Stulpfenster ${nomen.toLowerCase()}`;
+  // Stulpfenster: NEBENEINANDER liegende Flügel + mind. ein öffenbarer Flügel (Dreh/Tür)
+  // ohne Kippfunktion. (Festfelder zählen nicht; gestapelte Fenster sind kein Stulp.)
+  if (!gestapelt && ps.some(p => !p.fest && !istKippbar(p))) return `Stulpfenster ${nomen.toLowerCase()}`;
 
   // Unverändert gegenüber Katalog -> kuratierten Namen behalten
   if (Array.isArray(g.panes) && JSON.stringify(ps) === JSON.stringify(g.panes)) return g.label;
@@ -83,7 +91,10 @@ export function fensterBezeichnung(geometrie, panes) {
     if (a === 'Fest') return `${adj} Festfeld`;
     return `${adj} Fenster`;
   }
-  if (n === 2) return `${nomen}: ${arten[0]} links, ${arten[1]} rechts`;
+  if (n === 2) {
+    const [a, b] = gestapelt ? ['oben', 'unten'] : ['links', 'rechts'];
+    return `${nomen}: ${arten[0]} ${a}, ${arten[1]} ${b}`;
+  }
   return `${adj} Fenster (${arten.join(', ')})`;
 }
 // Stulpfenster: der mittlere Pfosten (kein fester Pfosten, sondern Stulp) entfällt,

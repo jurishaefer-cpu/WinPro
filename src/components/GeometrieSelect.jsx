@@ -7,7 +7,7 @@ function GeometrieSelect({ optionen, value, onChange, panes, cols }) {
   const aktiv = optionen.find(g => g.code === value);
   // Trigger spiegelt den aktuell bearbeiteten Stand (Flügel) wider, nicht nur den Katalog
   const aktivEff = aktiv ? { ...aktiv, panes: panes || aktiv.panes, cols: cols || aktiv.cols } : aktiv;
-  const aktivLabel = (aktiv && fensterBezeichnung(aktiv, panes)) || aktiv?.label;
+  const aktivLabel = (aktiv && fensterBezeichnung(aktiv, panes, cols)) || aktiv?.label;
 
   // nach Gruppe bündeln (Reihenfolge wie im Katalog)
   const gruppen = [];
