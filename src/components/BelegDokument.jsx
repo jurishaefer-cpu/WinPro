@@ -64,7 +64,7 @@ function BelegDokument({ art, angebot, kunde, positionen, profileMap, einstellun
       <p className="beleg-intro">{meta.intro}</p>
 
       {meta.bauvorhaben && angebot?.bezeichnung?.trim() && (
-        <p className="beleg-bauvorhaben"><strong>{angebot.bezeichnung}</strong></p>
+        <p className="beleg-bauvorhaben"><span className="beleg-bauvorhaben-label">Bauvorhaben:</span> <strong>{angebot.bezeichnung}</strong></p>
       )}
 
       {/* Positionen */}
