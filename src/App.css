@@ -1382,6 +1382,8 @@ body {
   border: 1px solid #e5e7eb;
   border-radius: 14px;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 .pos-card-head {
   display: flex;
@@ -1419,6 +1421,18 @@ body {
     #fbfcfd;
 }
 .pos-card-canvas .fz-svg { width: 100%; height: 100%; }
+.pos-card-text {
+  padding: 18px;
+  font-size: 15px;
+  color: #1a1a1a;
+  line-height: 1.5;
+  cursor: pointer;
+  min-height: 120px;
+  word-break: break-word;
+  flex: 1;
+}
+.pos-card-text p { margin: 0 0 6px; }
+.pos-card-text :last-child { margin-bottom: 0; }
 .pos-card-foot {
   display: flex; align-items: center; gap: 6px;
   padding: 12px 18px;
