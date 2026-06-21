@@ -10,7 +10,7 @@ const VERGLASUNGEN = [
   'Schallschutzverglasung Ug 1,1',
 ];
 const DICHTUNGEN = ['Grau', 'Schwarz'];
-const ROLLLADEN = ['ohne', 'Aufputz', 'Unterputz'];
+const ROLLLADEN = ['42x42mm'];
 
 function euro(n) {
   return Number(n || 0).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
@@ -34,7 +34,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
   const [kasten, setKasten] = useState(initial?.kasten ?? {
     kastenhoehe: 165, bedienung: 'Gurt', bedienungsseite: 'rechts', lamellenfarbe: '', lamellentyp: 'Alulamelle',
   });
-  const [rollladen, setRollladen] = useState(initial?.rollladen ?? 'ohne');
+  const [rollladen, setRollladen] = useState(initial?.rollladen && initial.rollladen !== 'ohne' ? initial.rollladen : '');
 
   const [innenfarbe, setInnenfarbe] = useState(initial?.innenfarbe ?? 'WEISS');
   const [aussenfarbe, setAussenfarbe] = useState(initial?.aussenfarbe ?? 'WEISS');
@@ -108,7 +108,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
         + (kasten.lamellentyp ? `, ${kasten.lamellentyp}` : '')
         + (kasten.lamellenfarbe ? ` ${kasten.lamellenfarbe}` : ''));
     }
-    if (rollladen !== 'ohne') teile.push(`Rollladenführung ${rollladen}`);
+    if (rollladen && rollladen !== 'ohne') teile.push(`Rollladenführung ${rollladen}`);
     if (standort) teile.push(`Standort: ${standort}`);
     if (ohneMontage) teile.push('ohne Montage');
     if (kommentar) teile.push(`Kommentar: ${kommentar}`);
@@ -240,9 +240,16 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
             </div>
           )}
           <label className="np-field-label">Rollladenführung</label>
-          <select className="np-select np-select--block" value={rollladen} onChange={e => setRollladen(e.target.value)}>
-            {ROLLLADEN.map(r => <option key={r} value={r}>{r}</option>)}
-          </select>
+          <input
+            className="np-input"
+            list="rollladen-liste"
+            value={rollladen}
+            onChange={e => setRollladen(e.target.value)}
+            placeholder="z.B. 42x42mm"
+          />
+          <datalist id="rollladen-liste">
+            {ROLLLADEN.map(r => <option key={r} value={r} />)}
+          </datalist>
         </aside>
 
         {/* Mitte: Zeichnung */}
