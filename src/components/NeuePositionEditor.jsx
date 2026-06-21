@@ -6,8 +6,6 @@ import GeometrieSelect from './GeometrieSelect';
 const VERGLASUNGEN = [
   '2-fach Verglasung, Ug 1,1 mit warmer Kante',
   '3-fach Verglasung, Ug 0,7 mit warmer Kante',
-  '2-fach Verglasung, Ug 1,1',
-  'Schallschutzverglasung Ug 1,1',
 ];
 const DICHTUNGEN = ['Grau', 'Schwarz'];
 const ROLLLADEN = ['42x42mm'];
