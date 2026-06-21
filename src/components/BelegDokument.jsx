@@ -1,0 +1,163 @@
+import FensterZeichnung, { geometrieByCode } from './FensterZeichnung';
+import { euro, datumDE, positionZeilen, BELEG_ART } from '../lib/belegHelfer';
+
+const MWST = 0.19;
+const ANZAHLUNG = 0.40;
+
+function BelegDokument({ art, angebot, kunde, positionen, profileMap, einstellungen }) {
+  const meta = BELEG_ART[art] ?? BELEG_ART.Angebot;
+  const firma = einstellungen?.firma ?? {};
+  const profil = einstellungen?.profil ?? {};
+  const eb = einstellungen?.erscheinungsbild ?? {};
+  const akzent = eb.akzentfarbe || '#c0152e';
+
+  const nummer = angebot?.belegnummer || '—';
+  const netto = positionen.reduce((s, p) => s + Number(p.nettopreis || 0) * Number(p.menge || 1), 0);
+  const mwst = netto * MWST;
+  const brutto = netto + mwst;
+  const anzahlung = brutto * ANZAHLUNG;
+
+  const empfName = kunde?.firma || `${kunde?.vorname ?? ''} ${kunde?.nachname ?? ''}`.trim();
+  const empfAP = kunde?.firma ? `${kunde?.vorname ?? ''} ${kunde?.nachname ?? ''}`.trim() : '';
+
+  return (
+    <div className="beleg" style={{ '--akzent': akzent }}>
+      {/* Kopf */}
+      <div className="beleg-kopf">
+        <div className="beleg-logo">{eb.logo && <img src={eb.logo} alt="Logo" />}</div>
+        <div className="beleg-firma">
+          <strong>{firma.firmenname || 'Firmenname'}</strong>
+          <div>{firma.strasse}</div>
+          <div>{[firma.plz, firma.ort].filter(Boolean).join(' ')}</div>
+          {firma.telefon && <div>Tel. {firma.telefon}</div>}
+          {firma.email && <div>{firma.email}</div>}
+        </div>
+      </div>
+      <div className="beleg-akzentlinie" />
+
+      {/* Empfänger + Datum/Ansprechpartner */}
+      <div className="beleg-adressen">
+        <div className="beleg-empfaenger">
+          <div>{empfName}</div>
+          {empfAP && <div>{empfAP}</div>}
+          <div>{kunde?.strasse}</div>
+          <div>{[kunde?.plz, kunde?.ort].filter(Boolean).join(' ')}</div>
+        </div>
+        <div className="beleg-meta">
+          <div>{firma.ort ? `${firma.ort} , ` : ''}{datumDE(new Date())}</div>
+          {meta.schluss && angebot?.ausfuehrungsdatum && (
+            <div>Ausführungsdatum: {datumDE(angebot.ausfuehrungsdatum)}</div>
+          )}
+          {profil.name && <div><strong>Ansprechpartner: {profil.name}</strong></div>}
+          {profil.telefon && <div><strong>Tel. {profil.telefon}</strong></div>}
+          {profil.email && <div><strong>E-Mail: {profil.email}</strong></div>}
+        </div>
+      </div>
+
+      {/* Titel + Anrede */}
+      <h2 className="beleg-titel">{meta.titel} {nummer}</h2>
+      <p className="beleg-anrede">Sehr geehrte Damen und Herren,</p>
+      <p className="beleg-intro">{meta.intro}</p>
+
+      {/* Positionen */}
+      <table className="beleg-tabelle">
+        <thead>
+          <tr>
+            <th className="pos-nr">Pos.</th>
+            <th className="pos-skizze">Skizze</th>
+            <th>Beschreibung</th>
+            <th className="pos-menge">Menge</th>
+            {meta.preise && <th className="pos-preis">Einzelpreis</th>}
+            {meta.preise && <th className="pos-preis">Gesamtpreis</th>}
+          </tr>
+        </thead>
+        <tbody>
+          {positionen.map((p, i) => {
+            const c = p.config;
+            const istFenster = p.typ === 'fenster' && c;
+            const menge = Number(p.menge || 1);
+            const zeilen = istFenster ? positionZeilen(c, profileMap?.[c.profilId]) : [];
+            return (
+              <tr key={p.id}>
+                <td className="pos-nr">{i + 1}</td>
+                <td className="pos-skizze">
+                  {istFenster && (
+                    <div className="beleg-zeichnung">
+                      <FensterZeichnung
+                        geometrie={geometrieByCode(c.code)} breite={c.breite} hoehe={c.hoehe}
+                        panes={c.panes} cols={c.cols} colWidths={c.colWidths} rowHeights={c.rowHeights}
+                        verbreiterung={c.verbreiterung ? c.verb : null}
+                        aufsatzkasten={c.aufsatzkasten ? c.kasten : null}
+                        glasFarbe={c.ornament ? '#7fb0cc' : undefined}
+                      />
+                    </div>
+                  )}
+                </td>
+                <td className="pos-beschr">
+                  {istFenster ? (
+                    <>
+                      {c.standort && <div className="pos-standort">{c.standort}</div>}
+                      {zeilen.map((z, k) => <div key={k}>{z}</div>)}
+                    </>
+                  ) : (
+                    <div className="pos-manuell" dangerouslySetInnerHTML={{ __html: p.beschreibung || '' }} />
+                  )}
+                </td>
+                <td className="pos-menge">{menge}</td>
+                {meta.preise && <td className="pos-preis">{euro(p.nettopreis)}</td>}
+                {meta.preise && <td className="pos-preis pos-preis--bold">{euro(Number(p.nettopreis || 0) * menge)}</td>}
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+
+      {/* Summen */}
+      {meta.preise && (
+        <div className="beleg-summen">
+          <div className="beleg-summen-zeile"><span>Zwischensumme netto</span><span>{euro(netto)}</span></div>
+          <div className="beleg-summen-zeile"><span>zzgl. MwSt. 19 %</span><span>{euro(mwst)}</span></div>
+          <div className="beleg-summen-zeile beleg-summen-zeile--gesamt"><span>Gesamtbetrag brutto</span><span>{euro(brutto)}</span></div>
+          {meta.schluss && (
+            <>
+              <div className="beleg-summen-zeile"><span>abzüglich Anzahlung (40 %)</span><span>−{euro(anzahlung)}</span></div>
+              <div className="beleg-summen-zeile beleg-summen-zeile--gesamt"><span>Rechnungsbetrag</span><span>{euro(brutto - anzahlung)}</span></div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Zahlungsbedingungen */}
+      {meta.zahlung && (
+        <div className="beleg-zahlung">
+          <strong>Zahlungsbedingungen</strong>
+          <p>{meta.zahlung}</p>
+          {meta.anzahlung && <p>Anzahlung (40 %): <strong>{euro(anzahlung)}</strong></p>}
+        </div>
+      )}
+
+      {/* Fuß */}
+      <div className="beleg-akzentlinie beleg-akzentlinie--fuss" />
+      <div className="beleg-fuss">
+        <div>
+          <strong>{firma.firmenname}</strong>
+          <div>{[firma.strasse, [firma.plz, firma.ort].filter(Boolean).join(' ')].filter(Boolean).join(' , ')}</div>
+          <div>{[firma.telefon && `Tel. ${firma.telefon}`, firma.email].filter(Boolean).join(' · ')}</div>
+        </div>
+        <div>
+          <div>{firma.bank}</div>
+          <div>{firma.iban && `IBAN ${firma.iban}`}</div>
+          <div>{firma.bic && `BIC ${firma.bic}`}</div>
+        </div>
+        <div>
+          {firma.steuernummer && <div>Steuer-Nr. {firma.steuernummer}</div>}
+          {firma.ust_id && <div>USt-IdNr. {firma.ust_id}</div>}
+          {(firma.handelsregister || firma.registergericht) && <div>{[firma.handelsregister, firma.registergericht].filter(Boolean).join(' · ')}</div>}
+          {firma.geschaeftsfuehrung && <div>GF: {firma.geschaeftsfuehrung}</div>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default BelegDokument;

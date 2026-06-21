@@ -5,6 +5,8 @@ import { useAuth } from '../auth/AuthContext';
 import ManuellePositionModal from '../components/ManuellePositionModal';
 import NeuePositionEditor from '../components/NeuePositionEditor';
 import FensterZeichnung, { geometrieByCode } from '../components/FensterZeichnung';
+import BelegModal from '../components/BelegModal';
+import { ladeEinstellungen } from '../lib/einstellungen';
 
 const STUFEN = ['Angebot', 'Auftragsbestätigung', 'Bestellung', 'Rechnung'];
 const SUBTITLE = {
@@ -39,6 +41,11 @@ function AngebotEditorPage() {
   const [editPos, setEditPos] = useState(null); // manuelle Position: 'neu' oder Positionsobjekt
   const [strukturPos, setStrukturPos] = useState(null); // Fenster/Tür-Editor: 'neu' oder Positionsobjekt
   const [deletePos, setDeletePos] = useState(null);
+  const [einstellungen, setEinstellungen] = useState({});
+  const [profileMap, setProfileMap] = useState({});
+  const [zeigeBeleg, setZeigeBeleg] = useState(null); // Belegart oder null
+  const [datumPrompt, setDatumPrompt] = useState(false);
+  const [ausfDatum, setAusfDatum] = useState('');
 
   useEffect(() => {
     async function laden() {
@@ -47,16 +54,55 @@ function AngebotEditorPage() {
       if (!a) { navigate(`/kunden/${kundeId}`); return; }
       setAngebot(a);
       setBezeichnung(a.bezeichnung ?? '');
+      setAusfDatum(a.ausfuehrungsdatum ?? '');
       const { data: k } = await supabase.from('kunden').select('*').eq('id', kundeId).single();
       setKunde(k);
       const { data: p } = await supabase
         .from('positionen').select('*').eq('angebot_id', angebotId)
         .order('sortierung', { ascending: true }).order('created_at', { ascending: true });
       setPositionen(p ?? []);
+      setEinstellungen(await ladeEinstellungen(user.id));
+      const { data: prof } = await supabase.from('profile').select('*');
+      const map = {}; (prof ?? []).forEach(pr => { map[pr.id] = pr; });
+      setProfileMap(map);
       setLoading(false);
     }
     laden();
-  }, [angebotId, kundeId, navigate]);
+  }, [angebotId, kundeId, navigate, user]);
+
+  // Belegnummer einmalig vergeben (Format JJJJ-NNNN)
+  async function sichereBelegnummer() {
+    if (angebot.belegnummer) return angebot.belegnummer;
+    const jahr = new Date().getFullYear();
+    const { data: alle } = await supabase.from('angebote').select('belegnummer').not('belegnummer', 'is', null);
+    let max = 0;
+    (alle ?? []).forEach(r => {
+      const m = /^(\d{4})-(\d+)$/.exec(r.belegnummer || '');
+      if (m && Number(m[1]) === jahr) max = Math.max(max, Number(m[2]));
+    });
+    const nummer = `${jahr}-${String(max + 1).padStart(4, '0')}`;
+    await supabase.from('angebote').update({ belegnummer: nummer }).eq('id', angebotId);
+    setAngebot(a => ({ ...a, belegnummer: nummer }));
+    return nummer;
+  }
+
+  async function oeffneBeleg(art) {
+    if (art === 'Rechnung' && !angebot.ausfuehrungsdatum) {
+      setDatumPrompt(true);
+      return;
+    }
+    await sichereBelegnummer();
+    setZeigeBeleg(art);
+  }
+
+  async function bestaetigeDatum() {
+    if (!ausfDatum) return;
+    await supabase.from('angebote').update({ ausfuehrungsdatum: ausfDatum }).eq('id', angebotId);
+    setAngebot(a => ({ ...a, ausfuehrungsdatum: ausfDatum }));
+    setDatumPrompt(false);
+    await sichereBelegnummer();
+    setZeigeBeleg('Rechnung');
+  }
 
   const summe = positionen.reduce((s, p) => s + Number(p.nettopreis || 0) * Number(p.menge || 1), 0);
   const stueck = positionen.reduce((s, p) => s + Number(p.menge || 1), 0);
@@ -151,7 +197,21 @@ function AngebotEditorPage() {
             </div>
           ))}
         </div>
-        <div className="stepper-belege"><b>BELEGE</b>Noch keine Belege erstellt.</div>
+        <div className="stepper-belege">
+          <b>BELEGE</b>
+          {angebot.belegnummer ? (
+            <button className="beleg-chip" onClick={() => oeffneBeleg(angebot.status)}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+              </svg>
+              {angebot.status} {angebot.belegnummer}
+            </button>
+          ) : (
+            <button className="beleg-erstellen" onClick={() => oeffneBeleg(angebot.status)}>
+              {angebot.status} erstellen
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Bearbeiten */}
@@ -311,6 +371,36 @@ function AngebotEditorPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Ausführungsdatum vor der Rechnung */}
+      {datumPrompt && (
+        <div className="modal-overlay" onClick={() => setDatumPrompt(false)}>
+          <div className="modal-box" onClick={e => e.stopPropagation()}>
+            <h2 className="modal-title">Ausführungsdatum erforderlich</h2>
+            <p className="modal-text">Bitte trage das Ausführungsdatum ein, bevor du die Rechnung erstellst.</p>
+            <div className="form-field" style={{ marginBottom: 8 }}>
+              <label>Ausführungsdatum</label>
+              <input type="date" value={ausfDatum || ''} onChange={e => setAusfDatum(e.target.value)} />
+            </div>
+            <div className="modal-actions" style={{ marginTop: 20 }}>
+              <button className="btn btn-secondary" onClick={() => setDatumPrompt(false)}>Abbrechen</button>
+              <button className="btn btn-primary btn-red" onClick={bestaetigeDatum} disabled={!ausfDatum}>Übernehmen &amp; Rechnung</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {zeigeBeleg && (
+        <BelegModal
+          art={zeigeBeleg}
+          angebot={angebot}
+          kunde={kunde}
+          positionen={positionen}
+          profileMap={profileMap}
+          einstellungen={einstellungen}
+          onClose={() => setZeigeBeleg(null)}
+        />
       )}
     </main>
   );

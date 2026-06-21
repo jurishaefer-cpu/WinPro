@@ -1159,6 +1159,94 @@ body {
   border-color: #f3c2c2;
 }
 
+/* ── BELEGE-Chip im Stepper ── */
+.beleg-chip, .beleg-erstellen {
+  display: inline-flex; align-items: center; gap: 8px;
+  border: 1px solid #e0e2e6; background: #fff;
+  border-radius: 8px; padding: 8px 14px; margin-left: 12px;
+  font-size: 14px; font-weight: 600; color: #1a1a1a; cursor: pointer;
+}
+.beleg-chip:hover, .beleg-erstellen:hover { background: #f6f7f9; }
+.beleg-erstellen { color: #8b1a1a; border-color: #e3c2c2; }
+
+/* ── Beleg-Vorschau (Vollbild + Druck) ── */
+.beleg-overlay {
+  position: fixed; inset: 0; z-index: 300;
+  background: #525659; display: flex; flex-direction: column;
+}
+.beleg-toolbar {
+  flex-shrink: 0; display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 20px; background: #fff; border-bottom: 1px solid #e5e7eb;
+}
+.beleg-toolbar-titel { font-size: 16px; font-weight: 700; color: #1a1a1a; }
+.beleg-toolbar-actions { display: flex; gap: 12px; }
+.beleg-scroll { flex: 1; overflow-y: auto; padding: 28px 16px; }
+
+.beleg {
+  width: 794px; max-width: 100%;
+  margin: 0 auto;
+  background: #fff;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+  padding: 48px 54px;
+  font-size: 12px; color: #1a1a1a; line-height: 1.45;
+  box-sizing: border-box;
+}
+.beleg-kopf { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; }
+.beleg-logo img { max-height: 70px; max-width: 220px; object-fit: contain; }
+.beleg-firma { text-align: right; font-size: 11px; line-height: 1.5; }
+.beleg-firma strong { font-size: 12px; }
+.beleg-akzentlinie { height: 2px; background: var(--akzent, #c0152e); margin: 10px 0 26px; }
+.beleg-akzentlinie--fuss { margin: 30px 0 12px; }
+
+.beleg-adressen { display: flex; justify-content: space-between; gap: 24px; margin-bottom: 26px; }
+.beleg-empfaenger { line-height: 1.55; }
+.beleg-meta { text-align: left; line-height: 1.55; align-self: flex-end; }
+
+.beleg-titel { font-size: 17px; font-weight: 700; margin: 0 0 14px; }
+.beleg-anrede { margin: 0 0 10px; }
+.beleg-intro { margin: 0 0 18px; }
+
+.beleg-tabelle { width: 100%; border-collapse: collapse; }
+.beleg-tabelle thead th {
+  text-align: left; font-size: 11px; font-weight: 700; color: #1a1a1a;
+  background: #eef0f2; padding: 8px 10px; border-bottom: 1px solid #d8dce1;
+}
+.beleg-tabelle td { padding: 12px 10px; vertical-align: top; border-bottom: 1px solid #eceef1; }
+.beleg-tabelle tr { break-inside: avoid; page-break-inside: avoid; }
+.pos-nr { width: 34px; }
+.pos-skizze { width: 150px; }
+.pos-menge { width: 50px; text-align: right; }
+.pos-preis { width: 84px; text-align: right; white-space: nowrap; }
+.pos-preis--bold { font-weight: 700; }
+.beleg-zeichnung { width: 140px; }
+.beleg-zeichnung .fz-svg { width: 100%; height: auto; }
+.pos-standort { font-weight: 700; margin-bottom: 2px; }
+.pos-beschr { font-size: 11px; line-height: 1.5; }
+.pos-manuell p { margin: 0 0 3px; }
+
+.beleg-summen { margin: 16px 0 0; margin-left: auto; width: 320px; }
+.beleg-summen-zeile { display: flex; justify-content: space-between; padding: 5px 0; }
+.beleg-summen-zeile--gesamt {
+  font-weight: 700; border-top: 2px solid var(--akzent, #c0152e); margin-top: 4px; padding-top: 8px;
+}
+
+.beleg-zahlung {
+  margin-top: 26px; background: #f7f8fa; border: 1px solid #eceef1; border-radius: 8px; padding: 16px 18px;
+}
+.beleg-zahlung strong { display: block; margin-bottom: 6px; }
+.beleg-zahlung p { margin: 0 0 4px; }
+
+.beleg-fuss { display: flex; justify-content: space-between; gap: 20px; font-size: 10px; color: #555; line-height: 1.5; }
+.beleg-fuss strong { color: #1a1a1a; }
+
+@media print {
+  body * { visibility: hidden !important; }
+  #beleg-druck, #beleg-druck * { visibility: visible !important; }
+  #beleg-druck { position: absolute; left: 0; top: 0; width: 100%; }
+  .beleg { box-shadow: none; width: 100%; padding: 0; }
+  .beleg-overlay { background: #fff; }
+}
+
 /* ── Einstellungen-Detailseiten ── */
 .einst-back { color: #8b1a1a; font-weight: 600; }
 .einst-card {
