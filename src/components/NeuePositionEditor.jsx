@@ -350,7 +350,6 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
             <button className="btn btn-outline" onClick={onClose}>Abbrechen</button>
             <button className="btn btn-primary btn-red" onClick={handleSave}>Speichern</button>
           </div>
-          <div className="np-gesamt">{Number(stueckzahl) || 1} Stück · Gesamt <b>{gesamt > 0 ? euro(gesamt) : '—'}</b></div>
         </div>
       </footer>
     </div>
