@@ -37,6 +37,14 @@ export const GEOMETRIEN = [
   { code: 'T02', kategorie: 'tuer', gruppe: 'Türen', label: 'Haustür DIN Rechts', open: 'tuer', din: 'rechts' },
   { code: 'T03', kategorie: 'tuer', gruppe: 'Türen', label: 'Balkontür Dreh-Kipp DIN Links', open: 'drehkipp', din: 'links', tuer: true },
   { code: 'T04', kategorie: 'tuer', gruppe: 'Türen', label: 'Balkontür Dreh-Kipp DIN Rechts', open: 'drehkipp', din: 'rechts', tuer: true },
+  { code: 'T05', kategorie: 'tuer', gruppe: 'Türen', label: 'Zweiflügelige Haustür', teilung: 'stulp', tuer: true,
+    panes: [{ open: 'tuer', din: 'links' }, { open: 'tuer', din: 'rechts' }] },
+  { code: 'T06', kategorie: 'tuer', gruppe: 'Türen', label: 'Haustür mit festem Seitenteil', teilung: 'pfosten', tuer: true,
+    panes: [{ open: 'tuer', din: 'links' }, { fest: true }] },
+  { code: 'T07', kategorie: 'tuer', gruppe: 'Türen', label: 'Zweiflügelige Balkontür Dreh-Kipp', teilung: 'stulp', tuer: true,
+    panes: [{ open: 'drehkipp', din: 'links' }, { open: 'drehkipp', din: 'rechts' }] },
+  { code: 'T08', kategorie: 'tuer', gruppe: 'Türen', label: 'Zweiflügelige Balkontür Dreh', teilung: 'stulp', tuer: true,
+    panes: [{ open: 'dreh', din: 'links' }, { open: 'dreh', din: 'rechts' }] },
 ];
 
 export function geometrieByCode(code) {
@@ -65,6 +73,7 @@ function fluegelArt(p) {
 export function fensterBezeichnung(geometrie, panes, cols) {
   const g = geometrie;
   if (!g) return '';
+  if (g.kategorie === 'tuer') return g.label;                 // Türen: immer Katalogname (kein „Stulpfenster")
   const ps = panes || g.panes;
   if (!Array.isArray(ps) || ps.length < 2) return g.label;   // einflügelig: Katalogname
 
@@ -144,7 +153,7 @@ export function GeometrieThumb({ geometrie, glasFarbe = '#cfe3ef' }) {
   const W = 120, H = 92, m = 7;
   const r0 = { x: m, y: m, w: W - 2 * m, h: H - 2 * m };
   const istFest = g?.open === 'fest';
-  const istTuer = g?.open === 'tuer';
+  const istTuer = g?.open === 'tuer' || g?.kategorie === 'tuer';
   const blendIn = inset(r0, 6);           // Blendrahmen breit (äußerer Rahmen)
   const miterBlend = gehrung(r0, blendIn);
   const inner = inset(r0, 8);
@@ -239,7 +248,7 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
   const blendIn = inset(win, blendW);                  // Blendrahmen-Innenkante
   const miterBlend = gehrung(win, blendIn);            // 45°-Gehrung am Blendrahmen
   const inner = inset(win, blendW + gap);              // Bereich innerhalb des Blendrahmens
-  const istTuer = g?.open === 'tuer';
+  const istTuer = g?.open === 'tuer' || g?.kategorie === 'tuer';
 
   // Flügel (1, 2 oder Festverglasung)
   const machFluegel = (rect, geo) => {
@@ -443,12 +452,17 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
         </g>
       )}
 
-      {/* Türgriff-Andeutung */}
-      {istTuer && leaves[0] && (
-        <rect
-          x={g.din === 'links' ? leaves[0].glas.x + leaves[0].glas.w - 12 : leaves[0].glas.x + 6}
-          y={leaves[0].glas.y + leaves[0].glas.h / 2 - 18} width="6" height="36" rx="3" fill="#0f1f3d" />
-      )}
+      {/* Türgriff-Andeutung – je öffnendem Türflügel */}
+      {istTuer && leaves.map((lf, li) => {
+        const p = effPanes ? effPanes[li] : g;
+        if (!p || p.fest) return null;            // Standflügel/Festfeld: kein Griff
+        const din = p.din || g.din || 'links';
+        const hx = din === 'links' ? lf.glas.x + lf.glas.w - 12 : lf.glas.x + 6;
+        return (
+          <rect key={'griff' + li} x={hx} y={lf.glas.y + lf.glas.h / 2 - 18}
+                width="6" height="36" rx="3" fill="#0f1f3d" />
+        );
+      })}
 
       {/* Anklickbare Flügel-Flächen (nur im Editor) */}
       {onPaneClick && leaves.map((lf, li) => (
