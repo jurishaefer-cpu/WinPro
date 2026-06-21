@@ -1249,17 +1249,26 @@ body {
 @media print {
   /* margin: 0 entfernt die Browser-Kopf-/Fusszeilen (Titel, Datum, URL, Seitenzahl) */
   @page { size: A4; margin: 0; }
+  /* Hintergrundfarben (Tabellenkopf, Akzentlinien, Skizzen) auch auf Handy drucken */
+  html, body {
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
+    margin: 0;
+  }
   body * { visibility: hidden !important; }
   #beleg-druck, #beleg-druck * { visibility: visible !important; }
-  .beleg-buehne { transform: none !important; height: auto !important; width: 100% !important; margin: 0 !important; }
-  #beleg-druck { position: absolute; left: 0; top: 0; width: 100%; }
+  .beleg-buehne { transform: none !important; height: auto !important; width: 210mm !important; margin: 0 !important; }
+  /* Feste A4-Breite statt 100%: iOS koppelt position:fixed sonst an die Viewport-Breite */
+  #beleg-druck { position: absolute; left: 0; top: 0; width: 210mm; }
   /* Im Druck normaler Blockfluss: Flexbox/min-height brechen den mehrseitigen Umbruch */
   .beleg {
     box-shadow: none;
-    width: 100%;
+    width: 210mm;
     min-height: 0;
     display: block;
     padding: 14mm 16mm;        /* Seitenrand, da @page jetzt randlos ist */
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
   }
   .beleg-akzentlinie--fuss { margin-top: 30px; }
   .beleg-overlay { background: #fff; }
