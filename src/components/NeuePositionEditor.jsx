@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import FensterZeichnung, { GEOMETRIEN, geometrieByCode } from './FensterZeichnung';
 import GeometrieSelect from './GeometrieSelect';
+import RichTextEditor from './RichTextEditor';
 
 const VERGLASUNGEN = [
   '2-fach Verglasung, Ug 1,1 mit warmer Kante',
@@ -109,7 +110,8 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
     if (rollladen && rollladen !== 'ohne') teile.push(`Rollladenführung ${rollladen}`);
     if (standort) teile.push(`Standort: ${standort}`);
     if (ohneMontage) teile.push('ohne Montage');
-    if (kommentar) teile.push(`Kommentar: ${kommentar}`);
+    const komText = (kommentar || '').replace(/<[^>]*>/g, '').trim();
+    if (komText) teile.push(`Kommentar: ${kommentar}`);
     return `<div>${teile.join('<br>')}</div>`;
   }
 
@@ -318,7 +320,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
           </div>
 
           <div className="np-group-label" style={{ marginTop: 24 }}>PRODUKTIONSKOMMENTAR</div>
-          <textarea className="np-textarea" value={kommentar} onChange={e => setKommentar(e.target.value)} rows={4} />
+          <RichTextEditor initialHtml={initial?.kommentar} onChange={setKommentar} placeholder="Kommentar für die Produktion…" minHeight={110} />
         </aside>
       </div>
 
