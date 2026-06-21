@@ -1721,6 +1721,11 @@ body {
   max-height: 320px; overflow-y: auto;
   display: flex; flex-direction: column; gap: 4px;
 }
+.geo-gruppe {
+  font-size: 12px; font-weight: 700; letter-spacing: 0.7px;
+  color: #9aa0a8; text-transform: uppercase;
+  padding: 12px 10px 6px;
+}
 .geo-option { border: 1px solid transparent; border-radius: 9px; }
 .geo-option.aktiv { background: #eef2fb; border-color: #d6e0f7; }
 .geo-option .geo-label { font-size: 15px; }

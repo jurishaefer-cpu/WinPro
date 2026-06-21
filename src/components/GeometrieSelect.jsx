@@ -6,6 +6,15 @@ function GeometrieSelect({ optionen, value, onChange }) {
   const ref = useRef(null);
   const aktiv = optionen.find(g => g.code === value);
 
+  // nach Gruppe bündeln (Reihenfolge wie im Katalog)
+  const gruppen = [];
+  optionen.forEach(g => {
+    const name = g.gruppe || 'Weitere';
+    let eintrag = gruppen.find(e => e[0] === name);
+    if (!eintrag) { eintrag = [name, []]; gruppen.push(eintrag); }
+    eintrag[1].push(g);
+  });
+
   useEffect(() => {
     function onDoc(e) { if (ref.current && !ref.current.contains(e.target)) setOffen(false); }
     document.addEventListener('mousedown', onDoc);
@@ -32,19 +41,24 @@ function GeometrieSelect({ optionen, value, onChange }) {
 
       {offen && (
         <div className="geo-menu">
-          {optionen.map(g => (
-            <button
-              type="button"
-              key={g.code}
-              className={'geo-option' + (g.code === value ? ' aktiv' : '')}
-              onClick={() => waehle(g.code)}
-            >
-              <span className="geo-thumb"><GeometrieThumb geometrie={g} /></span>
-              <span className="geo-text">
-                <span className="geo-label">{g.label}</span>
-                <span className="geo-code">{g.code}</span>
-              </span>
-            </button>
+          {gruppen.map(([gruppe, items]) => (
+            <div key={gruppe}>
+              <div className="geo-gruppe">{gruppe}</div>
+              {items.map(g => (
+                <button
+                  type="button"
+                  key={g.code}
+                  className={'geo-option' + (g.code === value ? ' aktiv' : '')}
+                  onClick={() => waehle(g.code)}
+                >
+                  <span className="geo-thumb"><GeometrieThumb geometrie={g} /></span>
+                  <span className="geo-text">
+                    <span className="geo-label">{g.label}</span>
+                    <span className="geo-code">{g.code}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
           ))}
         </div>
       )}

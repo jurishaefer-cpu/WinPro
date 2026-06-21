@@ -1,16 +1,19 @@
 // Katalog der Fenster-/Tür-Geometrien.
 // open: Öffnungsart, din: Anschlag (Bänder), apex = Griffseite (gegenüber den Bändern).
 export const GEOMETRIEN = [
-  { code: 'F01', kategorie: 'fenster', label: 'Drehkippfenster DIN Links', open: 'drehkipp', din: 'links' },
-  { code: 'F02', kategorie: 'fenster', label: 'Drehkippfenster DIN Rechts', open: 'drehkipp', din: 'rechts' },
-  { code: 'F03', kategorie: 'fenster', label: 'Drehfenster DIN Links', open: 'dreh', din: 'links' },
-  { code: 'F04', kategorie: 'fenster', label: 'Drehfenster DIN Rechts', open: 'dreh', din: 'rechts' },
-  { code: 'F05', kategorie: 'fenster', label: 'Kippfenster', open: 'kipp' },
-  { code: 'F06', kategorie: 'fenster', label: 'Festverglasung', open: 'fest' },
-  { code: 'T01', kategorie: 'tuer', label: 'Haustür DIN Links', open: 'tuer', din: 'links' },
-  { code: 'T02', kategorie: 'tuer', label: 'Haustür DIN Rechts', open: 'tuer', din: 'rechts' },
-  { code: 'T03', kategorie: 'tuer', label: 'Balkontür Dreh-Kipp DIN Links', open: 'drehkipp', din: 'links', tuer: true },
-  { code: 'T04', kategorie: 'tuer', label: 'Balkontür Dreh-Kipp DIN Rechts', open: 'drehkipp', din: 'rechts', tuer: true },
+  { code: 'F01', kategorie: 'fenster', gruppe: 'Einflügelig', label: 'Drehkippfenster DIN Links', open: 'drehkipp', din: 'links' },
+  { code: 'F02', kategorie: 'fenster', gruppe: 'Einflügelig', label: 'Drehkippfenster DIN Rechts', open: 'drehkipp', din: 'rechts' },
+  { code: 'F03', kategorie: 'fenster', gruppe: 'Einflügelig', label: 'Drehfenster DIN Links', open: 'dreh', din: 'links' },
+  { code: 'F04', kategorie: 'fenster', gruppe: 'Einflügelig', label: 'Drehfenster DIN Rechts', open: 'dreh', din: 'rechts' },
+  { code: 'F05', kategorie: 'fenster', gruppe: 'Einflügelig', label: 'Kippfenster', open: 'kipp' },
+  { code: 'F06', kategorie: 'fenster', gruppe: 'Einflügelig', label: 'Festverglasung', open: 'fest' },
+  { code: 'F07', kategorie: 'fenster', gruppe: 'Zweiflügelig', label: 'Zweiteiliges Drehkippfenster', fluegel: 2, teilung: 'pfosten', leafOpen: 'drehkipp' },
+  { code: 'F08', kategorie: 'fenster', gruppe: 'Zweiflügelig', label: 'Stulpfenster Drehkipp', fluegel: 2, teilung: 'stulp', leafOpen: 'drehkipp' },
+  { code: 'F09', kategorie: 'fenster', gruppe: 'Zweiflügelig', label: 'Stulpfenster Dreh', fluegel: 2, teilung: 'stulp', leafOpen: 'dreh' },
+  { code: 'T01', kategorie: 'tuer', gruppe: 'Türen', label: 'Haustür DIN Links', open: 'tuer', din: 'links' },
+  { code: 'T02', kategorie: 'tuer', gruppe: 'Türen', label: 'Haustür DIN Rechts', open: 'tuer', din: 'rechts' },
+  { code: 'T03', kategorie: 'tuer', gruppe: 'Türen', label: 'Balkontür Dreh-Kipp DIN Links', open: 'drehkipp', din: 'links', tuer: true },
+  { code: 'T04', kategorie: 'tuer', gruppe: 'Türen', label: 'Balkontür Dreh-Kipp DIN Rechts', open: 'drehkipp', din: 'rechts', tuer: true },
 ];
 
 export function geometrieByCode(code) {
@@ -57,24 +60,48 @@ export function GeometrieThumb({ geometrie, glasFarbe = '#cfe3ef' }) {
   const W = 120, H = 92, m = 7;
   const r0 = { x: m, y: m, w: W - 2 * m, h: H - 2 * m };
   const istFest = g?.open === 'fest';
-  const blendIn = inset(r0, 6);           // Blendrahmen breit (äußerer Rahmen)
-  const sashOut = inset(r0, 8);           // schmaler Zwischenraum → Flügelrahmen außen
-  const glas = istFest ? inset(blendIn, 2.5) : inset(sashOut, 4.5); // Glas
-  const linien = g ? oeffnungsLinien(g, glas) : [];
-  const miterBlend = gehrung(r0, blendIn);
-  const miterSash = istFest ? [] : gehrung(sashOut, glas);
   const istTuer = g?.open === 'tuer';
+  const blendIn = inset(r0, 6);           // Blendrahmen breit (äußerer Rahmen)
+  const miterBlend = gehrung(r0, blendIn);
+  const inner = inset(r0, 8);
+  const sashW = 4.5;
+
+  const mk = (rect, geo) => {
+    const gl = inset(rect, sashW);
+    return { sash: rect, glas: gl, miter: gehrung(rect, gl), lines: geo ? oeffnungsLinien(geo, gl) : [] };
+  };
+  let leaves = [];
+  let pfosten = null;
+  if (istFest) {
+    leaves = [{ sash: null, glas: inset(blendIn, 2.5), miter: [], lines: [] }];
+  } else if (g?.fluegel === 2) {
+    const dW = g.teilung === 'pfosten' ? 6 : 4;
+    const halfW = (inner.w - dW) / 2;
+    pfosten = { x: inner.x + halfW, y: inner.y, w: dW, h: inner.h };
+    leaves = [
+      mk({ x: inner.x, y: inner.y, w: halfW, h: inner.h }, { open: g.leafOpen, din: 'links' }),
+      mk({ x: inner.x + halfW + dW, y: inner.y, w: halfW, h: inner.h }, { open: g.leafOpen, din: 'rechts' }),
+    ];
+  } else {
+    leaves = [mk(inner, g)];
+  }
+
   return (
     <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="100%">
       <rect x={r0.x} y={r0.y} width={r0.w} height={r0.h} fill="#fff" stroke="#0f1f3d" strokeWidth="1.6" />
       <rect x={blendIn.x} y={blendIn.y} width={blendIn.w} height={blendIn.h} fill="#fff" stroke="#0f1f3d" strokeWidth="1.1" />
       {miterBlend.map((l, i) => <line key={'mb' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="0.8" />)}
-      {!istFest && <rect x={sashOut.x} y={sashOut.y} width={sashOut.w} height={sashOut.h} fill="#fff" stroke="#0f1f3d" strokeWidth="1.1" />}
-      {miterSash.map((l, i) => <line key={'ms' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="0.8" />)}
-      <rect x={glas.x} y={glas.y} width={glas.w} height={glas.h} fill={istTuer ? '#e7edf2' : glasFarbe} stroke="#0f1f3d" strokeWidth="0.9" />
-      {linien.map((l, i) => (
-        <line key={i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="0.9" />
+      {pfosten && <rect x={pfosten.x} y={pfosten.y} width={pfosten.w} height={pfosten.h} fill="#fff" stroke="#0f1f3d" strokeWidth="1.1" />}
+      {leaves.map((lf, li) => (
+        <g key={'lf' + li}>
+          {lf.sash && <rect x={lf.sash.x} y={lf.sash.y} width={lf.sash.w} height={lf.sash.h} fill="#fff" stroke="#0f1f3d" strokeWidth="1.1" />}
+          {lf.miter.map((l, i) => <line key={'ms' + li + '-' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="0.8" />)}
+          <rect x={lf.glas.x} y={lf.glas.y} width={lf.glas.w} height={lf.glas.h} fill={istTuer ? '#e7edf2' : glasFarbe} stroke="#0f1f3d" strokeWidth="0.9" />
+        </g>
       ))}
+      {leaves.map((lf, li) => lf.lines.map((l, i) => (
+        <line key={'op' + li + '-' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="0.9" />
+      )))}
     </svg>
   );
 }
@@ -112,25 +139,42 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
   const sashW = Math.max(10, u * 0.045);               // Flügelrahmen-Breite
   const istFest = g?.open === 'fest';                  // Festverglasung: kein Flügelrahmen
   const blendIn = inset(win, blendW);                  // Blendrahmen-Innenkante
-  const sashOut = inset(win, blendW + gap);            // Flügelrahmen außen
-  const glas = istFest
-    ? inset(blendIn, Math.max(6, u * 0.02))            // Glas direkt im Blendrahmen (Glasleiste)
-    : inset(sashOut, sashW);                           // Glas / Flügelrahmen innen
-
   const miterBlend = gehrung(win, blendIn);            // 45°-Gehrung am Blendrahmen
-  const miterSash = istFest ? [] : gehrung(sashOut, glas); // 45°-Gehrung am Flügelrahmen
-  const linien = g ? oeffnungsLinien(g, glas) : [];
+  const inner = inset(win, blendW + gap);              // Bereich innerhalb des Blendrahmens
   const istTuer = g?.open === 'tuer';
+
+  // Flügel (1, 2 oder Festverglasung)
+  const machFluegel = (rect, geo) => {
+    const gl = inset(rect, sashW);
+    return { sash: rect, glas: gl, miter: gehrung(rect, gl), lines: geo ? oeffnungsLinien(geo, gl) : [] };
+  };
+  let leaves = [];
+  let pfosten = null;
+  if (istFest) {
+    leaves = [{ sash: null, glas: inset(blendIn, Math.max(6, u * 0.02)), miter: [], lines: [] }];
+  } else if (g?.fluegel === 2) {
+    const dW = g.teilung === 'pfosten' ? blendW : Math.max(8, blendW * 0.6);
+    const halfW = (inner.w - dW) / 2;
+    const left = { x: inner.x, y: inner.y, w: halfW, h: inner.h };
+    const right = { x: inner.x + halfW + dW, y: inner.y, w: halfW, h: inner.h };
+    pfosten = { x: inner.x + halfW, y: inner.y, w: dW, h: inner.h, fest: g.teilung === 'pfosten' };
+    leaves = [machFluegel(left, { open: g.leafOpen, din: 'links' }), machFluegel(right, { open: g.leafOpen, din: 'rechts' })];
+  } else {
+    leaves = [machFluegel(inner, g)];
+  }
+
+  // Glas-Gesamtbereich (für Lamellen)
+  const glasMinX = Math.min(...leaves.map(l => l.glas.x));
+  const glasMaxX = Math.max(...leaves.map(l => l.glas.x + l.glas.w));
+  const glasTopY = leaves[0].glas.y;
+  const glasH = leaves[0].glas.h;
 
   // Lamellen (Rollladen) im oberen Drittel der Glasfläche
   const lamellen = [];
   if (hatKasten) {
     const anz = 7;
-    const bereich = glas.h * 0.32;
-    for (let i = 1; i <= anz; i++) {
-      const ly = glas.y + (bereich / anz) * i;
-      lamellen.push(ly);
-    }
+    const bereich = glasH * 0.32;
+    for (let i = 1; i <= anz; i++) lamellen.push(glasTopY + (bereich / anz) * i);
   }
   // Bedien-Badge (G = Gurt, M = Motor) an der Bedienungsseite
   const badge = hatKasten ? {
@@ -186,26 +230,36 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
         <line key={'mb' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="1.4" />
       ))}
 
-      {/* Flügelrahmen (entfällt bei Festverglasung) + Glas */}
-      {!istFest && (
-        <rect x={sashOut.x} y={sashOut.y} width={sashOut.w} height={sashOut.h} fill="#fff" stroke="#0f1f3d" strokeWidth="2" />
+      {/* Mittelpfosten bzw. Stulp (zweiflügelig) */}
+      {pfosten && (
+        <rect x={pfosten.x} y={pfosten.y} width={pfosten.w} height={pfosten.h}
+              fill="#fff" stroke="#0f1f3d" strokeWidth={pfosten.fest ? 2 : 1.6} />
       )}
-      {miterSash.map((l, i) => (
-        <line key={'ms' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="1.4" />
-      ))}
-      <rect x={glas.x} y={glas.y} width={glas.w} height={glas.h}
-            fill={istTuer ? '#e7edf2' : glasFarbe} stroke="#0f1f3d" strokeWidth="1.4" opacity="0.95" />
 
-      {/* Rollladen-Lamellen im oberen Glasbereich */}
+      {/* Flügelrahmen + Glas je Flügel */}
+      {leaves.map((lf, li) => (
+        <g key={'lf' + li}>
+          {lf.sash && (
+            <rect x={lf.sash.x} y={lf.sash.y} width={lf.sash.w} height={lf.sash.h} fill="#fff" stroke="#0f1f3d" strokeWidth="2" />
+          )}
+          {lf.miter.map((l, i) => (
+            <line key={'ms' + li + '-' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="1.4" />
+          ))}
+          <rect x={lf.glas.x} y={lf.glas.y} width={lf.glas.w} height={lf.glas.h}
+                fill={istTuer ? '#e7edf2' : glasFarbe} stroke="#0f1f3d" strokeWidth="1.4" opacity="0.95" />
+        </g>
+      ))}
+
+      {/* Rollladen-Lamellen im oberen Glasbereich (über die gesamte Breite) */}
       {lamellen.map((ly, i) => (
-        <line key={'lam' + i} x1={glas.x} y1={ly} x2={glas.x + glas.w} y2={ly} stroke="#0f1f3d" strokeWidth="1" opacity="0.7" />
+        <line key={'lam' + i} x1={glasMinX} y1={ly} x2={glasMaxX} y2={ly} stroke="#0f1f3d" strokeWidth="1" opacity="0.7" />
       ))}
 
-      {/* Öffnungssymbole */}
-      {linien.map((l, i) => (
-        <line key={i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]}
+      {/* Öffnungssymbole je Flügel */}
+      {leaves.map((lf, li) => lf.lines.map((l, i) => (
+        <line key={'op' + li + '-' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]}
               stroke="#0f1f3d" strokeWidth="1.4" />
-      ))}
+      )))}
 
       {/* Bedien-Badge (Gurt/Motor) */}
       {badge && (
