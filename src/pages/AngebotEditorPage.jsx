@@ -209,7 +209,7 @@ function AngebotEditorPage() {
                       hoehe={c.hoehe}
                       verbreiterung={c.verbreiterung ? c.verb : null}
                       aufsatzkasten={c.aufsatzkasten ? c.kasten : null}
-                      glasFarbe={c.ornament ? '#a6cbe0' : undefined}
+                      glasFarbe={c.ornament ? '#7fb0cc' : undefined}
                     />
                   </div>
                   <div className="pos-card-foot">
