@@ -41,6 +41,17 @@ export function geometrieByCode(code) {
   return GEOMETRIEN.find(g => g.code === code);
 }
 
+// Hat der Flügel eine Kippfunktion? (Dreh-Kipp oder reines Kippfenster)
+function istKippbar(p) {
+  return !!p && !p.fest && (p.open === 'drehkipp' || p.open === 'kipp');
+}
+// Stulpfenster: der mittlere Pfosten (kein fester Pfosten, sondern Stulp) entfällt,
+// sobald mind. einer der beiden angrenzenden Flügel nicht kippbar ist.
+function stulpPfostenZeigen(panes, cols, c) {
+  const angrenzend = (panes || []).filter((_, idx) => { const cc = idx % cols; return cc === c - 1 || cc === c; });
+  return angrenzend.length > 0 && angrenzend.every(istKippbar);
+}
+
 // Liefert die Öffnungs-Symbollinien innerhalb des Flügel-Rechtecks.
 function oeffnungsLinien(g, r) {
   const { x, y, w, h } = r;
@@ -111,7 +122,11 @@ export function GeometrieThumb({ geometrie, glasFarbe = '#cfe3ef' }) {
       if (p.fest) leaves.push({ sash: null, glas: inset(rect, 2.5), miter: [], lines: [] });
       else leaves.push(mk(rect, { open: p.open, din: p.din }));
     });
-    for (let c = 1; c < cols; c++) pfostenList.push({ x: colX[c] - dW, y: inner.y, w: dW, h: inner.h });
+    const istStulp = g?.teilung === 'stulp';
+    for (let c = 1; c < cols; c++) {
+      if (istStulp && !stulpPfostenZeigen(g.panes, cols, c)) continue;
+      pfostenList.push({ x: colX[c] - dW, y: inner.y, w: dW, h: inner.h });
+    }
     for (let r = 1; r < rows; r++) pfostenList.push({ x: inner.x, y: rowY[r] - dH, w: inner.w, h: dH });
   } else {
     leaves = [mk(inner, g)];
@@ -209,7 +224,12 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
       if (p.fest) leaves.push({ sash: null, rect, glas: inset(rect, Math.max(4, sashW * 0.5)), miter: [], lines: [] });
       else leaves.push(machFluegel(rect, { open: p.open, din: p.din }));
     });
-    for (let c = 1; c < cols; c++) pfostenList.push({ x: colX[c] - dW, y: inner.y, w: dW, h: inner.h, fest: g?.teilung !== 'stulp' });
+    const istStulp = g?.teilung === 'stulp';
+    for (let c = 1; c < cols; c++) {
+      // Stulp: Mittelpfosten verschwindet, wenn ein angrenzender Flügel nicht kippbar ist
+      if (istStulp && !stulpPfostenZeigen(effPanes, cols, c)) continue;
+      pfostenList.push({ x: colX[c] - dW, y: inner.y, w: dW, h: inner.h, fest: !istStulp });
+    }
     for (let r = 1; r < rows; r++) pfostenList.push({ x: inner.x, y: rowY[r] - dH, w: inner.w, h: dH, fest: true });
     if (cols > 1) subCols = colX.map((cx0, c) => ({ x0: cx0, x1: cx0 + colWpx[c], mm: Math.round(cwMM[c]), idx: c }));
     if (rows > 1) subRows = rowY.map((ry0, r) => ({ y0: ry0, y1: ry0 + rowHpx[r], mm: Math.round(rhMM[r]), idx: r }));
