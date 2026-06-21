@@ -1422,14 +1422,16 @@ body {
 }
 .pos-card-canvas .fz-svg { width: 100%; height: 100%; }
 .pos-card-text {
+  width: 100%; max-width: 440px; aspect-ratio: 1 / 1;
+  margin: 0 auto;
+  box-sizing: border-box;
   padding: 18px;
+  overflow-y: auto;
   font-size: 15px;
   color: #1a1a1a;
   line-height: 1.5;
   cursor: pointer;
-  min-height: 120px;
   word-break: break-word;
-  flex: 1;
 }
 .pos-card-text p { margin: 0 0 6px; }
 .pos-card-text :last-child { margin-bottom: 0; }
@@ -1905,6 +1907,7 @@ body {
 
   /* Fenster-Positions-Karte kompakter */
   .pos-card-canvas { padding: 12px; max-width: 320px; }
+  .pos-card-text { max-width: 320px; padding: 12px; }
   .pos-card-preis { font-size: 18px; }
 
   /* Sticky-Summenleiste gestapelt */
