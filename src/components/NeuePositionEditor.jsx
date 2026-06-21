@@ -230,7 +230,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
           </div>
 
           <label className="np-field-label">Geometrie</label>
-          <GeometrieSelect optionen={geomOptionen} value={code} onChange={waehleGeometrie} />
+          <GeometrieSelect optionen={geomOptionen} value={code} onChange={waehleGeometrie} panes={panes} cols={cols} />
 
           <div className="np-group-label" style={{ marginTop: 24 }}>MASSE</div>
           <div className="np-row">

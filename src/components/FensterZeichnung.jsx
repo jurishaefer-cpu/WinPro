@@ -42,17 +42,48 @@ function istKippbar(p) {
   return !!p && !p.fest && (p.open === 'drehkipp' || p.open === 'kipp');
 }
 
-const TEIL_WORT = { 2: 'Zweiteiliges', 3: 'Dreiteiliges', 4: 'Vierteiliges', 5: 'Fünfteiliges', 6: 'Sechsteiliges' };
-// Anzeigename des Fensters: ein Stulp-Element mit mind. einer nicht-kippbaren Seite
-// heisst „Zweiteiliges/Dreiteiliges … Stulpfenster" – sonst das Katalog-Label.
+const TEIL_ADJ = { 2: 'Zweiteiliges', 3: 'Dreiteiliges', 4: 'Vierteiliges', 5: 'Fünfteiliges', 6: 'Sechsteiliges' };
+const TEIL_NOMEN = { 2: 'Zweiteilig', 3: 'Dreiteilig', 4: 'Vierteilig', 5: 'Fünfteilig', 6: 'Sechsteilig' };
+
+// Öffnungsart eines Flügels als Wort
+function fluegelArt(p) {
+  if (!p || p.fest) return 'Fest';
+  if (p.open === 'drehkipp') return 'Drehkipp';
+  if (p.open === 'kipp') return 'Kipp';
+  if (p.open === 'dreh') return 'Dreh';
+  if (p.open === 'tuer') return 'Tür';
+  return 'Fest';
+}
+
+// Anzeigename des Fensters – passt sich an die tatsächliche Flügelkonfiguration an.
 export function fensterBezeichnung(geometrie, panes) {
   const g = geometrie;
   if (!g) return '';
   const ps = panes || g.panes;
-  if (g.teilung === 'stulp' && Array.isArray(ps) && ps.length >= 2 && ps.some(p => !istKippbar(p))) {
-    return `${TEIL_WORT[ps.length] || `${ps.length}-teiliges`} Stulpfenster`;
+  if (!Array.isArray(ps) || ps.length < 2) return g.label;   // einflügelig: Katalogname
+
+  const n = ps.length;
+  const adj = TEIL_ADJ[n] || `${n}-teiliges`;
+  const nomen = TEIL_NOMEN[n] || `${n}-teilig`;
+
+  // Stulp mit mind. einer nicht-kippbaren Seite
+  if (g.teilung === 'stulp' && ps.some(p => !istKippbar(p))) return `${adj} Stulpfenster`;
+
+  // Unverändert gegenüber Katalog -> kuratierten Namen behalten
+  if (Array.isArray(g.panes) && JSON.stringify(ps) === JSON.stringify(g.panes)) return g.label;
+
+  // Aus der aktuellen Flügelkonfiguration ableiten
+  const arten = ps.map(fluegelArt);
+  if (arten.every(a => a === arten[0])) {
+    const a = arten[0];
+    if (a === 'Drehkipp') return `${adj} Drehkippfenster`;
+    if (a === 'Dreh') return `${adj} Drehfenster`;
+    if (a === 'Kipp') return `${adj} Kippfenster`;
+    if (a === 'Fest') return `${adj} Festfeld`;
+    return `${adj} Fenster`;
   }
-  return g.label;
+  if (n === 2) return `${nomen}: ${arten[0]} links, ${arten[1]} rechts`;
+  return `${adj} Fenster (${arten.join(', ')})`;
 }
 // Stulpfenster: der mittlere Pfosten (kein fester Pfosten, sondern Stulp) entfällt,
 // sobald mind. einer der beiden angrenzenden Flügel nicht kippbar ist.

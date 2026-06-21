@@ -1,10 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
-import { GeometrieThumb } from './FensterZeichnung';
+import { GeometrieThumb, fensterBezeichnung } from './FensterZeichnung';
 
-function GeometrieSelect({ optionen, value, onChange }) {
+function GeometrieSelect({ optionen, value, onChange, panes, cols }) {
   const [offen, setOffen] = useState(false);
   const ref = useRef(null);
   const aktiv = optionen.find(g => g.code === value);
+  // Trigger spiegelt den aktuell bearbeiteten Stand (Flügel) wider, nicht nur den Katalog
+  const aktivEff = aktiv ? { ...aktiv, panes: panes || aktiv.panes, cols: cols || aktiv.cols } : aktiv;
+  const aktivLabel = (aktiv && fensterBezeichnung(aktiv, panes)) || aktiv?.label;
 
   // nach Gruppe bündeln (Reihenfolge wie im Katalog)
   const gruppen = [];
@@ -29,9 +32,9 @@ function GeometrieSelect({ optionen, value, onChange }) {
   return (
     <div className="geo-select" ref={ref}>
       <button type="button" className="geo-trigger" onClick={() => setOffen(o => !o)}>
-        <span className="geo-thumb"><GeometrieThumb geometrie={aktiv} /></span>
+        <span className="geo-thumb"><GeometrieThumb geometrie={aktivEff} /></span>
         <span className="geo-text">
-          <span className="geo-label">{aktiv?.label}</span>
+          <span className="geo-label">{aktivLabel}</span>
           <span className="geo-code">{aktiv?.code}</span>
         </span>
         <svg className={'geo-caret' + (offen ? ' offen' : '')} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
