@@ -24,6 +24,18 @@ export function kombiMass(elemente) {
   return { w, h };
 }
 
+// Zeile „Im Positionspreis enthalten: Montage …, Ausbau …, Entsorgung …" – nur eingegebene Posten (> 0).
+function montageZeile(config) {
+  if (config.ohneMontage) return null;
+  const posten = [
+    ['Montage', config.montage],
+    ['Ausbau', config.ausbau],
+    ['Entsorgung', config.entsorgung],
+  ].filter(([, v]) => Number(v) > 0);
+  if (!posten.length) return null;
+  return `Im Positionspreis enthalten: ${posten.map(([k, v]) => `${k} ${euro(v)}`).join(', ')}.`;
+}
+
 // Beschreibungszeilen einer Fenster-Position für den Beleg (HTML-Strings)
 export function positionZeilen(config, profil, mitMontage = true) {
   if (!config) return [];
@@ -58,9 +70,7 @@ export function positionZeilen(config, profil, mitMontage = true) {
     z.push(`Aufsatzkasten: ${Number(config.kasten.kastenhoehe) || 0} mm, ${config.kasten.bedienung} (${config.kasten.bedienungsseite})`);
   }
   if (config.rollladen) z.push(`Rollladenführung: ${esc(config.rollladen)}`);
-  if (mitMontage && !config.ohneMontage && Number(config.montage) > 0) {
-    z.push(`Im Positionspreis enthalten ist die Montage mit ${euro(config.montage)}.`);
-  }
+  if (mitMontage) { const mz = montageZeile(config); if (mz) z.push(mz); }
   return z;
 }
 
@@ -86,9 +96,7 @@ function kombiZeilen(config, profil, mitMontage = true) {
     if (el.verglasung) line += `, ${esc(el.verglasung)}${el.vsg ? ', VSG' : ''}${el.ornament ? ', Ornament' : ''}`;
     z.push(line);
   });
-  if (mitMontage && !config.ohneMontage && Number(config.montage) > 0) {
-    z.push(`Im Positionspreis enthalten ist die Montage mit ${euro(config.montage)}.`);
-  }
+  if (mitMontage) { const mz = montageZeile(config); if (mz) z.push(mz); }
   return z;
 }
 
