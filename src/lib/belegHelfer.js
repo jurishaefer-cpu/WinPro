@@ -24,16 +24,12 @@ export function kombiMass(elemente) {
   return { w, h };
 }
 
-// Zeile „Im Positionspreis enthalten: Montage …, Ausbau …, Entsorgung …" – nur eingegebene Posten (> 0).
+// Zeile „Im Positionspreis enthalten sind die Montagekosten mit € X" – Summe aus Montage, Ausbau, Entsorgung.
 function montageZeile(config) {
   if (config.ohneMontage) return null;
-  const posten = [
-    ['Montage', config.montage],
-    ['Ausbau', config.ausbau],
-    ['Entsorgung', config.entsorgung],
-  ].filter(([, v]) => Number(v) > 0);
-  if (!posten.length) return null;
-  return `Im Positionspreis enthalten: ${posten.map(([k, v]) => `${k} ${euro(v)}`).join(', ')}.`;
+  const summe = Number(config.montage || 0) + Number(config.ausbau || 0) + Number(config.entsorgung || 0);
+  if (summe <= 0) return null;
+  return `Im Positionspreis enthalten sind die Montagekosten mit ${euro(summe)}.`;
 }
 
 // Beschreibungszeilen einer Fenster-Position für den Beleg (HTML-Strings)
