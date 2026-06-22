@@ -1996,13 +1996,25 @@ body {
 .geo-option .geo-label { font-size: 15px; }
 
 /* Mitte */
-.np-chips { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; align-self: flex-start; }
+.np-chips { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; align-self: stretch; width: 100%; align-items: center; }
 .np-chip {
   background: #fff; border: 1px solid #e5e7eb; border-radius: 20px;
   padding: 7px 14px; font-size: 13px; color: #4a4f57;
 }
 .np-chip b { color: #1a1a1a; }
 .np-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #c0152e; margin-right: 4px; }
+
+/* Verbinden / Trennen — Pille oben rechts in der Zeichnungs-Toolbar */
+.np-merge {
+  margin-left: auto; display: inline-flex; align-items: center; gap: 10px;
+  background: #fff; border: 1.5px solid #8b1a1a; border-radius: 10px; padding: 5px 6px 5px 14px;
+}
+.np-merge-label { font-size: 13px; font-weight: 700; color: #8b1a1a; }
+.np-merge-ja {
+  border: none; background: #8b1a1a; color: #fff; font-weight: 700;
+  border-radius: 7px; padding: 6px 18px; font-size: 13px; cursor: pointer;
+}
+.np-merge-ja:hover { background: #731515; }
 .fz-svg { display: block; }
 /* Editierbare Maßfelder direkt in der Zeichnung */
 .fz-massinput {

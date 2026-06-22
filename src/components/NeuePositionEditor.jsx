@@ -70,7 +70,44 @@ function makeElement(src, id) {
     dichtungAussen: src?.dichtungAussen ?? 'Grau',
     kommentar: src?.kommentar ?? '',
     nettoJeStueck: src?.nettoJeStueck ?? 0,
+    // Verbinden/Trennen: aus zwei benachbarten Teilen zusammengeführtes Element
+    verbunden: src?.verbunden ?? false,
+    _dir: src?._dir ?? null,          // 'h' = nebeneinander, 'v' = übereinander
+    _parts: src?._parts ?? null,      // Bauteile zum späteren Trennen
   };
+}
+
+// Flügel-Zeilenzahl eines Elements (1 = einreihig nebeneinander)
+function elementRows(e) {
+  return Math.ceil((e.panes?.length || 1) / (e.cols || 1));
+}
+
+// Findet einen verbindbaren Nachbarn des aktiven Elements:
+// nebeneinander (gleiche Höhe, beide einreihig) oder übereinander (gleiche Breite, beide einspaltig).
+function findMergePartner(a, els) {
+  if (!a) return null;
+  const ar = a.row ?? 0, ac = a.col ?? 0;
+  const sameNum = (x, y) => Math.round(Number(x)) === Math.round(Number(y));
+  if (elementRows(a) === 1) {
+    const right = els.find(e => e.id !== a.id && (e.row ?? 0) === ar && (e.col ?? 0) === ac + 1 && elementRows(e) === 1 && sameNum(e.hoehe, a.hoehe));
+    if (right) return { dir: 'h', left: a, right };
+    const left = els.find(e => e.id !== a.id && (e.row ?? 0) === ar && (e.col ?? 0) === ac - 1 && elementRows(e) === 1 && sameNum(e.hoehe, a.hoehe));
+    if (left) return { dir: 'h', left, right: a };
+  }
+  if ((a.cols || 1) === 1) {
+    const below = els.find(e => e.id !== a.id && (e.col ?? 0) === ac && (e.row ?? 0) === ar + 1 && (e.cols || 1) === 1 && sameNum(e.breite, a.breite));
+    if (below) return { dir: 'v', top: a, bottom: below };
+    const above = els.find(e => e.id !== a.id && (e.col ?? 0) === ac && (e.row ?? 0) === ar - 1 && (e.cols || 1) === 1 && sameNum(e.breite, a.breite));
+    if (above) return { dir: 'v', top: above, bottom: a };
+  }
+  return null;
+}
+
+// Bauteil-Beschreibung eines Elements (für späteres Trennen). Ein bereits verbundenes
+// Element liefert seine eigenen Teile zurück, sonst sich selbst als ein Teil.
+function partsOf(e) {
+  if (e.verbunden && Array.isArray(e._parts) && e._parts.length) return e._parts;
+  return [{ paneCount: e.panes.length, cols: e.cols || 1, code: e.code, kategorie: e.kategorie }];
 }
 
 function buildInitElemente(cfg) {
@@ -118,6 +155,8 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
   const geometrie = geometrieByCode(aktiv.code);
   const geomOptionen = GEOMETRIEN.filter(g => g.kategorie === aktiv.kategorie);
   const istKombi = elemente.length > 1;
+  // Verbinden/Trennen: passender Nachbar zum aktiven Element (nur in einer Kombination)
+  const mergePartner = istKombi ? findMergePartner(aktiv, elemente) : null;
 
   // Farboptionen aus dem gewählten Profil
   const farbOptionen = useMemo(() => {
@@ -202,6 +241,113 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
     const rest = elemente.filter(e => e.id !== id);
     setElemente(rest);
     if (activeId === id) setActiveId(rest[0].id);
+    setSelectedPane(null);
+  }
+
+  // Zwei benachbarte Teile zu EINEM Element (ein Rahmen mit Pfosten) verbinden.
+  function verbinde() {
+    const cand = findMergePartner(aktiv, elemente);
+    if (!cand) return;
+    const newId = `el${nextId.current++}`;
+    setElemente(prev => {
+      if (cand.dir === 'h') {
+        const L = prev.find(e => e.id === cand.left.id);
+        const R = prev.find(e => e.id === cand.right.id);
+        if (!L || !R) return prev;
+        const M = makeElement({
+          ...L,
+          panes: [...L.panes, ...R.panes],
+          cols: (L.cols || 1) + (R.cols || 1),
+          colWidths: [...L.colWidths, ...R.colWidths],
+          rowHeights: [Number(L.hoehe)],
+          breite: (Number(L.breite) || 0) + (Number(R.breite) || 0),
+          hoehe: Number(L.hoehe),
+          row: L.row ?? 0, col: L.col ?? 0, offset: undefined,
+          verbunden: true, _dir: 'h', _parts: [...partsOf(L), ...partsOf(R)],
+          nettoJeStueck: (Number(L.nettoJeStueck) || 0) + (Number(R.nettoJeStueck) || 0),
+        }, newId);
+        const wasMain = prev[0].id === L.id || prev[0].id === R.id;
+        const rest = prev.filter(e => e.id !== L.id && e.id !== R.id)
+          .map(e => ((e.col ?? 0) > (R.col ?? 0) ? { ...e, col: (e.col ?? 0) - 1 } : e));
+        return wasMain ? [M, ...rest] : [...rest, M];
+      }
+      const T = prev.find(e => e.id === cand.top.id);
+      const B = prev.find(e => e.id === cand.bottom.id);
+      if (!T || !B) return prev;
+      const M = makeElement({
+        ...T,
+        panes: [...T.panes, ...B.panes],
+        cols: 1,
+        colWidths: [Number(T.breite)],
+        rowHeights: [...T.rowHeights, ...B.rowHeights],
+        breite: Number(T.breite),
+        hoehe: (Number(T.hoehe) || 0) + (Number(B.hoehe) || 0),
+        row: T.row ?? 0, col: T.col ?? 0, offset: undefined,
+        verbunden: true, _dir: 'v', _parts: [...partsOf(T), ...partsOf(B)],
+        nettoJeStueck: (Number(T.nettoJeStueck) || 0) + (Number(B.nettoJeStueck) || 0),
+      }, newId);
+      const wasMain = prev[0].id === T.id || prev[0].id === B.id;
+      const rest = prev.filter(e => e.id !== T.id && e.id !== B.id)
+        .map(e => ((e.row ?? 0) > (B.row ?? 0) ? { ...e, row: (e.row ?? 0) - 1 } : e));
+      return wasMain ? [M, ...rest] : [...rest, M];
+    });
+    setActiveId(newId);
+    setSelectedPane(null);
+  }
+
+  // Verbundenes Element wieder in seine Bauteile trennen.
+  function trenne() {
+    const M = elemente.find(e => e.id === activeId);
+    if (!M || !M.verbunden) return;
+    const parts = partsOf(M);
+    const dir = M._dir || 'h';
+    const ids = parts.map(() => `el${nextId.current++}`);
+    const frameProps = {
+      innenfarbe: M.innenfarbe, aussenfarbe: M.aussenfarbe,
+      verglasung: M.verglasung, vsg: M.vsg, ornament: M.ornament, ornamentArt: M.ornamentArt,
+      dichtungInnen: M.dichtungInnen, dichtungAussen: M.dichtungAussen,
+      verbreiterung: M.verbreiterung, verb: M.verb,
+      aufsatzkasten: M.aufsatzkasten, kasten: M.kasten,
+      rollladen: M.rollladen, kommentar: M.kommentar,
+    };
+    setElemente(prev => {
+      const cur = prev.find(e => e.id === M.id) || M;
+      const newEls = [];
+      let pIdx = 0, wIdx = 0, hIdx = 0;
+      parts.forEach((pt, i) => {
+        const paneSlice = cur.panes.slice(pIdx, pIdx + pt.paneCount);
+        pIdx += pt.paneCount;
+        const netto = i === 0 ? (Number(cur.nettoJeStueck) || 0) : 0;
+        if (dir === 'h') {
+          const widthSlice = cur.colWidths.slice(wIdx, wIdx + pt.cols);
+          wIdx += pt.cols;
+          newEls.push(makeElement({
+            ...frameProps, code: pt.code, kategorie: pt.kategorie,
+            panes: paneSlice, cols: pt.cols, colWidths: widthSlice,
+            breite: widthSlice.reduce((a, c) => a + (Number(c) || 0), 0),
+            hoehe: Number(cur.hoehe), rowHeights: [Number(cur.hoehe)],
+            row: cur.row ?? 0, col: (cur.col ?? 0) + i, nettoJeStueck: netto,
+          }, ids[i]));
+        } else {
+          const heightSlice = cur.rowHeights.slice(hIdx, hIdx + pt.paneCount);
+          hIdx += pt.paneCount;
+          newEls.push(makeElement({
+            ...frameProps, code: pt.code, kategorie: pt.kategorie,
+            panes: paneSlice, cols: 1, colWidths: [Number(cur.breite)],
+            breite: Number(cur.breite),
+            hoehe: heightSlice.reduce((a, c) => a + (Number(c) || 0), 0), rowHeights: heightSlice,
+            row: (cur.row ?? 0) + i, col: cur.col ?? 0, nettoJeStueck: netto,
+          }, ids[i]));
+        }
+      });
+      const shift = parts.length - 1;
+      let rest = prev.filter(e => e.id !== M.id);
+      if (dir === 'h') rest = rest.map(e => ((e.col ?? 0) > (cur.col ?? 0) ? { ...e, col: (e.col ?? 0) + shift } : e));
+      else rest = rest.map(e => ((e.row ?? 0) > (cur.row ?? 0) ? { ...e, row: (e.row ?? 0) + shift } : e));
+      const wasMain = prev[0].id === M.id;
+      return wasMain ? [...newEls, ...rest] : [...rest, ...newEls];
+    });
+    setActiveId(ids[0]);
     setSelectedPane(null);
   }
   // Element an eine Seite des Hauptfensters andocken (Drag im Canvas)
@@ -486,6 +632,17 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
             <span className="np-chip"><span className="np-dot" /> {systemLabel}</span>
             <span className="np-chip">Maß <b>{Math.round(breiteGes).toLocaleString('de-DE')} × {Math.round(hoeheGes).toLocaleString('de-DE')} mm</b></span>
             <span className="np-chip">Fläche <b>{flaeche.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} m²</b></span>
+            {aktiv.verbunden ? (
+              <div className="np-merge">
+                <span className="np-merge-label">Trennen</span>
+                <button className="np-merge-ja" onClick={trenne}>Ja</button>
+              </div>
+            ) : mergePartner ? (
+              <div className="np-merge">
+                <span className="np-merge-label">Verbinden</span>
+                <button className="np-merge-ja" onClick={verbinde}>Ja</button>
+              </div>
+            ) : null}
           </div>
           {/* Mobiler In-Fluss-Knopf oben (Desktop nutzt den runden FAB in der Zeichnung) */}
           <button className="np-add-inline" onClick={() => setAddMenu(v => !v)}>+ Element hinzufügen</button>
