@@ -469,7 +469,6 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
 export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', onUnitClick, activeId, onPaneClick, selectedPane, onDock, onSlide, onTotalBreite, onTotalHoehe, onColBreite, onElementHoehe }) {
   const svgRef = useRef(null);
   const [drag, setDrag] = useState(null); // { id, side, targetId }
-  const [hDrag, setHDrag] = useState(null); // Höhe ziehen: { id }
   function svgPoint(clientX, clientY) {
     const svg = svgRef.current;
     if (!svg || !svg.getScreenCTM) return { x: 0, y: 0 };
@@ -606,22 +605,6 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', onUnitC
     if (drag && drag.id === id && drag.side && onDock) onDock(id, drag.side, drag.targetId);
     setDrag(null);
   }
-  // Höhe je Element frei ziehen (kann über die Zeilen darunter reichen).
-  function hDown(e, id) {
-    e.stopPropagation();
-    e.currentTarget.setPointerCapture?.(e.pointerId);
-    setHDrag({ id });
-  }
-  function hMove(e, id) {
-    if (!hDrag || hDrag.id !== id || !onElementHoehe) return;
-    const p = svgPoint(e.clientX, e.clientY);
-    const u = units.find(x => x.e._key === id);
-    if (!u) return;
-    let mm = Math.round(((p.y - u.r0.y) / scale) / 10) * 10;   // Unterkante folgt dem Finger, auf 10 mm gerundet
-    mm = Math.max(200, mm);
-    onElementHoehe(id, mm);
-  }
-  function hUp() { setHDrag(null); }
 
   return (
     <svg ref={svgRef} viewBox={`0 0 ${VB_W} ${VB_H}`} preserveAspectRatio="xMidYMid meet" className="fz-svg">
@@ -725,18 +708,6 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', onUnitC
                       fill="#0f1f3d" opacity={drag && drag.id === u.e._key ? 1 : 0.85} />
                 <text x={u.r0.x + u.r0.w / 2} y={u.r0.y + 7 + 13} textAnchor="middle" dominantBaseline="central"
                       fontSize="12.5" fontWeight="700" fill="#fff" style={{ pointerEvents: 'none' }}>↔ ziehen</text>
-              </g>
-            )}
-            {/* Höhen-Griff (jedes Element einzeln; darf über die Nachbarn darunter reichen) */}
-            {editM && onElementHoehe && (
-              <g style={{ cursor: 'ns-resize', touchAction: 'none' }}
-                 onPointerDown={e => hDown(e, u.e._key)}
-                 onPointerMove={e => hMove(e, u.e._key)}
-                 onPointerUp={hUp}>
-                <rect x={u.r0.x + u.r0.w / 2 - hw / 2} y={u.r0.y + u.r0.h - 13} width={hw} height={26} rx="13"
-                      fill="#0f1f3d" opacity={hDrag && hDrag.id === u.e._key ? 1 : 0.85} />
-                <text x={u.r0.x + u.r0.w / 2} y={u.r0.y + u.r0.h} textAnchor="middle" dominantBaseline="central"
-                      fontSize="12.5" fontWeight="700" fill="#fff" style={{ pointerEvents: 'none' }}>↕ {Math.round(u.elHmm)}</text>
               </g>
             )}
           </g>
