@@ -468,7 +468,8 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
 // Kombination mehrerer gekoppelter Einheiten (eigener Rahmen je Element), im Raster (row/col).
 export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', onUnitClick, activeId, onPaneClick, selectedPane, onDock, onSlide, onTotalBreite, onTotalHoehe, onColBreite, onElementHoehe }) {
   const svgRef = useRef(null);
-  const [drag, setDrag] = useState(null); // { id, side }
+  const [drag, setDrag] = useState(null); // { id, side, targetId }
+  const [hDrag, setHDrag] = useState(null); // Höhe ziehen: { id }
   function svgPoint(clientX, clientY) {
     const svg = svgRef.current;
     if (!svg || !svg.getScreenCTM) return { x: 0, y: 0 };
@@ -483,9 +484,26 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', onUnitC
   const colsSet = [...new Set(els.map(e => e.col ?? 0))].sort((a, b) => a - b);
   const rowsSet = [...new Set(els.map(e => e.row ?? 0))].sort((a, b) => a - b);
   const colWmm = {}; colsSet.forEach(cc => { colWmm[cc] = Math.max(...els.filter(e => (e.col ?? 0) === cc).map(e => Math.max(200, Number(e.breite) || 1000))); });
-  const rowHmm = {}; rowsSet.forEach(rr => { rowHmm[rr] = Math.max(...els.filter(e => (e.row ?? 0) === rr).map(e => Math.max(200, Number(e.hoehe) || 1200))); });
+  // Raster-Zeilenhöhe aus den „gebundenen" Elementen (die direkt ein weiteres Element unter sich
+  // haben oder in der untersten Zeile liegen). Ein Element mit freiem Platz darunter darf höher
+  // gezogen werden und über die Zeilen darunter reichen, ohne die Zeilenhöhe der Nachbarn aufzublähen.
+  const maxRow = Math.max(...rowsSet);
+  const hMm = e => Math.max(200, Number(e.hoehe) || 1200);
+  const gebunden = e => {
+    const c = e.col ?? 0, r = e.row ?? 0;
+    if (r === maxRow) return true;
+    return els.some(o => (o.col ?? 0) === c && (o.row ?? 0) === r + 1);
+  };
+  const rowHmm = {}; rowsSet.forEach(rr => {
+    const inRow = els.filter(e => (e.row ?? 0) === rr);
+    const pool = inRow.filter(gebunden);
+    rowHmm[rr] = Math.max(...(pool.length ? pool : inRow).map(hMm));
+  });
   const totalWmm = colsSet.reduce((a, cc) => a + colWmm[cc], 0);
-  const totalHmm = rowsSet.reduce((a, rr) => a + rowHmm[rr], 0);
+  // Gesamthöhe: Summe der Zeilen, mind. so hoch wie das am weitesten nach unten reichende Element.
+  const rowTopMm = {}; { let y = 0; rowsSet.forEach(rr => { rowTopMm[rr] = y; y += rowHmm[rr]; }); }
+  let totalHmm = rowsSet.reduce((a, rr) => a + rowHmm[rr], 0);
+  els.forEach(e => { const b = rowTopMm[e.row ?? 0] + hMm(e); if (b > totalHmm) totalHmm = b; });
 
   const maxW = 600, maxH = 440;
   const scale = Math.min(maxW / Math.max(200, totalWmm), maxH / Math.max(200, totalHmm));
@@ -588,6 +606,22 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', onUnitC
     if (drag && drag.id === id && drag.side && onDock) onDock(id, drag.side, drag.targetId);
     setDrag(null);
   }
+  // Höhe je Element frei ziehen (kann über die Zeilen darunter reichen).
+  function hDown(e, id) {
+    e.stopPropagation();
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+    setHDrag({ id });
+  }
+  function hMove(e, id) {
+    if (!hDrag || hDrag.id !== id || !onElementHoehe) return;
+    const p = svgPoint(e.clientX, e.clientY);
+    const u = units.find(x => x.e._key === id);
+    if (!u) return;
+    let mm = Math.round(((p.y - u.r0.y) / scale) / 10) * 10;   // Unterkante folgt dem Finger, auf 10 mm gerundet
+    mm = Math.max(200, mm);
+    onElementHoehe(id, mm);
+  }
+  function hUp() { setHDrag(null); }
 
   return (
     <svg ref={svgRef} viewBox={`0 0 ${VB_W} ${VB_H}`} preserveAspectRatio="xMidYMid meet" className="fz-svg">
@@ -691,6 +725,18 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', onUnitC
                       fill="#0f1f3d" opacity={drag && drag.id === u.e._key ? 1 : 0.85} />
                 <text x={u.r0.x + u.r0.w / 2} y={u.r0.y + 7 + 13} textAnchor="middle" dominantBaseline="central"
                       fontSize="12.5" fontWeight="700" fill="#fff" style={{ pointerEvents: 'none' }}>↔ ziehen</text>
+              </g>
+            )}
+            {/* Höhen-Griff (jedes Element einzeln; darf über die Nachbarn darunter reichen) */}
+            {editM && onElementHoehe && (
+              <g style={{ cursor: 'ns-resize', touchAction: 'none' }}
+                 onPointerDown={e => hDown(e, u.e._key)}
+                 onPointerMove={e => hMove(e, u.e._key)}
+                 onPointerUp={hUp}>
+                <rect x={u.r0.x + u.r0.w / 2 - hw / 2} y={u.r0.y + u.r0.h - 13} width={hw} height={26} rx="13"
+                      fill="#0f1f3d" opacity={hDrag && hDrag.id === u.e._key ? 1 : 0.85} />
+                <text x={u.r0.x + u.r0.w / 2} y={u.r0.y + u.r0.h} textAnchor="middle" dominantBaseline="central"
+                      fontSize="12.5" fontWeight="700" fill="#fff" style={{ pointerEvents: 'none' }}>↕ {Math.round(u.elHmm)}</text>
               </g>
             )}
           </g>
