@@ -89,7 +89,13 @@ function kombiZeilen(config, profil, mitMontage = true) {
         ? `, Farbe ${esc(el.innenfarbe)}`
         : `, Farbe innen ${esc(el.innenfarbe ?? '')} / außen ${esc(el.aussenfarbe ?? '')}`;
     }
-    if (el.verglasung) line += `, ${esc(el.verglasung)}${el.vsg ? ', VSG' : ''}${el.ornament ? ', Ornament' : ''}`;
+    if (el.verglasung) {
+      line += `, ${esc(el.verglasung)}${el.vsg ? ', VSG' : ''}`;
+      if (el.ornament) {
+        line += ', Ornament';
+        if (el.ornamentArt) line += ` (<span style="color:#8b1a1a">${esc(el.ornamentArt)}</span>)`;
+      }
+    }
     z.push(line);
   });
   if (mitMontage) { const mz = montageZeile(config); if (mz) z.push(mz); }
