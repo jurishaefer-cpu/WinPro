@@ -558,6 +558,8 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
             </div>
             <span className="np-canvas-badge">{istKombi ? `aktiv: ${aktiv.code}` : aktiv.code}</span>
           </div>
+          {/* Mobiler In-Fluss-Knopf (Desktop nutzt den runden FAB in der Zeichnung) */}
+          <button className="np-add-inline" onClick={() => setAddMenu(v => !v)}>+ Element hinzufügen</button>
         </section>
 
         {/* Rechte Spalte */}

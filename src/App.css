@@ -2071,6 +2071,8 @@ body {
   transition: background .12s, transform .12s;
 }
 .np-add-fab:hover { background: #eef2fb; transform: translateY(-1px); }
+/* Mobiler In-Fluss-Knopf statt FAB (nur auf kleinen Schirmen sichtbar) */
+.np-add-inline { display: none; }
 .np-add-menu {
   position: absolute; left: 16px; bottom: 76px; z-index: 10;
   width: 250px;
@@ -2134,12 +2136,17 @@ body {
 .np-gesamt b { color: #1a1a1a; font-size: 15px; }
 
 @media (max-width: 1100px) {
-  /* Einspaltig & in sinnvoller Reihenfolge: Zeichnung oben, dann Eingaben */
-  .np-body { display: flex; flex-direction: column; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+  /* Kopf & Fuß bleiben fix; NUR der Body scrollt (ein einziger, normaler Scrollbereich) */
+  .np-body {
+    display: flex; flex-direction: column;
+    flex: 1; min-height: 0;
+    overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
+  }
   .np-col { overflow-y: visible; }
+  /* Zeichnung oben, dann Eingaben */
   .np-col--center { order: -1; }
   .np-col--left, .np-col--right { border: none; border-bottom: 1px solid #eef0f2; }
-  .np-footer { flex-direction: column; align-items: stretch; }
+  .np-footer { flex-direction: column; align-items: stretch; box-shadow: 0 -4px 16px rgba(15, 31, 61, 0.06); }
   .np-footer-preis { flex-wrap: wrap; }
 }
 
@@ -2304,13 +2311,16 @@ body {
   .np-chip { font-size: 12px; padding: 6px 10px; }
 
   /* Fuß: Kosten + Preis + Aktionen gestapelt */
-  .np-footer { padding: 12px 16px; gap: 14px; }
-  .np-footer-kosten { gap: 12px; }
-  .np-footer-preis { flex-direction: column; align-items: stretch; gap: 12px; }
+  .np-footer { padding: 9px 16px 11px; gap: 9px; }
+  .np-footer-kosten { gap: 10px; }
+  .np-kosten-feld label, .np-netto label { margin-bottom: 3px; font-size: 10px; }
+  .np-euro-input input { padding: 7px 0; }
+  .np-footer-preis { flex-direction: column; align-items: stretch; gap: 9px; }
   .np-netto { width: 100%; }
+  .np-netto-summe { margin-top: 3px; }
   .np-euro-input--lg { width: 100%; }
   .np-footer-actions { width: 100%; }
-  .np-footer-actions .btn { flex: 1; text-align: center; }
+  .np-footer-actions .btn { flex: 1; text-align: center; padding: 12px 6px; }
   .np-gesamt { align-self: flex-start; padding-bottom: 0; }
 
   /* Header-Select & In-Zeichnung-Maßfelder ≥16px → kein iOS-Zoom beim Fokus */
@@ -2318,11 +2328,24 @@ body {
   .fz-massinput { font-size: 18px; }
   .fz-massinput--sub { font-size: 16px; }
 
-  /* Zeichnung kompakter, damit Formular + Zeichnung gut zusammen scrollen */
+  /* Zeichnung kompakter */
   .np-canvas { min-height: auto; padding: 4px 0 8px; }
-  .np-canvas .fz-svg { height: 44vh; }
-  /* Body: weiches Scrollen, kein Scroll-Übergreifen auf die Seite dahinter */
-  .np-body { -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+  .np-canvas .fz-svg { height: 42vh; }
+  /* Statt schwebendem FAB: klarer Knopf im Fluss unter der Zeichnung */
+  .np-add-fab { display: none; }
+  .np-add-inline {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    margin: 6px auto 0; width: 100%; max-width: 320px; height: 50px;
+    border: 1px solid #d6e0f7; border-radius: 12px; background: #fff; color: #0f1f3d;
+    font-size: 16px; font-weight: 700; cursor: pointer;
+  }
+  .np-add-inline:active { background: #eef2fb; }
+  /* Hinzufügen-/Öffnungsart-Menü als zentrierter Dialog (kein Anker an der Zeichnung nötig) */
+  .np-add-menu, .pane-menu {
+    position: fixed; left: 50%; top: 50%; right: auto; bottom: auto;
+    transform: translate(-50%, -50%);
+    width: min(300px, calc(100vw - 32px)); max-height: 80vh; overflow-y: auto;
+  }
 
   /* +-Knopf größer für Touch */
   .np-add-fab { width: 54px; height: 54px; font-size: 30px; }
