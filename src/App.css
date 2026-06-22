@@ -1841,6 +1841,8 @@ body {
 .np-overlay {
   position: fixed;
   inset: 0;
+  height: 100vh;
+  height: 100dvh;          /* folgt der sichtbaren Höhe (Adressleiste) auf Mobilgeräten */
   z-index: 200;
   background: #fff;
   display: flex;
@@ -2021,8 +2023,7 @@ body {
 .fz-massinput:focus { border-color: #0f1f3d; box-shadow: 0 0 0 3px rgba(15,31,61,0.12); }
 .fz-massinput--sub { font-size: 15px; font-weight: 600; border-radius: 6px; padding: 0 2px; }
 .np-canvas { flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; position: relative; }
-/* Editor-Zeichnung: Touch-Gesten gehören dem Ziehen/Tippen, nicht dem Seiten-Scroll */
-.np-canvas .fz-svg { height: 56vh; width: auto; max-width: 100%; touch-action: none; }
+.np-canvas .fz-svg { height: 56vh; width: auto; max-width: 100%; }
 
 /* Pane-Auswahlmenü (Öffnungsart je Feld) – oben links über der Zeichnung */
 .pane-menu-backdrop {
@@ -2133,8 +2134,10 @@ body {
 .np-gesamt b { color: #1a1a1a; font-size: 15px; }
 
 @media (max-width: 1100px) {
-  .np-body { grid-template-columns: 1fr; overflow-y: auto; }
+  /* Einspaltig & in sinnvoller Reihenfolge: Zeichnung oben, dann Eingaben */
+  .np-body { display: flex; flex-direction: column; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
   .np-col { overflow-y: visible; }
+  .np-col--center { order: -1; }
   .np-col--left, .np-col--right { border: none; border-bottom: 1px solid #eef0f2; }
   .np-footer { flex-direction: column; align-items: stretch; }
   .np-footer-preis { flex-wrap: wrap; }
@@ -2315,9 +2318,11 @@ body {
   .fz-massinput { font-size: 18px; }
   .fz-massinput--sub { font-size: 16px; }
 
-  /* Mehr Platz für die Kombi-Zeichnung, Touch-Drag bequemer */
-  .np-canvas { min-height: 50vh; }
-  .np-canvas .fz-svg { height: 60vh; }
+  /* Zeichnung kompakter, damit Formular + Zeichnung gut zusammen scrollen */
+  .np-canvas { min-height: auto; padding: 4px 0 8px; }
+  .np-canvas .fz-svg { height: 44vh; }
+  /* Body: weiches Scrollen, kein Scroll-Übergreifen auf die Seite dahinter */
+  .np-body { -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
 
   /* +-Knopf größer für Touch */
   .np-add-fab { width: 54px; height: 54px; font-size: 30px; }
