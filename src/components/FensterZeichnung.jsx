@@ -403,7 +403,7 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
                  onChange={e => onBreite(e.target.value)} />
         </foreignObject>
       ) : (
-        <text x={cx} y={mainTopY - 10} textAnchor="middle" fontSize="32" fill="#0f1f3d" fontWeight="700">{Math.round(b)}</text>
+        <text x={cx} y={mainTopY - 10} textAnchor="middle" fontSize="40" fill="#0f1f3d" fontWeight="700">{Math.round(b)}</text>
       )}
 
       {/* Zwischenmaße Breite (je Spalte) – editierbar */}
@@ -418,7 +418,7 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
                      onChange={e => onColWidth(s.idx, e.target.value)} />
             </foreignObject>
           ) : (
-            <text x={(s.x0 + s.x1) / 2} y={subTopY - 7} textAnchor="middle" fontSize="24" fill="#0f1f3d" fontWeight="700">{s.mm}</text>
+            <text x={(s.x0 + s.x1) / 2} y={subTopY - 7} textAnchor="middle" fontSize="30" fill="#0f1f3d" fontWeight="700">{s.mm}</text>
           )}
         </g>
       ))}
@@ -433,7 +433,7 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
                  onChange={e => onHoehe(e.target.value)} />
         </foreignObject>
       ) : (
-        <text x={mainLeftX - 10} y={cy} textAnchor="middle" fontSize="32" fill="#0f1f3d" fontWeight="700"
+        <text x={mainLeftX - 10} y={cy} textAnchor="middle" fontSize="40" fill="#0f1f3d" fontWeight="700"
               transform={`rotate(-90 ${mainLeftX - 10} ${cy})`}>{Math.round(hh)}</text>
       )}
 
@@ -452,7 +452,7 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
                        onChange={e => onRowHeight(s.idx, e.target.value)} />
               </foreignObject>
             ) : (
-              <text x={subLeftX - 7} y={mid} textAnchor="middle" fontSize="24" fill="#0f1f3d" fontWeight="700"
+              <text x={subLeftX - 7} y={mid} textAnchor="middle" fontSize="30" fill="#0f1f3d" fontWeight="700"
                     transform={`rotate(-90 ${subLeftX - 7} ${mid})`}>{s.mm}</text>
             )}
           </g>
@@ -637,7 +637,7 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', onUnitC
                  onBlur={e => onTotalBreite(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); }} />
         </foreignObject>
       ) : (
-        <text x={ox + totalWpx / 2} y={topY - 10} textAnchor="middle" fontSize="32" fill="#0f1f3d" fontWeight="700">{Math.round(totalWmm)}</text>
+        <text x={ox + totalWpx / 2} y={topY - 10} textAnchor="middle" fontSize="38" fill="#0f1f3d" fontWeight="700">{Math.round(totalWmm)}</text>
       )}
 
       {/* Breitenbemaßung je Element (oben, innen) – oberstes Element jeder Spalte, eigene Breite */}
@@ -654,7 +654,7 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', onUnitC
                        onChange={e => onElementBreite(u.e._key, e.target.value)} />
               </foreignObject>
             ) : (
-              <text x={(x0 + x1) / 2} y={oy - 22} textAnchor="middle" fontSize="22" fill="#0f1f3d" fontWeight="700">{Math.round(u.r0.w / scale)}</text>
+              <text x={(x0 + x1) / 2} y={oy - 22} textAnchor="middle" fontSize="26" fill="#0f1f3d" fontWeight="700">{Math.round(u.r0.w / scale)}</text>
             )}
           </g>
         );
@@ -671,7 +671,7 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', onUnitC
                  onBlur={e => onTotalHoehe(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); }} />
         </foreignObject>
       ) : (
-        <text x={leftX - 10} y={oy + totalHpx / 2} textAnchor="middle" fontSize="32" fill="#0f1f3d" fontWeight="700"
+        <text x={leftX - 10} y={oy + totalHpx / 2} textAnchor="middle" fontSize="38" fill="#0f1f3d" fontWeight="700"
               transform={`rotate(-90 ${leftX - 10} ${oy + totalHpx / 2})`}>{Math.round(totalHmm)}</text>
       )}
 
@@ -683,7 +683,7 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', onUnitC
             <line x1={ox - 14} y1={y0} x2={ox - 14} y2={y1} stroke="#0f1f3d" strokeWidth="1" />
             <line x1={ox - 19} y1={y0} x2={ox - 9} y2={y0} stroke="#0f1f3d" strokeWidth="1" />
             <line x1={ox - 19} y1={y1} x2={ox - 9} y2={y1} stroke="#0f1f3d" strokeWidth="1" />
-            <text x={ox - 22} y={mid} textAnchor="middle" fontSize="22" fill="#0f1f3d" fontWeight="700"
+            <text x={ox - 22} y={mid} textAnchor="middle" fontSize="26" fill="#0f1f3d" fontWeight="700"
                   transform={`rotate(-90 ${ox - 22} ${mid})`}>{Math.round(rowHmm[rr])}</text>
           </g>
         );
