@@ -46,6 +46,7 @@ function makeElement(src, id) {
     id,
     row: src?.row ?? 0,
     col: src?.col ?? 0,
+    offset: src?.offset,                 // Versatz entlang der Andock-Kante (mm); undefiniert = unten bündig
     kategorie: src?.kategorie ?? 'fenster',
     code,
     panes,
@@ -214,13 +215,17 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
       else if (side === 'links') col = Math.min(...cols) - 1;
       else if (side === 'unten') row = Math.max(...rows) + 1;
       else if (side === 'oben') row = Math.min(...rows) - 1;
-      // Maße bleiben unabhängig – nur die Rasterposition ändert sich.
-      let next = prev.map(e => (e.id === id ? { ...e, row, col } : e));
+      // Maße bleiben unabhängig – nur die Rasterposition ändert sich; Versatz zurücksetzen.
+      let next = prev.map(e => (e.id === id ? { ...e, row, col, offset: undefined } : e));
       const minR = Math.min(...next.map(e => e.row ?? 0));
       const minC = Math.min(...next.map(e => e.col ?? 0));
       next = next.map(e => ({ ...e, row: (e.row ?? 0) - minR, col: (e.col ?? 0) - minC }));
       return next;
     });
+  }
+  // Element entlang seiner Andock-Kante verschieben (Versatz in mm)
+  function slideElement(id, offsetMm) {
+    setElemente(prev => prev.map(e => (e.id === id ? { ...e, offset: offsetMm } : e)));
   }
 
   // --- Maße / Preis ---
@@ -444,7 +449,8 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
           <div className="np-canvas">
             {istKombi ? (
               <KombinationsZeichnung elemente={elemente} activeId={activeId}
-                onUnitClick={switchActive} onPaneClick={setSelectedPane} selectedPane={selectedPane} onDock={dockElement} />
+                onUnitClick={switchActive} onPaneClick={setSelectedPane} selectedPane={selectedPane}
+                onDock={dockElement} onSlide={slideElement} />
             ) : (
               <FensterZeichnung geometrie={geometrie} breite={aktiv.breite} hoehe={aktiv.hoehe}
                 verbreiterung={aktiv.verbreiterung ? aktiv.verb : null}

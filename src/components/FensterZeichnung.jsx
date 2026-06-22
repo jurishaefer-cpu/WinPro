@@ -466,7 +466,7 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
 }
 
 // Kombination mehrerer gekoppelter Einheiten (eigener Rahmen je Element), im Raster (row/col).
-export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', onUnitClick, activeId, onPaneClick, selectedPane, onDock }) {
+export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', onUnitClick, activeId, onPaneClick, selectedPane, onDock, onSlide }) {
   const svgRef = useRef(null);
   const [drag, setDrag] = useState(null); // { id, side }
   function svgPoint(clientX, clientY) {
@@ -500,11 +500,14 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', onUnitC
 
   const units = els.map(e => {
     const cc = e.col ?? 0, rr = e.row ?? 0;
-    const elBmm = Math.max(200, Number(e.breite) || colWmm[cc]);
     const elHmm = Math.max(200, Number(e.hoehe) || rowHmm[rr]);
-    // Höhen bleiben unabhängig: jedes Element in eigener Höhe, unten bündig in seiner Zeile.
-    const rowBottom = rowYpx[rr] + rowHmm[rr] * scale;
-    const r0 = { x: colXpx[cc], y: rowBottom - elHmm * scale, w: colWmm[cc] * scale, h: elHmm * scale };
+    // Höhen unabhängig: Versatz entlang der Kante (offset = mm von Zeilenoberkante),
+    // Standard = unten bündig; per Drag frei verschiebbar, bleibt aber innerhalb der Zeile (verbunden).
+    const maxOffMm = Math.max(0, rowHmm[rr] - elHmm);
+    let offMm = e.offset == null ? maxOffMm : Number(e.offset);
+    if (!Number.isFinite(offMm)) offMm = maxOffMm;
+    offMm = Math.min(maxOffMm, Math.max(0, offMm));
+    const r0 = { x: colXpx[cc], y: rowYpx[rr] + offMm * scale, w: colWmm[cc] * scale, h: elHmm * scale };
     const c = computeUnit(r0, scale, {
       geometrie: geometrieByCode(e.code), breite: colWmm[cc], hoehe: elHmm,
       panes: e.panes, cols: e.cols, colWidths: e.colWidths, rowHeights: e.rowHeights,
@@ -512,20 +515,25 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', onUnitC
     });
     // rechtsbündig letztes Element seiner Zeile? → Höhenbemaßung rechts
     const rightmost = !els.some(o => (o.row ?? 0) === rr && (o.col ?? 0) > cc);
-    return { e, c, r0, elHmm, rightmost };
+    return { e, c, r0, elHmm, rr, maxOffMm, rightmost };
   });
 
   const topY = oy - 34, leftX = ox - 34;          // Gesamtmaße ganz außen
   const interaktiv = !!onUnitClick;
   const mainKey = els[0]._key;
 
-  // Andock-Seite aus Zeigerposition relativ zur Kombi-Mitte (Drag-Richtung)
-  function sideFromPoint(p) {
-    const cxA = ox + totalWpx / 2, cyA = oy + totalHpx / 2;
-    const dx = (p.x - cxA) / (totalWpx / 2 || 1);
-    const dy = (p.y - cyA) / (totalHpx / 2 || 1);
-    if (Math.abs(dx) >= Math.abs(dy)) return dx >= 0 ? 'rechts' : 'links';
-    return dy >= 0 ? 'unten' : 'oben';
+  const dropZonen = [
+    ['links', 2, oy, ox - 4, totalHpx],
+    ['rechts', ox + totalWpx + 2, oy, MR - 4, totalHpx],
+    ['oben', ox, 2, totalWpx, oy - 4],
+    ['unten', ox, oy + totalHpx + 2, totalWpx, MB - 4],
+  ];
+  // Liegt der Zeiger in einer Andock-Zone (Rand)? → Um-Docken; sonst entlang der Kante verschieben.
+  function zoneAt(p) {
+    for (const [side, zx, zy, zw, zh] of dropZonen) {
+      if (p.x >= zx && p.x <= zx + zw && p.y >= zy && p.y <= zy + zh) return side;
+    }
+    return null;
   }
   function handleDown(e, id) {
     e.stopPropagation();
@@ -534,19 +542,26 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', onUnitC
   }
   function handleMove(e, id) {
     if (!drag || drag.id !== id) return;
-    const side = sideFromPoint(svgPoint(e.clientX, e.clientY));
-    setDrag(d => (d ? { ...d, side } : d));
+    const p = svgPoint(e.clientX, e.clientY);
+    const zone = zoneAt(p);
+    if (zone) {
+      setDrag(d => (d ? { ...d, side: zone } : d));   // am Rand → Vorschau Um-Docken
+    } else {
+      setDrag(d => (d ? { ...d, side: null } : d));
+      // entlang der Kante verschieben: Element folgt vertikal dem Zeiger, bleibt in der Zeile
+      const u = units.find(unit => unit.e._key === id);
+      if (u && onSlide && u.maxOffMm > 0) {
+        // Griff sitzt ~15px unter der Element-Oberkante → unter dem Finger halten
+        let offMm = (p.y - 15 - rowYpx[u.rr]) / scale;
+        offMm = Math.min(u.maxOffMm, Math.max(0, offMm));
+        onSlide(id, offMm);
+      }
+    }
   }
   function handleUp(e, id) {
     if (drag && drag.id === id && drag.side && onDock) onDock(id, drag.side);
     setDrag(null);
   }
-  const dropZonen = [
-    ['links', 2, oy, ox - 4, totalHpx],
-    ['rechts', ox + totalWpx + 2, oy, MR - 4, totalHpx],
-    ['oben', ox, 2, totalWpx, oy - 4],
-    ['unten', ox, oy + totalHpx + 2, totalWpx, MB - 4],
-  ];
 
   return (
     <svg ref={svgRef} viewBox={`0 0 ${VB_W} ${VB_H}`} preserveAspectRatio="xMidYMid meet" className="fz-svg">
