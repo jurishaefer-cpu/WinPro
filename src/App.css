@@ -1882,6 +1882,7 @@ body {
 .np-col--left { border-right: 1px solid #eef0f2; }
 .np-col--right { border-left: 1px solid #eef0f2; }
 .np-col--center {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;

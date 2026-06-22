@@ -509,28 +509,6 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
                 onPaneClick={setSelectedPane} selectedPane={selectedPane} />
             )}
 
-            {/* + Element hinzufügen (unten links) */}
-            <button className="np-add-fab" onClick={() => setAddMenu(v => !v)} title="Element hinzufügen">+</button>
-            {addMenu && (
-              <div className="pane-menu-backdrop" onClick={() => setAddMenu(false)} />
-            )}
-            {addMenu && (
-              <div className="np-add-menu">
-                <div className="pane-menu-head">
-                  <span>Element hinzufügen</span>
-                  <button className="pane-menu-close" onClick={() => setAddMenu(false)}>✕</button>
-                </div>
-                <button className="pane-option" onClick={() => addElement('fenster')}>
-                  <span className="pane-option-thumb"><GeometrieThumb geometrie={geometrieByCode('F01')} /></span>
-                  <span className="pane-option-label">Fenster hinzufügen</span>
-                </button>
-                <button className="pane-option" onClick={() => addElement('tuer')}>
-                  <span className="pane-option-thumb"><GeometrieThumb geometrie={geometrieByCode('T01')} /></span>
-                  <span className="pane-option-label">Tür hinzufügen</span>
-                </button>
-              </div>
-            )}
-
             {selectedPane != null && (
               <div className="pane-menu-backdrop" onClick={() => setSelectedPane(null)} />
             )}
@@ -560,6 +538,28 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
             </div>
             <span className="np-canvas-badge">{istKombi ? `aktiv: ${aktiv.code}` : aktiv.code}</span>
           </div>
+
+          {/* + Element hinzufügen — Desktop: runder Knopf unten links in der Ecke */}
+          <button className="np-add-fab" onClick={() => setAddMenu(v => !v)} title="Element hinzufügen">+</button>
+          {addMenu && (
+            <div className="pane-menu-backdrop" onClick={() => setAddMenu(false)} />
+          )}
+          {addMenu && (
+            <div className="np-add-menu">
+              <div className="pane-menu-head">
+                <span>Element hinzufügen</span>
+                <button className="pane-menu-close" onClick={() => setAddMenu(false)}>✕</button>
+              </div>
+              <button className="pane-option" onClick={() => addElement('fenster')}>
+                <span className="pane-option-thumb"><GeometrieThumb geometrie={geometrieByCode('F01')} /></span>
+                <span className="pane-option-label">Fenster hinzufügen</span>
+              </button>
+              <button className="pane-option" onClick={() => addElement('tuer')}>
+                <span className="pane-option-thumb"><GeometrieThumb geometrie={geometrieByCode('T01')} /></span>
+                <span className="pane-option-label">Tür hinzufügen</span>
+              </button>
+            </div>
+          )}
         </section>
 
         {/* Rechte Spalte */}
