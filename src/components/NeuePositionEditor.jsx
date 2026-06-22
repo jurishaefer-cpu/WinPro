@@ -488,6 +488,8 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
             <span className="np-chip">Maß <b>{Math.round(breiteGes).toLocaleString('de-DE')} × {Math.round(hoeheGes).toLocaleString('de-DE')} mm</b></span>
             <span className="np-chip">Fläche <b>{flaeche.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} m²</b></span>
           </div>
+          {/* Mobiler In-Fluss-Knopf oben (Desktop nutzt den runden FAB in der Zeichnung) */}
+          <button className="np-add-inline" onClick={() => setAddMenu(v => !v)}>+ Element hinzufügen</button>
           <div className="np-canvas">
             {istKombi ? (
               <KombinationsZeichnung elemente={elemente} activeId={activeId}
@@ -558,8 +560,6 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
             </div>
             <span className="np-canvas-badge">{istKombi ? `aktiv: ${aktiv.code}` : aktiv.code}</span>
           </div>
-          {/* Mobiler In-Fluss-Knopf (Desktop nutzt den runden FAB in der Zeichnung) */}
-          <button className="np-add-inline" onClick={() => setAddMenu(v => !v)}>+ Element hinzufügen</button>
         </section>
 
         {/* Rechte Spalte */}

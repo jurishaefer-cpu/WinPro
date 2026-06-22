@@ -2142,7 +2142,9 @@ body {
     flex: 1; min-height: 0;
     overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
   }
-  .np-col { overflow-y: visible; }
+  /* Spalten behalten ihre natürliche Höhe (nicht stauchen) → Body scrollt sauber */
+  .np-col { overflow-y: visible; flex: 0 0 auto; }
+  .np-canvas { flex: 0 0 auto; }
   /* Zeichnung oben, dann Eingaben */
   .np-col--center { order: -1; }
   .np-col--left, .np-col--right { border: none; border-bottom: 1px solid #eef0f2; }
