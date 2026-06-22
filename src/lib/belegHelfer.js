@@ -24,9 +24,9 @@ export function kombiMass(elemente) {
   return { w, h };
 }
 
-// Zeile „Im Positionspreis enthalten sind die Montagekosten mit € X" – Summe aus Montage, Ausbau, Entsorgung.
+// Montage-Hinweis: bei „Ohne Montage" entsprechend ausweisen, sonst Summe aus Montage, Ausbau, Entsorgung.
 function montageZeile(config) {
-  if (config.ohneMontage) return null;
+  if (config.ohneMontage) return 'Lieferung ohne Montage.';
   const summe = Number(config.montage || 0) + Number(config.ausbau || 0) + Number(config.entsorgung || 0);
   if (summe <= 0) return null;
   return `Im Positionspreis enthalten sind die Montagekosten mit ${euro(summe)}.`;
