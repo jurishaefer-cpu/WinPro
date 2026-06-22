@@ -1,5 +1,5 @@
 import FensterZeichnung, { geometrieByCode, KombinationsZeichnung } from './FensterZeichnung';
-import { euro, datumDE, positionZeilen, BELEG_ART } from '../lib/belegHelfer';
+import { euro, datumDE, positionZeilen, montageZeile, BELEG_ART } from '../lib/belegHelfer';
 
 const MWST = 0.19;
 const ANZAHLUNG = 0.40;
@@ -84,7 +84,8 @@ function BelegDokument({ art, angebot, kunde, positionen, profileMap, einstellun
             const c = p.config;
             const istFenster = p.typ === 'fenster' && c;
             const menge = Number(p.menge || 1);
-            const zeilen = istFenster ? positionZeilen(c, profileMap?.[c.profilId], meta.preise) : [];
+            const zeilen = istFenster ? positionZeilen(c, profileMap?.[c.profilId], false) : [];
+            const montage = istFenster && meta.preise ? montageZeile(c) : null;
             return (
               <tr key={p.id}>
                 <td className="pos-nr">{i + 1}</td>
@@ -113,6 +114,7 @@ function BelegDokument({ art, angebot, kunde, positionen, profileMap, einstellun
                       {c.kommentar && (c.kommentar.replace(/<[^>]*>/g, '').trim()) && (
                         <div className="pos-kommentar" dangerouslySetInnerHTML={{ __html: c.kommentar }} />
                       )}
+                      {montage && <div dangerouslySetInnerHTML={{ __html: montage }} />}
                     </>
                   ) : (
                     <div className="pos-manuell" dangerouslySetInnerHTML={{ __html: p.beschreibung || '' }} />
