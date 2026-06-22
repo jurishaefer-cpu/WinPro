@@ -205,16 +205,15 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
     setSelectedPane(null);
   }
   // Element an eine Seite des Hauptfensters andocken (Drag im Canvas)
-  function dockElement(id, side) {
+  function dockElement(id, side, targetId) {
     setElemente(prev => {
-      const main = prev[0];
-      const cols = prev.map(e => e.col ?? 0);
-      const rows = prev.map(e => e.row ?? 0);
-      let row = main.row ?? 0, col = main.col ?? 0;
-      if (side === 'rechts') col = Math.max(...cols) + 1;
-      else if (side === 'links') col = Math.min(...cols) - 1;
-      else if (side === 'unten') row = Math.max(...rows) + 1;
-      else if (side === 'oben') row = Math.min(...rows) - 1;
+      // An die freie Kante des Ziel-Elements docken (Fallback: Hauptelement).
+      const target = (targetId != null && prev.find(e => e.id === targetId)) || prev[0];
+      let row = target.row ?? 0, col = target.col ?? 0;
+      if (side === 'rechts') col = (target.col ?? 0) + 1;
+      else if (side === 'links') col = (target.col ?? 0) - 1;
+      else if (side === 'unten') row = (target.row ?? 0) + 1;
+      else if (side === 'oben') row = (target.row ?? 0) - 1;
       // Maße bleiben unabhängig – nur die Rasterposition ändert sich; Versatz zurücksetzen.
       let next = prev.map(e => (e.id === id ? { ...e, row, col, offset: undefined } : e));
       const minR = Math.min(...next.map(e => e.row ?? 0));

@@ -524,16 +524,40 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', onUnitC
   const mainKey = els[0]._key;
   const colEl = {}; colsSet.forEach(cc => { colEl[cc] = els.find(e => (e.col ?? 0) === cc); });
 
-  const dropZonen = [
-    ['links', 2, oy, ox - 4, totalHpx],
-    ['rechts', ox + totalWpx + 2, oy, MR - 4, totalHpx],
-    ['oben', ox, 2, totalWpx, oy - 4],
-    ['unten', ox, oy + totalHpx + 2, totalWpx, MB - 4],
-  ];
-  // Liegt der Zeiger in einer Andock-Zone (Rand)? → Um-Docken; sonst entlang der Kante verschieben.
+  // Dünne Andock-Streifen an JEDER freien Kante jedes Elements (außer dem gezogenen).
+  // „Frei" = die im Raster angrenzende Zelle ist nicht von einem anderen Element belegt.
+  const STRIP = 14, GAP = 2;
+  function buildZonen(dragId) {
+    if (dragId == null) return [];
+    const belegt = new Set(els.filter(e => e._key !== dragId).map(e => `${e.col ?? 0},${e.row ?? 0}`));
+    const gesehen = new Set();
+    const zonen = [];
+    els.forEach(e => {
+      if (e._key === dragId) return;
+      const cc = e.col ?? 0, rr = e.row ?? 0;
+      const cl = colXpx[cc], cw = colWmm[cc] * scale;
+      const ct = rowYpx[rr], ch = rowHmm[rr] * scale;
+      const kanten = [
+        ['rechts', cc + 1, rr, cl + cw + GAP, ct, STRIP, ch],
+        ['links', cc - 1, rr, cl - STRIP - GAP, ct, STRIP, ch],
+        ['unten', cc, rr + 1, cl, ct + ch + GAP, cw, STRIP],
+        ['oben', cc, rr - 1, cl, ct - STRIP - GAP, cw, STRIP],
+      ];
+      kanten.forEach(([side, ncol, nrow, zx, zy, zw, zh]) => {
+        if (belegt.has(`${ncol},${nrow}`)) return;          // dort sitzt ein Element → keine Zone
+        const cellKey = `${ncol},${nrow}`;
+        if (gesehen.has(cellKey)) return;                   // Zielzelle nur einmal anbieten
+        gesehen.add(cellKey);
+        zonen.push([side, e._key, zx, zy, zw, zh]);
+      });
+    });
+    return zonen;
+  }
+  const dropZonen = buildZonen(drag?.id);
+  // Liegt der Zeiger auf einem Andock-Streifen? → Um-Docken an dessen Kante; sonst entlang der Kante verschieben.
   function zoneAt(p) {
-    for (const [side, zx, zy, zw, zh] of dropZonen) {
-      if (p.x >= zx && p.x <= zx + zw && p.y >= zy && p.y <= zy + zh) return side;
+    for (const [side, targetId, zx, zy, zw, zh] of dropZonen) {
+      if (p.x >= zx && p.x <= zx + zw && p.y >= zy && p.y <= zy + zh) return { side, targetId };
     }
     return null;
   }
@@ -547,9 +571,9 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', onUnitC
     const p = svgPoint(e.clientX, e.clientY);
     const zone = zoneAt(p);
     if (zone) {
-      setDrag(d => (d ? { ...d, side: zone } : d));   // am Rand → Vorschau Um-Docken
+      setDrag(d => (d ? { ...d, side: zone.side, targetId: zone.targetId } : d));   // an Kante → Vorschau Um-Docken
     } else {
-      setDrag(d => (d ? { ...d, side: null } : d));
+      setDrag(d => (d ? { ...d, side: null, targetId: null } : d));
       // entlang der Kante verschieben: Element folgt vertikal dem Zeiger, bleibt in der Zeile
       const u = units.find(unit => unit.e._key === id);
       if (u && onSlide && u.maxOffMm > 0) {
@@ -561,7 +585,7 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', onUnitC
     }
   }
   function handleUp(e, id) {
-    if (drag && drag.id === id && drag.side && onDock) onDock(id, drag.side);
+    if (drag && drag.id === id && drag.side && onDock) onDock(id, drag.side, drag.targetId);
     setDrag(null);
   }
 
@@ -629,14 +653,16 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', onUnitC
         );
       })}
 
-      {/* Andock-Zonen während des Ziehens */}
-      {drag && dropZonen.map(([side, zx, zy, zw, zh]) => (
-        <g key={'dz' + side} pointerEvents="none">
-          <rect x={zx} y={zy} width={Math.max(0, zw)} height={Math.max(0, zh)} rx="6"
-                fill={drag.side === side ? 'rgba(192,21,46,0.16)' : 'rgba(15,31,61,0.05)'}
-                stroke={drag.side === side ? '#c0152e' : '#aeb7c6'} strokeWidth="1.5" strokeDasharray="5 4" />
-        </g>
-      ))}
+      {/* Andock-Streifen an jeder freien Kante – während des Ziehens */}
+      {drag && dropZonen.map(([side, targetId, zx, zy, zw, zh]) => {
+        const aktiv = drag.side === side && drag.targetId === targetId;
+        return (
+          <rect key={'dz' + targetId + side} x={zx} y={zy} width={Math.max(0, zw)} height={Math.max(0, zh)} rx="4"
+                pointerEvents="none"
+                fill={aktiv ? 'rgba(192,21,46,0.16)' : 'rgba(15,31,61,0.05)'}
+                stroke={aktiv ? '#c0152e' : '#aeb7c6'} strokeWidth="1.2" strokeDasharray="4 3" />
+        );
+      })}
 
       {/* Einheiten */}
       {units.map((u) => {
