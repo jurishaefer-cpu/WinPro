@@ -52,7 +52,7 @@ export function positionZeilen(config, profil, mitMontage = true) {
     let w = `Wärmeschutz: ${esc(config.verglasung)}${config.vsg ? ', VSG' : ''}`;
     if (config.ornament) {
       w += ', Ornament';
-      if (config.ornamentArt) w += ` (<span style="color:#c0152e">${esc(config.ornamentArt)}</span>)`;
+      if (config.ornamentArt) w += ` (<span style="color:#8b1a1a">${esc(config.ornamentArt)}</span>)`;
     }
     z.push(w);
   }
