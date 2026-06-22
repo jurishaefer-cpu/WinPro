@@ -642,7 +642,7 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', onUnitC
       {units.map((u) => {
         const aktiv = activeId != null && u.e._key === activeId;
         const istMainUnit = u.e._key === mainKey;
-        const hw = Math.min(54, u.r0.w * 0.55);
+        const hw = Math.max(64, Math.min(96, u.r0.w * 0.7));
         return (
           <g key={'u' + u.e._key}>
             <UnitBody c={u.c} glasFarbe={u.e.ornament ? '#7fb0cc' : glasFarbe} keyPrefix={'u' + u.e._key + '-'}
@@ -657,14 +657,14 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', onUnitC
             )}
             {/* Verschiebe-Griff (nicht am Hauptelement) */}
             {interaktiv && !istMainUnit && (
-              <g style={{ cursor: 'move' }}
+              <g style={{ cursor: 'move', touchAction: 'none' }}
                  onPointerDown={e => handleDown(e, u.e._key)}
                  onPointerMove={e => handleMove(e, u.e._key)}
                  onPointerUp={e => handleUp(e, u.e._key)}>
-                <rect x={u.r0.x + u.r0.w / 2 - hw / 2} y={u.r0.y + 6} width={hw} height={18} rx="9"
-                      fill="#0f1f3d" opacity={drag && drag.id === u.e._key ? 1 : 0.82} />
-                <text x={u.r0.x + u.r0.w / 2} y={u.r0.y + 6 + 9} textAnchor="middle" dominantBaseline="central"
-                      fontSize="11" fontWeight="700" fill="#fff" style={{ pointerEvents: 'none' }}>↔ ziehen</text>
+                <rect x={u.r0.x + u.r0.w / 2 - hw / 2} y={u.r0.y + 7} width={hw} height={26} rx="13"
+                      fill="#0f1f3d" opacity={drag && drag.id === u.e._key ? 1 : 0.85} />
+                <text x={u.r0.x + u.r0.w / 2} y={u.r0.y + 7 + 13} textAnchor="middle" dominantBaseline="central"
+                      fontSize="12.5" fontWeight="700" fill="#fff" style={{ pointerEvents: 'none' }}>↔ ziehen</text>
               </g>
             )}
           </g>

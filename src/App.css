@@ -2021,7 +2021,8 @@ body {
 .fz-massinput:focus { border-color: #0f1f3d; box-shadow: 0 0 0 3px rgba(15,31,61,0.12); }
 .fz-massinput--sub { font-size: 15px; font-weight: 600; border-radius: 6px; padding: 0 2px; }
 .np-canvas { flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; position: relative; }
-.np-canvas .fz-svg { height: 56vh; width: auto; max-width: 100%; }
+/* Editor-Zeichnung: Touch-Gesten gehören dem Ziehen/Tippen, nicht dem Seiten-Scroll */
+.np-canvas .fz-svg { height: 56vh; width: auto; max-width: 100%; touch-action: none; }
 
 /* Pane-Auswahlmenü (Öffnungsart je Feld) – oben links über der Zeichnung */
 .pane-menu-backdrop {
@@ -2308,4 +2309,27 @@ body {
   .np-footer-actions { width: 100%; }
   .np-footer-actions .btn { flex: 1; text-align: center; }
   .np-gesamt { align-self: flex-start; padding-bottom: 0; }
+
+  /* Header-Select & In-Zeichnung-Maßfelder ≥16px → kein iOS-Zoom beim Fokus */
+  .np-header-right .np-select { font-size: 16px; }
+  .fz-massinput { font-size: 18px; }
+  .fz-massinput--sub { font-size: 16px; }
+
+  /* Mehr Platz für die Kombi-Zeichnung, Touch-Drag bequemer */
+  .np-canvas { min-height: 50vh; }
+  .np-canvas .fz-svg { height: 60vh; }
+
+  /* +-Knopf größer für Touch */
+  .np-add-fab { width: 54px; height: 54px; font-size: 30px; }
+  .np-add-menu, .pane-menu { width: min(280px, calc(100vw - 32px)); }
+  .pane-option { padding: 11px 8px; }
+  .pane-option-thumb { width: 52px; height: 42px; }
+
+  /* Tap-Verzögerung vermeiden, Doppeltipp-Zoom auf Bedienelementen aus */
+  .btn, .np-segmented button, .pane-option, .np-add-fab, .icon-btn,
+  .np-aktiv-remove, .pane-menu-close { touch-action: manipulation; }
+
+  /* Aktiv-Hinweis (welches Element) gut greifbar */
+  .np-aktiv-hinweis { padding: 10px 14px; font-size: 14px; }
+  .np-aktiv-remove { padding: 8px 14px; font-size: 13px; }
 }
