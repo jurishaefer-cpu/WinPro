@@ -1219,11 +1219,11 @@ body {
 .beleg-tabelle td { padding: 12px 10px; vertical-align: top; border-bottom: 1px solid #eceef1; }
 .beleg-tabelle tr { break-inside: avoid; page-break-inside: avoid; }
 .pos-nr { width: 34px; }
-.pos-skizze { width: 150px; }
+.pos-skizze { width: 210px; }
 .pos-menge { width: 50px; text-align: right; }
 .pos-preis { width: 84px; text-align: right; white-space: nowrap; }
 .pos-preis--bold { font-weight: 700; }
-.beleg-zeichnung { width: 140px; }
+.beleg-zeichnung { width: 200px; }
 .beleg-zeichnung .fz-svg { width: 100%; height: auto; }
 .pos-standort { font-weight: 700; margin-bottom: 2px; }
 .pos-beschr { font-size: 11px; line-height: 1.5; }
