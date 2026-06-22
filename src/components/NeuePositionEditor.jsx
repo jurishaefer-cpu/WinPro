@@ -227,9 +227,9 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
     setElemente(prev => prev.map(e => (e.id === id ? { ...e, offset: offsetMm } : e)));
   }
   // Maße in der Kombi-Zeichnung editieren
-  function setColBreite(col, val) {
+  function setElementBreite(id, val) {
     setElemente(prev => prev.map(e => {
-      if ((e.col ?? 0) !== col) return e;
+      if (e.id !== id) return e;
       const n = e.cols || 1;
       return { ...e, breite: val, colWidths: Array(n).fill(Math.round((Number(val) || 0) / n)) };
     }));
@@ -495,7 +495,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
                 onUnitClick={switchActive} onPaneClick={setSelectedPane} selectedPane={selectedPane}
                 onDock={dockElement} onSlide={slideElement}
                 onTotalBreite={setTotalBreite} onTotalHoehe={setTotalHoehe}
-                onColBreite={setColBreite} onElementHoehe={setElementHoehe} />
+                onElementBreite={setElementBreite} onElementHoehe={setElementHoehe} />
             ) : (
               <FensterZeichnung geometrie={geometrie} breite={aktiv.breite} hoehe={aktiv.hoehe}
                 verbreiterung={aktiv.verbreiterung ? aktiv.verb : null}

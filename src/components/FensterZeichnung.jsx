@@ -466,7 +466,7 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
 }
 
 // Kombination mehrerer gekoppelter Einheiten (eigener Rahmen je Element), im Raster (row/col).
-export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', onUnitClick, activeId, onPaneClick, selectedPane, onDock, onSlide, onTotalBreite, onTotalHoehe, onColBreite, onElementHoehe }) {
+export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', onUnitClick, activeId, onPaneClick, selectedPane, onDock, onSlide, onTotalBreite, onTotalHoehe, onElementBreite, onElementHoehe }) {
   const svgRef = useRef(null);
   const [drag, setDrag] = useState(null); // { id, side, targetId }
   function svgPoint(clientX, clientY) {
@@ -482,23 +482,40 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', onUnitC
   if (!els.length) return null;
   const colsSet = [...new Set(els.map(e => e.col ?? 0))].sort((a, b) => a - b);
   const rowsSet = [...new Set(els.map(e => e.row ?? 0))].sort((a, b) => a - b);
-  const colWmm = {}; colsSet.forEach(cc => { colWmm[cc] = Math.max(...els.filter(e => (e.col ?? 0) === cc).map(e => Math.max(200, Number(e.breite) || 1000))); });
+  const maxRow = Math.max(...rowsSet);
+  const maxCol = Math.max(...colsSet);
+  const hMm = e => Math.max(200, Number(e.hoehe) || 1200);
+  const bMm = e => Math.max(200, Number(e.breite) || 1000);
   // Raster-Zeilenhöhe aus den „gebundenen" Elementen (die direkt ein weiteres Element unter sich
   // haben oder in der untersten Zeile liegen). Ein Element mit freiem Platz darunter darf höher
   // gezogen werden und über die Zeilen darunter reichen, ohne die Zeilenhöhe der Nachbarn aufzublähen.
-  const maxRow = Math.max(...rowsSet);
-  const hMm = e => Math.max(200, Number(e.hoehe) || 1200);
-  const gebunden = e => {
+  const gebundenH = e => {
     const c = e.col ?? 0, r = e.row ?? 0;
     if (r === maxRow) return true;
     return els.some(o => (o.col ?? 0) === c && (o.row ?? 0) === r + 1);
   };
   const rowHmm = {}; rowsSet.forEach(rr => {
     const inRow = els.filter(e => (e.row ?? 0) === rr);
-    const pool = inRow.filter(gebunden);
+    const pool = inRow.filter(gebundenH);
     rowHmm[rr] = Math.max(...(pool.length ? pool : inRow).map(hMm));
   });
-  const totalWmm = colsSet.reduce((a, cc) => a + colWmm[cc], 0);
+  // Spaltenbreite analog: nur „gebundene" Elemente (die direkt rechts einen Nachbarn haben oder in
+  // der rechten Spalte liegen) bestimmen die Spaltenbreite. Ein Element mit freiem Platz rechts darf
+  // breiter sein und über die Spalten rechts daneben reichen, ohne die Nachbarspalten aufzublähen.
+  const gebundenB = e => {
+    const c = e.col ?? 0, r = e.row ?? 0;
+    if (c === maxCol) return true;
+    return els.some(o => (o.row ?? 0) === r && (o.col ?? 0) === c + 1);
+  };
+  const colWmm = {}; colsSet.forEach(cc => {
+    const inCol = els.filter(e => (e.col ?? 0) === cc);
+    const pool = inCol.filter(gebundenB);
+    colWmm[cc] = Math.max(...(pool.length ? pool : inCol).map(bMm));
+  });
+  // Gesamtbreite: Summe der Spalten, mind. so breit wie das am weitesten nach rechts reichende Element.
+  const colLeftMm = {}; { let x = 0; colsSet.forEach(cc => { colLeftMm[cc] = x; x += colWmm[cc]; }); }
+  let totalWmm = colsSet.reduce((a, cc) => a + colWmm[cc], 0);
+  els.forEach(e => { const r = colLeftMm[e.col ?? 0] + bMm(e); if (r > totalWmm) totalWmm = r; });
   // Gesamthöhe: Summe der Zeilen, mind. so hoch wie das am weitesten nach unten reichende Element.
   const rowTopMm = {}; { let y = 0; rowsSet.forEach(rr => { rowTopMm[rr] = y; y += rowHmm[rr]; }); }
   let totalHmm = rowsSet.reduce((a, rr) => a + rowHmm[rr], 0);
@@ -518,28 +535,30 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', onUnitC
   const units = els.map(e => {
     const cc = e.col ?? 0, rr = e.row ?? 0;
     const elHmm = Math.max(200, Number(e.hoehe) || rowHmm[rr]);
+    const elBmm = Math.max(200, Number(e.breite) || colWmm[cc]);
     // Höhen unabhängig: Versatz entlang der Kante (offset = mm von Zeilenoberkante),
     // Standard = unten bündig; per Drag frei verschiebbar, bleibt aber innerhalb der Zeile (verbunden).
     const maxOffMm = Math.max(0, rowHmm[rr] - elHmm);
     let offMm = e.offset == null ? maxOffMm : Number(e.offset);
     if (!Number.isFinite(offMm)) offMm = maxOffMm;
     offMm = Math.min(maxOffMm, Math.max(0, offMm));
-    const r0 = { x: colXpx[cc], y: rowYpx[rr] + offMm * scale, w: colWmm[cc] * scale, h: elHmm * scale };
+    const r0 = { x: colXpx[cc], y: rowYpx[rr] + offMm * scale, w: elBmm * scale, h: elHmm * scale };
     const c = computeUnit(r0, scale, {
-      geometrie: geometrieByCode(e.code), breite: colWmm[cc], hoehe: elHmm,
+      geometrie: geometrieByCode(e.code), breite: elBmm, hoehe: elHmm,
       panes: e.panes, cols: e.cols, colWidths: e.colWidths, rowHeights: e.rowHeights,
       verbreiterung: e.verbreiterung ? e.verb : null, aufsatzkasten: e.aufsatzkasten ? e.kasten : null,
     });
     // rechtsbündig letztes Element seiner Zeile? → Höhenbemaßung rechts
     const rightmost = !els.some(o => (o.row ?? 0) === rr && (o.col ?? 0) > cc);
-    return { e, c, r0, elHmm, rr, maxOffMm, rightmost };
+    // oberstes Element seiner Spalte? → Breitenbemaßung oben
+    const topmost = !els.some(o => (o.col ?? 0) === cc && (o.row ?? 0) < rr);
+    return { e, c, r0, elHmm, rr, maxOffMm, rightmost, topmost };
   });
 
   const topY = oy - 56, leftX = ox - 56;          // Gesamtmaße ganz außen
   const interaktiv = !!onUnitClick;
-  const editM = !!onColBreite;                    // Maße editierbar (nur im Editor)
+  const editM = !!onElementBreite;                // Maße editierbar (nur im Editor)
   const mainKey = els[0]._key;
-  const colEl = {}; colsSet.forEach(cc => { colEl[cc] = els.find(e => (e.col ?? 0) === cc); });
 
   // Dünne Andock-Streifen an JEDER freien Kante jedes Elements (außer dem gezogenen).
   // „Frei" = die im Raster angrenzende Zelle ist nicht von einem anderen Element belegt.
@@ -621,21 +640,21 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', onUnitC
         <text x={ox + totalWpx / 2} y={topY - 10} textAnchor="middle" fontSize="20" fill="#0f1f3d" fontWeight="600">{Math.round(totalWmm)}</text>
       )}
 
-      {/* Spaltenbreiten (oben, innen) */}
-      {colsSet.length > 1 && colsSet.map(cc => {
-        const x0 = colXpx[cc], x1 = colXpx[cc] + colWmm[cc] * scale;
+      {/* Breitenbemaßung je Element (oben, innen) – oberstes Element jeder Spalte, eigene Breite */}
+      {colsSet.length > 1 && units.filter(u => u.topmost).map(u => {
+        const x0 = u.r0.x, x1 = u.r0.x + u.r0.w;
         return (
-          <g key={'cw' + cc}>
+          <g key={'cw' + u.e._key}>
             <line x1={x0} y1={oy - 16} x2={x1} y2={oy - 16} stroke="#0f1f3d" strokeWidth="1" />
             <line x1={x0} y1={oy - 21} x2={x0} y2={oy - 11} stroke="#0f1f3d" strokeWidth="1" />
             <line x1={x1} y1={oy - 21} x2={x1} y2={oy - 11} stroke="#0f1f3d" strokeWidth="1" />
-            {editM && onColBreite && colEl[cc] ? (
+            {editM && onElementBreite ? (
               <foreignObject x={(x0 + x1) / 2 - 42} y={oy - 48} width={84} height={28}>
-                <input className="fz-massinput fz-massinput--sub" type="number" value={colEl[cc].breite}
-                       onChange={e => onColBreite(cc, e.target.value)} />
+                <input className="fz-massinput fz-massinput--sub" type="number" value={u.e.breite}
+                       onChange={e => onElementBreite(u.e._key, e.target.value)} />
               </foreignObject>
             ) : (
-              <text x={(x0 + x1) / 2} y={oy - 22} textAnchor="middle" fontSize="13" fill="#0f1f3d" fontWeight="600">{Math.round(colWmm[cc])}</text>
+              <text x={(x0 + x1) / 2} y={oy - 22} textAnchor="middle" fontSize="13" fill="#0f1f3d" fontWeight="600">{Math.round(u.r0.w / scale)}</text>
             )}
           </g>
         );
