@@ -466,7 +466,7 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
 }
 
 // Kombination mehrerer gekoppelter Einheiten (eigener Rahmen je Element), im Raster (row/col).
-export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', onUnitClick, activeId, onPaneClick, selectedPane, onDock, onSlide }) {
+export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', onUnitClick, activeId, onPaneClick, selectedPane, onDock, onSlide, onTotalBreite, onTotalHoehe, onColBreite, onElementHoehe }) {
   const svgRef = useRef(null);
   const [drag, setDrag] = useState(null); // { id, side }
   function svgPoint(clientX, clientY) {
@@ -490,7 +490,7 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', onUnitC
   const maxW = 600, maxH = 440;
   const scale = Math.min(maxW / Math.max(200, totalWmm), maxH / Math.max(200, totalHmm));
   const totalWpx = totalWmm * scale, totalHpx = totalHmm * scale;
-  const ML = 92, MT = 84, MR = 74, MB = 40;
+  const ML = 96, MT = 100, MR = 86, MB = 40;
   const VB_W = totalWpx + ML + MR;
   const VB_H = totalHpx + MT + MB;
   const ox = ML, oy = MT;
@@ -518,9 +518,11 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', onUnitC
     return { e, c, r0, elHmm, rr, maxOffMm, rightmost };
   });
 
-  const topY = oy - 34, leftX = ox - 34;          // Gesamtmaße ganz außen
+  const topY = oy - 56, leftX = ox - 56;          // Gesamtmaße ganz außen
   const interaktiv = !!onUnitClick;
+  const editM = !!onColBreite;                    // Maße editierbar (nur im Editor)
   const mainKey = els[0]._key;
+  const colEl = {}; colsSet.forEach(cc => { colEl[cc] = els.find(e => (e.col ?? 0) === cc); });
 
   const dropZonen = [
     ['links', 2, oy, ox - 4, totalHpx],
@@ -569,17 +571,31 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', onUnitC
       <line x1={ox} y1={topY} x2={ox + totalWpx} y2={topY} stroke="#0f1f3d" strokeWidth="1.2" />
       <line x1={ox} y1={topY - 6} x2={ox} y2={topY + 6} stroke="#0f1f3d" strokeWidth="1.2" />
       <line x1={ox + totalWpx} y1={topY - 6} x2={ox + totalWpx} y2={topY + 6} stroke="#0f1f3d" strokeWidth="1.2" />
-      <text x={ox + totalWpx / 2} y={topY - 10} textAnchor="middle" fontSize="20" fill="#0f1f3d" fontWeight="600">{Math.round(totalWmm)}</text>
+      {editM && onTotalBreite ? (
+        <foreignObject x={ox + totalWpx / 2 - 60} y={topY - 38} width={120} height={32}>
+          <input className="fz-massinput" type="number" key={'tw' + Math.round(totalWmm)} defaultValue={Math.round(totalWmm)}
+                 onBlur={e => onTotalBreite(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); }} />
+        </foreignObject>
+      ) : (
+        <text x={ox + totalWpx / 2} y={topY - 10} textAnchor="middle" fontSize="20" fill="#0f1f3d" fontWeight="600">{Math.round(totalWmm)}</text>
+      )}
 
       {/* Spaltenbreiten (oben, innen) */}
       {colsSet.length > 1 && colsSet.map(cc => {
         const x0 = colXpx[cc], x1 = colXpx[cc] + colWmm[cc] * scale;
         return (
           <g key={'cw' + cc}>
-            <line x1={x0} y1={oy - 14} x2={x1} y2={oy - 14} stroke="#0f1f3d" strokeWidth="1" />
-            <line x1={x0} y1={oy - 19} x2={x0} y2={oy - 9} stroke="#0f1f3d" strokeWidth="1" />
-            <line x1={x1} y1={oy - 19} x2={x1} y2={oy - 9} stroke="#0f1f3d" strokeWidth="1" />
-            <text x={(x0 + x1) / 2} y={oy - 22} textAnchor="middle" fontSize="13" fill="#0f1f3d" fontWeight="600">{Math.round(colWmm[cc])}</text>
+            <line x1={x0} y1={oy - 16} x2={x1} y2={oy - 16} stroke="#0f1f3d" strokeWidth="1" />
+            <line x1={x0} y1={oy - 21} x2={x0} y2={oy - 11} stroke="#0f1f3d" strokeWidth="1" />
+            <line x1={x1} y1={oy - 21} x2={x1} y2={oy - 11} stroke="#0f1f3d" strokeWidth="1" />
+            {editM && onColBreite && colEl[cc] ? (
+              <foreignObject x={(x0 + x1) / 2 - 42} y={oy - 48} width={84} height={28}>
+                <input className="fz-massinput fz-massinput--sub" type="number" value={colEl[cc].breite}
+                       onChange={e => onColBreite(cc, e.target.value)} />
+              </foreignObject>
+            ) : (
+              <text x={(x0 + x1) / 2} y={oy - 22} textAnchor="middle" fontSize="13" fill="#0f1f3d" fontWeight="600">{Math.round(colWmm[cc])}</text>
+            )}
           </g>
         );
       })}
@@ -588,8 +604,16 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', onUnitC
       <line x1={leftX} y1={oy} x2={leftX} y2={oy + totalHpx} stroke="#0f1f3d" strokeWidth="1.2" />
       <line x1={leftX - 6} y1={oy} x2={leftX + 6} y2={oy} stroke="#0f1f3d" strokeWidth="1.2" />
       <line x1={leftX - 6} y1={oy + totalHpx} x2={leftX + 6} y2={oy + totalHpx} stroke="#0f1f3d" strokeWidth="1.2" />
-      <text x={leftX - 10} y={oy + totalHpx / 2} textAnchor="middle" fontSize="20" fill="#0f1f3d" fontWeight="600"
-            transform={`rotate(-90 ${leftX - 10} ${oy + totalHpx / 2})`}>{Math.round(totalHmm)}</text>
+      {editM && onTotalHoehe ? (
+        <foreignObject x={leftX - 16 - 36} y={oy + totalHpx / 2 - 16} width={72} height={32}
+                       transform={`rotate(-90 ${leftX - 16} ${oy + totalHpx / 2})`}>
+          <input className="fz-massinput" type="number" key={'th' + Math.round(totalHmm)} defaultValue={Math.round(totalHmm)}
+                 onBlur={e => onTotalHoehe(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); }} />
+        </foreignObject>
+      ) : (
+        <text x={leftX - 10} y={oy + totalHpx / 2} textAnchor="middle" fontSize="20" fill="#0f1f3d" fontWeight="600"
+              transform={`rotate(-90 ${leftX - 10} ${oy + totalHpx / 2})`}>{Math.round(totalHmm)}</text>
+      )}
 
       {/* Zeilenhöhen (links, innen) */}
       {rowsSet.length > 1 && rowsSet.map(rr => {
@@ -656,8 +680,15 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', onUnitC
             <line x1={dx} y1={u.r0.y} x2={dx} y2={u.r0.y + u.r0.h} stroke="#0f1f3d" strokeWidth="1" />
             <line x1={dx - 5} y1={u.r0.y} x2={dx + 5} y2={u.r0.y} stroke="#0f1f3d" strokeWidth="1" />
             <line x1={dx - 5} y1={u.r0.y + u.r0.h} x2={dx + 5} y2={u.r0.y + u.r0.h} stroke="#0f1f3d" strokeWidth="1" />
-            <text x={dx + 16} y={mid} textAnchor="middle" fontSize="15" fill="#0f1f3d" fontWeight="600"
-                  transform={`rotate(-90 ${dx + 16} ${mid})`}>{Math.round(u.elHmm)}</text>
+            {editM && onElementHoehe ? (
+              <foreignObject x={dx + 14 - 36} y={mid - 14} width={72} height={28} transform={`rotate(-90 ${dx + 14} ${mid})`}>
+                <input className="fz-massinput fz-massinput--sub" type="number" value={u.e.hoehe}
+                       onChange={e => onElementHoehe(u.e._key, e.target.value)} />
+              </foreignObject>
+            ) : (
+              <text x={dx + 16} y={mid} textAnchor="middle" fontSize="15" fill="#0f1f3d" fontWeight="600"
+                    transform={`rotate(-90 ${dx + 16} ${mid})`}>{Math.round(u.elHmm)}</text>
+            )}
           </g>
         );
       })}

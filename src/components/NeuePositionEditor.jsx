@@ -227,6 +227,48 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
   function slideElement(id, offsetMm) {
     setElemente(prev => prev.map(e => (e.id === id ? { ...e, offset: offsetMm } : e)));
   }
+  // Maße in der Kombi-Zeichnung editieren
+  function setColBreite(col, val) {
+    setElemente(prev => prev.map(e => {
+      if ((e.col ?? 0) !== col) return e;
+      const n = e.cols || 1;
+      return { ...e, breite: val, colWidths: Array(n).fill(Math.round((Number(val) || 0) / n)) };
+    }));
+  }
+  function setElementHoehe(id, val) {
+    setElemente(prev => prev.map(e => {
+      if (e.id !== id) return e;
+      const r = Math.ceil(e.panes.length / e.cols);
+      return { ...e, hoehe: val, rowHeights: Array(r).fill(Math.round((Number(val) || 0) / r)) };
+    }));
+  }
+  function setTotalBreite(val) {
+    const v = Number(val);
+    setElemente(prev => {
+      const cur = kombiMass(prev).w;
+      if (!Number.isFinite(v) || v <= 0 || cur <= 0) return prev;
+      const f = v / cur;
+      return prev.map(e => {
+        const nb = Math.max(200, Math.round((Number(e.breite) || 1000) * f));
+        const n = e.cols || 1;
+        return { ...e, breite: nb, colWidths: Array(n).fill(Math.round(nb / n)) };
+      });
+    });
+  }
+  function setTotalHoehe(val) {
+    const v = Number(val);
+    setElemente(prev => {
+      if (!Number.isFinite(v) || v <= 0) return prev;
+      // Gesamthöhe = höchstes Element → dieses (bzw. die gleichhohen) auf den neuen Wert setzen,
+      // niedrigere Elemente behalten ihre eigene Höhe.
+      const maxH = Math.max(...prev.map(e => Number(e.hoehe) || 0));
+      return prev.map(e => {
+        if ((Number(e.hoehe) || 0) !== maxH) return e;
+        const r = Math.ceil(e.panes.length / e.cols);
+        return { ...e, hoehe: v, rowHeights: Array(r).fill(Math.round(v / r)) };
+      });
+    });
+  }
 
   // --- Maße / Preis ---
   const kombi = kombiMass(elemente);
@@ -450,7 +492,9 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
             {istKombi ? (
               <KombinationsZeichnung elemente={elemente} activeId={activeId}
                 onUnitClick={switchActive} onPaneClick={setSelectedPane} selectedPane={selectedPane}
-                onDock={dockElement} onSlide={slideElement} />
+                onDock={dockElement} onSlide={slideElement}
+                onTotalBreite={setTotalBreite} onTotalHoehe={setTotalHoehe}
+                onColBreite={setColBreite} onElementHoehe={setElementHoehe} />
             ) : (
               <FensterZeichnung geometrie={geometrie} breite={aktiv.breite} hoehe={aktiv.hoehe}
                 verbreiterung={aktiv.verbreiterung ? aktiv.verb : null}
