@@ -25,9 +25,9 @@ export function kombiMass(elemente) {
 }
 
 // Beschreibungszeilen einer Fenster-Position für den Beleg (HTML-Strings)
-export function positionZeilen(config, profil) {
+export function positionZeilen(config, profil, mitMontage = true) {
   if (!config) return [];
-  if (config.elemente?.length > 1) return kombiZeilen(config, profil);
+  if (config.elemente?.length > 1) return kombiZeilen(config, profil, mitMontage);
   const z = [];
   if (profil?.material) z.push(`Material: ${esc(profil.material.toLowerCase())}`);
   const profilTeile = [profil?.hersteller, profil?.system].filter(Boolean).join(' ');
@@ -58,14 +58,14 @@ export function positionZeilen(config, profil) {
     z.push(`Aufsatzkasten: ${Number(config.kasten.kastenhoehe) || 0} mm, ${config.kasten.bedienung} (${config.kasten.bedienungsseite})`);
   }
   if (config.rollladen) z.push(`Rollladenführung: ${esc(config.rollladen)}`);
-  if (!config.ohneMontage && Number(config.montage) > 0) {
+  if (mitMontage && !config.ohneMontage && Number(config.montage) > 0) {
     z.push(`Im Positionspreis enthalten ist die Montage mit ${euro(config.montage)}.`);
   }
   return z;
 }
 
 // Beschreibungszeilen einer Fensterkombination (mehrere gekoppelte Elemente)
-function kombiZeilen(config, profil) {
+function kombiZeilen(config, profil, mitMontage = true) {
   const z = [];
   if (profil?.material) z.push(`Material: ${esc(profil.material.toLowerCase())}`);
   const profilTeile = [profil?.hersteller, profil?.system].filter(Boolean).join(' ');
@@ -86,7 +86,7 @@ function kombiZeilen(config, profil) {
     if (el.verglasung) line += `, ${esc(el.verglasung)}${el.vsg ? ', VSG' : ''}${el.ornament ? ', Ornament' : ''}`;
     z.push(line);
   });
-  if (!config.ohneMontage && Number(config.montage) > 0) {
+  if (mitMontage && !config.ohneMontage && Number(config.montage) > 0) {
     z.push(`Im Positionspreis enthalten ist die Montage mit ${euro(config.montage)}.`);
   }
   return z;

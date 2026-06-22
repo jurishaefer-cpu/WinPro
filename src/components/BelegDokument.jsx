@@ -84,7 +84,7 @@ function BelegDokument({ art, angebot, kunde, positionen, profileMap, einstellun
             const c = p.config;
             const istFenster = p.typ === 'fenster' && c;
             const menge = Number(p.menge || 1);
-            const zeilen = istFenster ? positionZeilen(c, profileMap?.[c.profilId]) : [];
+            const zeilen = istFenster ? positionZeilen(c, profileMap?.[c.profilId], meta.preise) : [];
             return (
               <tr key={p.id}>
                 <td className="pos-nr">{i + 1}</td>
