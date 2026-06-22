@@ -391,8 +391,23 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
   const mainLeftX = hatSubH ? x - 86 : x - 34;
   const subLeftX = x - 34;
 
+  // Im Beleg (keine Editier-Handler) den viewBox eng an den Inhalt zuschneiden,
+  // damit die Zeichnung ihre Spalte ausfüllt statt von Leerraum umgeben zu sein.
+  const beleg = !onBreite && !onHoehe;
+  // Maß-Fonts proportional zur Zeichnungsbreite, damit sie auf jedem Beleg gleich groß
+  // rendern (Einzelfenster wie Kombination). Rand links/oben passend zur (rotierten)
+  // Maßzahl, sonst ragt sie aus dem viewBox.
+  const fMain = beleg ? Math.round(rw * 0.095) : 22;
+  const fSub = beleg ? Math.round(rw * 0.072) : 17;
+  const randLO = 12 + Math.round(fMain * 0.8);
+  const vbLeft = mainLeftX - randLO, vbTop = mainTopY - randLO;
+  const vbRight = x + rw + 14, vbBottom = y + rh + 14;
+  const viewBox = beleg
+    ? `${vbLeft} ${vbTop} ${vbRight - vbLeft} ${vbBottom - vbTop}`
+    : `0 0 ${VB_W} ${VB_H}`;
+
   return (
-    <svg viewBox={`0 0 ${VB_W} ${VB_H}`} preserveAspectRatio="xMidYMid meet" className="fz-svg">
+    <svg viewBox={viewBox} preserveAspectRatio="xMidYMid meet" className="fz-svg">
       {/* Hauptmaß Breite (oben) */}
       <line x1={x} y1={mainTopY} x2={x + rw} y2={mainTopY} stroke="#0f1f3d" strokeWidth="1.2" />
       <line x1={x} y1={mainTopY - 6} x2={x} y2={mainTopY + 6} stroke="#0f1f3d" strokeWidth="1.2" />
@@ -403,7 +418,7 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
                  onChange={e => onBreite(e.target.value)} />
         </foreignObject>
       ) : (
-        <text x={cx} y={mainTopY - 10} textAnchor="middle" fontSize="40" fill="#0f1f3d" fontWeight="700">{Math.round(b)}</text>
+        <text x={cx} y={mainTopY - 10} textAnchor="middle" fontSize={fMain} fill="#0f1f3d" fontWeight="700">{Math.round(b)}</text>
       )}
 
       {/* Zwischenmaße Breite (je Spalte) – editierbar */}
@@ -418,7 +433,7 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
                      onChange={e => onColWidth(s.idx, e.target.value)} />
             </foreignObject>
           ) : (
-            <text x={(s.x0 + s.x1) / 2} y={subTopY - 7} textAnchor="middle" fontSize="30" fill="#0f1f3d" fontWeight="700">{s.mm}</text>
+            <text x={(s.x0 + s.x1) / 2} y={subTopY - 7} textAnchor="middle" fontSize={fSub} fill="#0f1f3d" fontWeight="700">{s.mm}</text>
           )}
         </g>
       ))}
@@ -433,7 +448,7 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
                  onChange={e => onHoehe(e.target.value)} />
         </foreignObject>
       ) : (
-        <text x={mainLeftX - 10} y={cy} textAnchor="middle" fontSize="40" fill="#0f1f3d" fontWeight="700"
+        <text x={mainLeftX - 10} y={cy} textAnchor="middle" fontSize={fMain} fill="#0f1f3d" fontWeight="700"
               transform={`rotate(-90 ${mainLeftX - 10} ${cy})`}>{Math.round(hh)}</text>
       )}
 
@@ -452,7 +467,7 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
                        onChange={e => onRowHeight(s.idx, e.target.value)} />
               </foreignObject>
             ) : (
-              <text x={subLeftX - 7} y={mid} textAnchor="middle" fontSize="30" fill="#0f1f3d" fontWeight="700"
+              <text x={subLeftX - 7} y={mid} textAnchor="middle" fontSize={fSub} fill="#0f1f3d" fontWeight="700"
                     transform={`rotate(-90 ${subLeftX - 7} ${mid})`}>{s.mm}</text>
             )}
           </g>
@@ -524,7 +539,17 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', onUnitC
   const maxW = 600, maxH = 440;
   const scale = Math.min(maxW / Math.max(200, totalWmm), maxH / Math.max(200, totalHmm));
   const totalWpx = totalWmm * scale, totalHpx = totalHmm * scale;
-  const ML = 96, MT = 100, MR = 86, MB = 40;
+  // Im Beleg (nicht interaktiv) den Rahmen eng halten: rechts/unten gibt es keine Maße,
+  // links/oben nur so viel Rand wie die Maßzahlen brauchen → Zeichnung füllt ihre Spalte.
+  const beleg = !onUnitClick;
+  // Maß-Fonts proportional zur Zeichnungsbreite, damit sie auf dem Beleg genauso groß
+  // rendern wie beim Einzelfenster (siehe FensterZeichnung). Links/oben muss der Rand
+  // zur (rotierten) Maßzahl passen, sonst ragt sie aus dem viewBox.
+  const fMain = beleg ? Math.round(totalWpx * 0.085) : 22;
+  const fSub = beleg ? Math.round(totalWpx * 0.065) : 17;
+  const ML = beleg ? Math.round(70 + fMain * 0.8) : 96;
+  const MT = beleg ? Math.round(70 + fMain * 0.8) : 100;
+  const MR = beleg ? 22 : 86, MB = beleg ? 20 : 40;
   const VB_W = totalWpx + ML + MR;
   const VB_H = totalHpx + MT + MB;
   const ox = ML, oy = MT;
@@ -637,7 +662,7 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', onUnitC
                  onBlur={e => onTotalBreite(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); }} />
         </foreignObject>
       ) : (
-        <text x={ox + totalWpx / 2} y={topY - 10} textAnchor="middle" fontSize="38" fill="#0f1f3d" fontWeight="700">{Math.round(totalWmm)}</text>
+        <text x={ox + totalWpx / 2} y={topY - 10} textAnchor="middle" fontSize={fMain} fill="#0f1f3d" fontWeight="700">{Math.round(totalWmm)}</text>
       )}
 
       {/* Breitenbemaßung je Element (oben, innen) – oberstes Element jeder Spalte, eigene Breite */}
@@ -654,7 +679,7 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', onUnitC
                        onChange={e => onElementBreite(u.e._key, e.target.value)} />
               </foreignObject>
             ) : (
-              <text x={(x0 + x1) / 2} y={oy - 22} textAnchor="middle" fontSize="26" fill="#0f1f3d" fontWeight="700">{Math.round(u.r0.w / scale)}</text>
+              <text x={(x0 + x1) / 2} y={oy - 22} textAnchor="middle" fontSize={fSub} fill="#0f1f3d" fontWeight="700">{Math.round(u.r0.w / scale)}</text>
             )}
           </g>
         );
@@ -671,7 +696,7 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', onUnitC
                  onBlur={e => onTotalHoehe(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); }} />
         </foreignObject>
       ) : (
-        <text x={leftX - 10} y={oy + totalHpx / 2} textAnchor="middle" fontSize="38" fill="#0f1f3d" fontWeight="700"
+        <text x={leftX - 10} y={oy + totalHpx / 2} textAnchor="middle" fontSize={fMain} fill="#0f1f3d" fontWeight="700"
               transform={`rotate(-90 ${leftX - 10} ${oy + totalHpx / 2})`}>{Math.round(totalHmm)}</text>
       )}
 
@@ -683,7 +708,7 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', onUnitC
             <line x1={ox - 14} y1={y0} x2={ox - 14} y2={y1} stroke="#0f1f3d" strokeWidth="1" />
             <line x1={ox - 19} y1={y0} x2={ox - 9} y2={y0} stroke="#0f1f3d" strokeWidth="1" />
             <line x1={ox - 19} y1={y1} x2={ox - 9} y2={y1} stroke="#0f1f3d" strokeWidth="1" />
-            <text x={ox - 22} y={mid} textAnchor="middle" fontSize="26" fill="#0f1f3d" fontWeight="700"
+            <text x={ox - 22} y={mid} textAnchor="middle" fontSize={fSub} fill="#0f1f3d" fontWeight="700"
                   transform={`rotate(-90 ${ox - 22} ${mid})`}>{Math.round(rowHmm[rr])}</text>
           </g>
         );
