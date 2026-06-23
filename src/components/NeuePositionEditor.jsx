@@ -587,10 +587,22 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
         <aside className="np-col np-col--left">
           {istKombi && (
             <div className="np-aktiv-hinweis">
-              {istMain ? 'Hauptelement' : `Element ${elemente.findIndex(e => e.id === activeId) + 1}`} wird bearbeitet
-              {!istMain && (
-                <button className="np-aktiv-remove" onClick={() => removeElement(activeId)} title="Dieses Element entfernen">Entfernen</button>
-              )}
+              <div className="np-elem-switch">
+                {elemente.map((el, i) => (
+                  <button key={el.id} type="button"
+                          className={'np-elem-btn' + (el.id === activeId ? ' aktiv' : '')}
+                          onClick={() => switchActive(el.id)}
+                          title={i === 0 ? 'Hauptelement bearbeiten' : `Element ${i + 1} bearbeiten`}>
+                    {i === 0 ? 'Haupt' : i + 1}
+                  </button>
+                ))}
+              </div>
+              <div className="np-aktiv-zeile">
+                <span>{istMain ? 'Hauptelement' : `Element ${aktivIndex + 1}`} wird bearbeitet</span>
+                {!istMain && (
+                  <button className="np-aktiv-remove" onClick={() => removeElement(activeId)} title="Dieses Element entfernen">Entfernen</button>
+                )}
+              </div>
             </div>
           )}
           <div className="np-group-label">TYP &amp; GEOMETRIE</div>
