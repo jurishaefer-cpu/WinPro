@@ -455,14 +455,29 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
   // Im Beleg (keine Editier-Handler) den viewBox eng an den Inhalt zuschneiden,
   // damit die Zeichnung ihre Spalte ausfüllt statt von Leerraum umgeben zu sein.
   const beleg = !onBreite && !onHoehe;
-  // Maß-Fonts proportional zur Zeichnungsbreite, damit sie auf jedem Beleg gleich groß
-  // rendern (Einzelfenster wie Kombination). Rand links/oben passend zur (rotierten)
-  // Maßzahl, sonst ragt sie aus dem viewBox.
-  const fMain = beleg ? Math.round(rw * 0.095) : 22;
-  const fSub = beleg ? Math.round(rw * 0.072) : 17;
-  const randLO = 12 + Math.round(fMain * 0.8);
+  // Beleg: feste Anzeige-Box (.beleg-zeichnung). Die Maß-Schrift wird so gewählt, dass sie
+  // NACH dem Einpassen (preserveAspectRatio) auf jeder Position gleich groß/lesbar erscheint –
+  // unabhängig vom Seitenverhältnis (hohe Fenster werden sonst stark verkleinert).
+  const BOX_W = 185, BOX_H = 150, ZIEL_FONT = 13;
+  const cRight = x + rw + 14, cBottom = y + rh + 14;
+  let fMain, randLO;
+  if (beleg) {
+    fMain = 30;
+    for (let i = 0; i < 4; i++) {
+      randLO = 12 + fMain * 0.85;
+      const vbW = (cRight - mainLeftX) + randLO;
+      const vbH = (cBottom - mainTopY) + randLO;
+      fMain = ZIEL_FONT * Math.max(vbW / BOX_W, vbH / BOX_H);
+    }
+    fMain = Math.round(fMain);
+    randLO = Math.round(12 + fMain * 0.85);
+  } else {
+    fMain = 22;
+    randLO = 12 + Math.round(22 * 0.8);
+  }
+  const fSub = beleg ? Math.round(fMain * 0.76) : 17;
   const vbLeft = mainLeftX - randLO, vbTop = mainTopY - randLO;
-  const vbRight = x + rw + 14, vbBottom = y + rh + 14;
+  const vbRight = cRight, vbBottom = cBottom;
   const viewBox = beleg
     ? `${vbLeft} ${vbTop} ${vbRight - vbLeft} ${vbBottom - vbTop}`
     : `0 0 ${VB_W} ${VB_H}`;
@@ -603,14 +618,25 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
   // Im Beleg (nicht interaktiv) den Rahmen eng halten: rechts/unten gibt es keine Maße,
   // links/oben nur so viel Rand wie die Maßzahlen brauchen → Zeichnung füllt ihre Spalte.
   const beleg = !onUnitClick;
-  // Maß-Fonts proportional zur Zeichnungsbreite, damit sie auf dem Beleg genauso groß
-  // rendern wie beim Einzelfenster (siehe FensterZeichnung). Links/oben muss der Rand
-  // zur (rotierten) Maßzahl passen, sonst ragt sie aus dem viewBox.
-  const fMain = beleg ? Math.round(totalWpx * 0.085) : 22;
-  const fSub = beleg ? Math.round(totalWpx * 0.065) : 17;
-  const ML = beleg ? Math.round(70 + fMain * 0.8) : 96;
-  const MT = beleg ? Math.round(70 + fMain * 0.8) : 100;
+  // Maß-Schrift box-bewusst wählen: nach dem Einpassen in die feste Beleg-Box (.beleg-zeichnung)
+  // sollen die Maße auf jeder Position gleich groß/lesbar sein – auch bei hohen Kombinationen.
   const MR = beleg ? 22 : 86, MB = beleg ? 20 : 40;
+  const BOX_W = 185, BOX_H = 150, ZIEL_FONT = 13;
+  let fMain, ML, MT;
+  if (beleg) {
+    fMain = 30;
+    for (let i = 0; i < 4; i++) {
+      ML = 70 + fMain * 0.8; MT = 70 + fMain * 0.8;
+      const vbW = totalWpx + ML + MR;
+      const vbH = totalHpx + MT + MB;
+      fMain = ZIEL_FONT * Math.max(vbW / BOX_W, vbH / BOX_H);
+    }
+    fMain = Math.round(fMain);
+    ML = Math.round(70 + fMain * 0.8); MT = Math.round(70 + fMain * 0.8);
+  } else {
+    fMain = 22; ML = 96; MT = 100;
+  }
+  const fSub = beleg ? Math.round(fMain * 0.76) : 17;
   const VB_W = totalWpx + ML + MR;
   const VB_H = totalHpx + MT + MB;
   const ox = ML, oy = MT;

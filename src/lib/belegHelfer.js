@@ -42,11 +42,9 @@ export function positionZeilen(config, profil, mitMontage = true) {
   if (profilTeile || profil?.bautiefe) {
     z.push(`Profil: ${esc(profilTeile)}${profil?.bautiefe ? ` · ${profil.bautiefe} mm Bautiefe` : ''}`);
   }
-  // Mehrflügeliges (z.B. verbundenes) Fenster als ein Fenster benennen
-  if (config.panes?.length > 1) {
-    const bez = fensterBezeichnung(geometrieByCode(config.code), config.panes, config.cols);
-    if (bez) z.push(`Ausführung: ${esc(bez)}`);
-  }
+  // Ausführung immer ausweisen (auch beim Einzelfenster, z.B. „Drehkippfenster DIN Links")
+  const bez = fensterBezeichnung(geometrieByCode(config.code), config.panes, config.cols);
+  if (bez) z.push(`Ausführung: ${esc(bez)}`);
   z.push(`Maß: ${Math.round(config.breite)} × ${Math.round(config.hoehe)} mm`);
   if (config.innenfarbe && config.innenfarbe === config.aussenfarbe) {
     z.push(`Farbe: ${esc(config.innenfarbe)}`);
