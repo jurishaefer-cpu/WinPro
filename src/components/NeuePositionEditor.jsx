@@ -66,6 +66,15 @@ function istAluHaustuerProfil(p) {
   return t.includes('aluminium haustur') || t.includes('alu haustur') || (t.includes('alu') && t.includes('haustur'));
 }
 
+// Haustür = ALU-Haustür oder eine Tür mit Haustür-Flügel (open: 'tuer'). Für diese werden
+// Standort, Aufsatzkasten/Rollladenführung und Dichtungen im Editor ausgeblendet.
+function istHaustuerGeo(geo, panes) {
+  if (!geo) return false;
+  if (geo.aluHaustuer) return true;
+  const ps = panes && panes.length ? panes : (geo.panes || [{ open: geo.open }]);
+  return geo.open === 'tuer' || ps.some(p => p?.open === 'tuer');
+}
+
 // Balkon-/Terrassentür = Tür ohne Haustür-Flügel (Dreh-/Dreh-Kipp-/Schiebetür).
 // Für diese ist die Schwelle frei wählbar; Haustüren haben sie ohnehin immer.
 function istBalkonTuer(geo, panes) {
@@ -241,6 +250,8 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
   const geometrie = geometrieByCode(aktiv.code);
   // System „Aluminium Haustür": ausschließlich die ALU-Geometrien anbieten – sonst die bisherigen.
   const istAluSystem = istAluHaustuerProfil(profil);
+  // Haustüren (ALU-System oder Haustür-Geometrie): Standort, Aufsatzkasten/Rollladen, Dichtungen ausblenden.
+  const istHaustuerAktiv = istAluSystem || istHaustuerGeo(geometrie, aktiv.panes);
   const geomOptionen = istAluSystem
     ? GEOMETRIEN.filter(g => g.aluHaustuer)
     : GEOMETRIEN.filter(g => g.kategorie === aktiv.kategorie && !g.aluHaustuer);
@@ -575,7 +586,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
       teile.push(systemLabel);
       teile.push(`Innen ${farbe(el.innenfarbe)} / Außen ${farbe(el.aussenfarbe)}`);
       teile.push(el.verglasung + (el.vsg ? ', VSG' : '') + (el.ornament ? `, Ornament${el.ornamentArt ? ` (${el.ornamentArt})` : ''}` : ''));
-      teile.push(`Dichtung innen/außen: ${el.dichtungInnen}/${el.dichtungAussen}`);
+      if (!istHaustuerGeo(geometrie, el.panes)) teile.push(`Dichtung innen/außen: ${el.dichtungInnen}/${el.dichtungAussen}`);
       if (el.verbreiterung) {
         const seiten = ['oben', 'unten', 'links', 'rechts'].filter(k => Number(el.verb[k]) > 0).map(k => `${k} ${Number(el.verb[k])} mm`);
         teile.push('Verbreiterung' + (seiten.length ? ': ' + seiten.join(', ') : ''));
@@ -737,10 +748,12 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
               <label className="np-field-label">Stückzahl</label>
               <input className="np-input" type="number" min="1" value={stueckzahl} onChange={e => setStueckzahl(e.target.value)} />
             </div>
-            <div>
-              <label className="np-field-label">Standort</label>
-              <input className="np-input" value={standort} onChange={e => setStandort(e.target.value)} placeholder="z. B. EG Küche" />
-            </div>
+            {!istHaustuerAktiv && (
+              <div>
+                <label className="np-field-label">Standort</label>
+                <input className="np-input" value={standort} onChange={e => setStandort(e.target.value)} placeholder="z. B. EG Küche" />
+              </div>
+            )}
           </div>
 
           <div className="np-group-label" style={{ marginTop: 24 }}>ANBAUTEN</div>
@@ -765,6 +778,8 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
               ))}
             </div>
           )}
+          {!istHaustuerAktiv && (
+          <>
           <label className="np-field-label">Aufsatzkasten</label>
           <div className="np-segmented">
             <button className={!aktiv.aufsatzkasten ? 'active' : ''} onClick={() => updAktiv({ aufsatzkasten: false })}>nein</button>
@@ -817,6 +832,8 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
           <datalist id="rollladen-liste">
             {ROLLLADEN.map(r => <option key={r} value={r} />)}
           </datalist>
+          </>
+          )}
         </aside>
 
         {/* Mitte: Zeichnung */}
@@ -949,6 +966,8 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
             </>
           )}
 
+          {!istHaustuerAktiv && (
+          <>
           <div className="np-group-label" style={{ marginTop: 24 }}>DICHTUNGEN</div>
           <div className="np-row">
             <div>
@@ -964,6 +983,8 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
               </select>
             </div>
           </div>
+          </>
+          )}
 
           <div className="np-group-label" style={{ marginTop: 24 }}>PRODUKTIONSKOMMENTAR</div>
           <RichTextEditor key={activeId} initialHtml={aktiv.kommentar} onChange={html => updAktiv({ kommentar: html })} placeholder="Kommentar für die Produktion…" minHeight={110} />
