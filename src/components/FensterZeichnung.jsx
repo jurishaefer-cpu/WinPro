@@ -57,7 +57,37 @@ export const GEOMETRIEN = [
     panes: [{ fest: true }, { open: 'psk', din: 'links' }] },
   { code: 'T13', kategorie: 'tuer', gruppe: 'Schiebetüren', label: 'Parallel-Schiebe-Kipp-Tür (PSK), Schiebe links / Fest rechts', teilung: 'pfosten', tuer: true,
     panes: [{ open: 'psk', din: 'rechts' }, { fest: true }] },
+
+  // --- ALU Haustür: eigenes System „Aluminium Haustür". Diese Geometrien sind NUR sichtbar/
+  // editierbar, wenn dieses System gewählt ist (aluHaustuer-Flag). `oberlicht` = fester Querriegel
+  // über die volle Breite oben; `colRatio` = relative Spaltenbreiten (z. B. 500/1000/500).
+  { code: 'A01', kategorie: 'tuer', aluHaustuer: true, gruppe: 'ALU Haustür', label: 'ALU Haustür DIN Links', tuer: true, defBreite: 1100, defHoehe: 2100, open: 'tuer', din: 'links' },
+  { code: 'A02', kategorie: 'tuer', aluHaustuer: true, gruppe: 'ALU Haustür', label: 'ALU Haustür DIN Rechts', tuer: true, defBreite: 1100, defHoehe: 2100, open: 'tuer', din: 'rechts' },
+  { code: 'A03', kategorie: 'tuer', aluHaustuer: true, gruppe: 'ALU Haustür', label: 'ALU Haustür DIN Rechts mit Seitenteil', tuer: true, defBreite: 2000, defHoehe: 2100,
+    panes: [{ fest: true }, { open: 'tuer', din: 'rechts' }] },
+  { code: 'A04', kategorie: 'tuer', aluHaustuer: true, gruppe: 'ALU Haustür', label: 'ALU Haustür DIN Links mit Seitenteil', tuer: true, defBreite: 2000, defHoehe: 2100,
+    panes: [{ open: 'tuer', din: 'links' }, { fest: true }] },
+  { code: 'A05', kategorie: 'tuer', aluHaustuer: true, gruppe: 'ALU Haustür', label: 'ALU Haustür DIN Rechts mit 2 Seitenteilen', tuer: true, defBreite: 2000, defHoehe: 2100, cols: 3, colRatio: [1, 2, 1],
+    panes: [{ fest: true }, { open: 'tuer', din: 'rechts' }, { fest: true }] },
+  { code: 'A06', kategorie: 'tuer', aluHaustuer: true, gruppe: 'ALU Haustür', label: 'ALU Haustür DIN Links mit 2 Seitenteilen', tuer: true, defBreite: 2000, defHoehe: 2100, cols: 3, colRatio: [1, 2, 1],
+    panes: [{ fest: true }, { open: 'tuer', din: 'links' }, { fest: true }] },
+  { code: 'A07', kategorie: 'tuer', aluHaustuer: true, gruppe: 'ALU Haustür', label: 'ALU Haustür DIN Rechts mit Oberlicht', tuer: true, oberlicht: true, oberlichtMm: 400, defBreite: 1100, defHoehe: 2500, cols: 1,
+    panes: [{ open: 'tuer', din: 'rechts' }] },
+  { code: 'A08', kategorie: 'tuer', aluHaustuer: true, gruppe: 'ALU Haustür', label: 'ALU Haustür DIN Links mit Oberlicht', tuer: true, oberlicht: true, oberlichtMm: 400, defBreite: 1100, defHoehe: 2500, cols: 1,
+    panes: [{ open: 'tuer', din: 'links' }] },
+  { code: 'A09', kategorie: 'tuer', aluHaustuer: true, gruppe: 'ALU Haustür', label: 'ALU Haustür DIN Rechts mit Seitenteil und Oberlicht', tuer: true, oberlicht: true, oberlichtMm: 400, defBreite: 2000, defHoehe: 2500, cols: 2,
+    panes: [{ fest: true }, { open: 'tuer', din: 'rechts' }] },
+  { code: 'A10', kategorie: 'tuer', aluHaustuer: true, gruppe: 'ALU Haustür', label: 'ALU Haustür DIN Links mit Seitenteil und Oberlicht', tuer: true, oberlicht: true, oberlichtMm: 400, defBreite: 2000, defHoehe: 2500, cols: 2,
+    panes: [{ open: 'tuer', din: 'links' }, { fest: true }] },
+  { code: 'A11', kategorie: 'tuer', aluHaustuer: true, gruppe: 'ALU Haustür', label: 'ALU Haustür DIN Rechts mit 2 Seitenteilen und Oberlicht', tuer: true, oberlicht: true, oberlichtMm: 400, defBreite: 2000, defHoehe: 2500, cols: 3, colRatio: [1, 2, 1],
+    panes: [{ fest: true }, { open: 'tuer', din: 'rechts' }, { fest: true }] },
+  { code: 'A12', kategorie: 'tuer', aluHaustuer: true, gruppe: 'ALU Haustür', label: 'ALU Haustür DIN Links mit 2 Seitenteilen und Oberlicht', tuer: true, oberlicht: true, oberlichtMm: 400, defBreite: 2000, defHoehe: 2500, cols: 3, colRatio: [1, 2, 1],
+    panes: [{ fest: true }, { open: 'tuer', din: 'links' }, { fest: true }] },
 ];
+
+// Codes der ALU-Haustür-Geometrien (nur im System „Aluminium Haustür" sichtbar).
+export const ALU_HAUSTUER_CODES = GEOMETRIEN.filter(g => g.aluHaustuer).map(g => g.code);
+export function istAluCode(code) { return ALU_HAUSTUER_CODES.includes(code); }
 
 export function geometrieByCode(code) {
   return GEOMETRIEN.find(g => g.code === code);
@@ -187,8 +217,15 @@ export function GeometrieThumb({ geometrie, glasFarbe = '#cfe3ef' }) {
   const istFest = g?.open === 'fest';
   const blendIn = inset(r0, 6);           // Blendrahmen breit (äußerer Rahmen)
   const miterBlend = gehrung(r0, blendIn);
-  const inner = inset(r0, 8);
+  let inner = inset(r0, 8);
   const sashW = 4.5;
+  // Oberlicht (Vorschau): schmaler fester Streifen oben, Rest darunter.
+  let olThumb = null;
+  if (g?.oberlicht) {
+    const olH = inner.h * 0.20;
+    olThumb = { x: inner.x, y: inner.y, w: inner.w, h: olH };
+    inner = { x: inner.x, y: inner.y + olH + 5, w: inner.w, h: inner.h - olH - 5 };
+  }
 
   const mk = (rect, geo) => {
     const gl = inset(rect, sashW);
@@ -230,6 +267,10 @@ export function GeometrieThumb({ geometrie, glasFarbe = '#cfe3ef' }) {
     for (let r = 1; r < rows; r++) pfostenList.push({ x: inner.x, y: rowY[r] - dH, w: inner.w, h: dH });
   } else {
     leaves = [mk(inner, g)];
+  }
+  if (olThumb) {
+    leaves.push({ sash: null, glas: inset(olThumb, 2.5), miter: [], lines: [], tuer: false });
+    pfostenList.push({ x: olThumb.x, y: olThumb.y + olThumb.h, w: olThumb.w, h: 5 });
   }
 
   return (
@@ -297,8 +338,19 @@ export function computeUnit(r0, scale, { geometrie, breite, hoehe, panes: panesP
       [[win.x, by], [blendIn.x, by]],
     ];
   }
-  const inner = insetTRBL(win, blendW + gap, blendW + gap, schwelleW + gap, blendW + gap);
+  let inner = insetTRBL(win, blendW + gap, blendW + gap, schwelleW + gap, blendW + gap);
   const istTuer = g?.open === 'tuer' || g?.kategorie === 'tuer';
+
+  // Oberlicht: fester Querriegel über die VOLLE Breite oben (eigene Scheibe + waagrechter Kämpfer).
+  // Die eigentliche Flügel-/Seitenteil-Aufteilung sitzt darunter (unverändertes Raster).
+  let oberlichtRect = null, kaempferRect = null;
+  if (g?.oberlicht) {
+    const olH = Math.min(Math.max(0, (g.oberlichtMm ?? 400)) * scale, inner.h * 0.42);
+    const kH = blendW;                                  // Kämpfer (waagrechter Rahmen) unter dem Oberlicht
+    oberlichtRect = { x: inner.x, y: inner.y, w: inner.w, h: olH };
+    kaempferRect = { x: inner.x, y: inner.y + olH, w: inner.w, h: kH, fest: true };
+    inner = { x: inner.x, y: inner.y + olH + kH, w: inner.w, h: inner.h - olH - kH };
+  }
 
   const machFluegel = (rect, geo) => {
     const gl = inset(rect, sashW);
@@ -351,6 +403,11 @@ export function computeUnit(r0, scale, { geometrie, breite, hoehe, panes: panesP
     if (rows > 1) subRows = rowY.map((ry0, r) => ({ y0: ry0, y1: ry0 + rowHpx[r], mm: Math.round(rhMM[r]), idx: r }));
   } else {
     leaves = [machFluegel(inner, g)];
+  }
+  if (oberlichtRect) {
+    // Oberlicht als feste Scheibe (volle Breite) ans Ende; Kämpfer als waagrechter Rahmen.
+    leaves.push({ sash: null, rect: oberlichtRect, glas: inset(oberlichtRect, Math.max(4, sashW * 0.5)), miter: [], lines: [], tuer: false });
+    pfostenList.push(kaempferRect);
   }
   const glasMinX = Math.min(...leaves.map(l => l.glas.x));
   const glasMaxX = Math.max(...leaves.map(l => l.glas.x + l.glas.w));
@@ -436,12 +493,15 @@ export function UnitBody({ c, glasFarbe = '#cfe3ef', onPaneClick, selectedPane, 
                 width="6" height="36" rx="3" fill="#0f1f3d" />
         );
       })}
-      {onPaneClick && leaves.map((lf, li) => (
-        <rect key={keyPrefix + 'hit' + li} x={lf.rect.x} y={lf.rect.y} width={lf.rect.w} height={lf.rect.h}
-              fill={selectedPane === li ? 'rgba(192,21,46,0.12)' : 'transparent'}
-              stroke={selectedPane === li ? '#c0152e' : 'transparent'} strokeWidth="2.5"
-              style={{ cursor: 'pointer' }} onClick={() => onPaneClick(li)} />
-      ))}
+      {onPaneClick && leaves.map((lf, li) => {
+        if (effPanes && li >= effPanes.length) return null;   // Oberlicht/Zusatzscheibe: nicht als Pane anklickbar
+        return (
+          <rect key={keyPrefix + 'hit' + li} x={lf.rect.x} y={lf.rect.y} width={lf.rect.w} height={lf.rect.h}
+                fill={selectedPane === li ? 'rgba(192,21,46,0.12)' : 'transparent'}
+                stroke={selectedPane === li ? '#c0152e' : 'transparent'} strokeWidth="2.5"
+                style={{ cursor: 'pointer' }} onClick={() => onPaneClick(li)} />
+        );
+      })}
     </g>
   );
 }

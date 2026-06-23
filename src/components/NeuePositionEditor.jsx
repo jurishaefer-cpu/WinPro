@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import FensterZeichnung, { GEOMETRIEN, geometrieByCode, GeometrieThumb, fensterBezeichnung, KombinationsZeichnung } from './FensterZeichnung';
+import FensterZeichnung, { GEOMETRIEN, geometrieByCode, GeometrieThumb, fensterBezeichnung, KombinationsZeichnung, istAluCode } from './FensterZeichnung';
 import GeometrieSelect from './GeometrieSelect';
 import RichTextEditor from './RichTextEditor';
 import { kombiMass } from '../lib/belegHelfer';
@@ -46,6 +46,26 @@ function panesFromGeo(geo) {
   return [{ open: geo.open, din: geo.din }];
 }
 
+// Spaltenbreiten aus relativen Proportionen (geo.colRatio, z. B. [1,2,1] → 500/1000/500); sonst gleich.
+function verteileNachRatio(breite, cols, ratio) {
+  const b = Math.max(0, Math.round(Number(breite) || 0));
+  if (Array.isArray(ratio) && ratio.length === cols) {
+    const sum = ratio.reduce((a, c) => a + c, 0) || 1;
+    const w = ratio.map(r => Math.round(b * r / sum));
+    w[cols - 1] += b - w.reduce((a, c) => a + c, 0);
+    return w;
+  }
+  return Array(cols).fill(Math.round(b / cols));
+}
+
+// Erkennt das System „Aluminium Haustür" anhand von Hersteller/System des Profils (tolerant ggü. Schreibweise).
+function istAluHaustuerProfil(p) {
+  if (!p) return false;
+  const t = `${p.hersteller || ''} ${p.system || ''}`.toLowerCase()
+    .replace(/ü/g, 'u').replace(/ä/g, 'a').replace(/ö/g, 'o').replace(/ß/g, 'ss');
+  return t.includes('aluminium haustur') || t.includes('alu haustur') || (t.includes('alu') && t.includes('haustur'));
+}
+
 // Balkon-/Terrassentür = Tür ohne Haustür-Flügel (Dreh-/Dreh-Kipp-/Schiebetür).
 // Für diese ist die Schwelle frei wählbar; Haustüren haben sie ohnehin immer.
 function istBalkonTuer(geo, panes) {
@@ -75,7 +95,7 @@ function makeElement(src, id) {
     code,
     panes,
     cols,
-    colWidths: src?.colWidths ?? Array(cols).fill(Math.round(breite / cols)),
+    colWidths: src?.colWidths ?? verteileNachRatio(breite, cols, geo?.colRatio),
     rowHeights: src?.rowHeights ?? Array(rows).fill(Math.round(hoehe / rows)),
     breite,
     hoehe,
@@ -218,7 +238,24 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
   const aktivIndex = Math.max(0, elemente.findIndex(e => e.id === aktiv.id));
   const istMain = aktiv && aktiv.id === elemente[0].id;
   const geometrie = geometrieByCode(aktiv.code);
-  const geomOptionen = GEOMETRIEN.filter(g => g.kategorie === aktiv.kategorie);
+  // System „Aluminium Haustür": ausschließlich die ALU-Geometrien anbieten – sonst die bisherigen.
+  const istAluSystem = istAluHaustuerProfil(profil);
+  const geomOptionen = istAluSystem
+    ? GEOMETRIEN.filter(g => g.aluHaustuer)
+    : GEOMETRIEN.filter(g => g.kategorie === aktiv.kategorie && !g.aluHaustuer);
+
+  // Beim Wechsel DES SYSTEMS die aktive Geometrie auf eine gültige umstellen
+  // (ALU↔Standard). Bestehende Positionen beim Laden bleiben unangetastet.
+  const prevAluSystem = useRef(null);
+  useEffect(() => {
+    if (!profil) return;                                   // erst wenn das System geladen ist
+    if (prevAluSystem.current === null) { prevAluSystem.current = istAluSystem; return; }
+    if (istAluSystem === prevAluSystem.current) return;
+    prevAluSystem.current = istAluSystem;
+    if (istAluSystem && !istAluCode(aktiv.code)) waehleGeometrie('A01');
+    else if (!istAluSystem && istAluCode(aktiv.code)) waehleGeometrie('F01');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [istAluSystem, profil]);
   const istKombi = elemente.length > 1;
   // Verbinden/Trennen: passender Nachbar zum aktiven Element (nur in einer Kombination)
   const mergePartner = istKombi ? findMergePartner(aktiv, elemente) : null;
@@ -243,12 +280,17 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
     const np = panesFromGeo(geo);
     const c = geo?.cols || np.length;
     const r = Math.ceil(np.length / c);
+    // ALU-Haustür-Geometrien bringen sinnvolle Standardmaße mit; sonst aktuelle Maße behalten.
+    const nb = Number(geo?.defBreite) || Number(aktiv.breite) || 1000;
+    const nh = Number(geo?.defHoehe) || Number(aktiv.hoehe) || 1200;
     updAktiv({
       code: neuCode,
       panes: np,
       cols: c,
-      colWidths: Array(c).fill(Math.round((Number(aktiv.breite) || 1000) / c)),
-      rowHeights: Array(r).fill(Math.round((Number(aktiv.hoehe) || 1200) / r)),
+      breite: nb,
+      hoehe: nh,
+      colWidths: verteileNachRatio(nb, c, geo?.colRatio),
+      rowHeights: Array(r).fill(Math.round(nh / r)),
     });
     setSelectedPane(null);
   }
@@ -617,11 +659,15 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
           )}
           <div className="np-group-label">TYP &amp; GEOMETRIE</div>
 
-          <label className="np-field-label">Kategorie</label>
-          <div className="np-segmented">
-            <button className={aktiv.kategorie === 'fenster' ? 'active' : ''} onClick={() => wechselKategorie('fenster')}>Fenster</button>
-            <button className={aktiv.kategorie === 'tuer' ? 'active' : ''} onClick={() => wechselKategorie('tuer')}>Tür</button>
-          </div>
+          {!istAluSystem && (
+            <>
+              <label className="np-field-label">Kategorie</label>
+              <div className="np-segmented">
+                <button className={aktiv.kategorie === 'fenster' ? 'active' : ''} onClick={() => wechselKategorie('fenster')}>Fenster</button>
+                <button className={aktiv.kategorie === 'tuer' ? 'active' : ''} onClick={() => wechselKategorie('tuer')}>Tür</button>
+              </div>
+            </>
+          )}
 
           <label className="np-field-label">Geometrie</label>
           <GeometrieSelect optionen={geomOptionen} value={aktiv.code} onChange={waehleGeometrie} panes={aktiv.panes} cols={aktiv.cols} />
@@ -778,7 +824,9 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
             ) : null}
           </div>
           {/* Mobiler In-Fluss-Knopf oben (Desktop nutzt den runden FAB in der Zeichnung) */}
-          <button className="np-add-inline" onClick={() => setAddMenu(v => !v)}>+ Element hinzufügen</button>
+          {!istAluSystem && (
+            <button className="np-add-inline" onClick={() => setAddMenu(v => !v)}>+ Element hinzufügen</button>
+          )}
           <div className="np-canvas">
             {istKombi ? (
               <KombinationsZeichnung elemente={elemente} activeId={activeId}
@@ -830,7 +878,9 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
           </div>
 
           {/* + Element hinzufügen — Desktop: runder Knopf unten links in der Ecke */}
-          <button className="np-add-fab" onClick={() => setAddMenu(v => !v)} title="Element hinzufügen">+</button>
+          {!istAluSystem && (
+            <button className="np-add-fab" onClick={() => setAddMenu(v => !v)} title="Element hinzufügen">+</button>
+          )}
           {addMenu && (
             <div className="pane-menu-backdrop" onClick={() => setAddMenu(false)} />
           )}
