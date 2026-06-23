@@ -1223,8 +1223,10 @@ body {
 .pos-menge { width: 50px; text-align: right; }
 .pos-preis { width: 84px; text-align: right; white-space: nowrap; }
 .pos-preis--bold { font-weight: 700; }
-.beleg-zeichnung { width: 185px; }
-.beleg-zeichnung .fz-svg { width: 100%; height: auto; }
+/* Feste Zeichnungs-Box: jede Position ist gleich groß, egal ob breites oder hohes Fenster
+   (das SVG skaliert per preserveAspectRatio in die Box und wird zentriert). */
+.beleg-zeichnung { width: 185px; height: 150px; display: flex; align-items: center; justify-content: center; }
+.beleg-zeichnung .fz-svg { width: 100%; height: 100%; }
 .pos-standort { font-weight: 700; margin-bottom: 2px; }
 .pos-beschr { font-size: 11px; line-height: 1.5; }
 .pos-manuell p { margin: 0 0 3px; }

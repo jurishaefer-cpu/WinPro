@@ -93,14 +93,14 @@ function BelegDokument({ art, angebot, kunde, positionen, profileMap, einstellun
                   {istFenster && (
                     <div className="beleg-zeichnung">
                       {c.elemente?.length > 1 ? (
-                        <KombinationsZeichnung elemente={c.elemente} />
+                        <KombinationsZeichnung elemente={c.elemente} weissesGlas />
                       ) : (
                         <FensterZeichnung
                           geometrie={geometrieByCode(c.code)} breite={c.breite} hoehe={c.hoehe}
                           panes={c.panes} cols={c.cols} colWidths={c.colWidths} rowHeights={c.rowHeights}
                           verbreiterung={c.verbreiterung ? c.verb : null}
                           aufsatzkasten={c.aufsatzkasten ? c.kasten : null}
-                          glasFarbe={c.ornament ? '#7fb0cc' : undefined}
+                          glasFarbe="#ffffff"
                         />
                       )}
                     </div>

@@ -542,7 +542,7 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
 }
 
 // Kombination mehrerer gekoppelter Einheiten (eigener Rahmen je Element), im Raster (row/col).
-export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', onUnitClick, activeId, onPaneClick, selectedPane, onDock, onSlide, onTotalBreite, onTotalHoehe, onElementBreite, onElementHoehe }) {
+export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weissesGlas = false, onUnitClick, activeId, onPaneClick, selectedPane, onDock, onSlide, onTotalBreite, onTotalHoehe, onElementBreite, onElementHoehe }) {
   const svgRef = useRef(null);
   const [drag, setDrag] = useState(null); // { id, side, targetId }
   function svgPoint(clientX, clientY) {
@@ -793,7 +793,7 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', onUnitC
         const hw = Math.max(64, Math.min(96, u.r0.w * 0.7));
         return (
           <g key={'u' + u.e._key}>
-            <UnitBody c={u.c} glasFarbe={u.e.ornament ? '#7fb0cc' : glasFarbe} keyPrefix={'u' + u.e._key + '-'}
+            <UnitBody c={u.c} glasFarbe={weissesGlas ? '#ffffff' : (u.e.ornament ? '#7fb0cc' : glasFarbe)} keyPrefix={'u' + u.e._key + '-'}
               onPaneClick={interaktiv && aktiv ? onPaneClick : undefined} selectedPane={aktiv ? selectedPane : null} />
             {aktiv && (
               <rect x={u.r0.x} y={u.r0.y} width={u.r0.w} height={u.r0.h} fill="none"
