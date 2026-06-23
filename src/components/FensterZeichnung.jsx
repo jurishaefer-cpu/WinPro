@@ -267,9 +267,15 @@ export function computeUnit(r0, scale, { geometrie, breite, hoehe, panes: panesP
   const win = { x: r0.x + vl, y: r0.y + vo + kh, w: r0.w - vl - vr, h: r0.h - vo - vu - kh };
 
   const u = Math.min(win.w, win.h);
-  const blendW = Math.max(12, u * 0.052);
-  const gap = Math.max(2.5, u * 0.011);
-  const sashW = Math.max(10, u * 0.045);
+  // Rahmen-/Flügelprofile als FESTE physische Breite (mm × scale), nicht proportional zur
+  // Fenstergröße. So bleibt die Rahmenbreite gleich, wenn man die Fenstergröße ändert, und
+  // alle Elemente einer Kombination (gleicher scale) haben dieselbe Profilbreite.
+  // Nur bei sehr kleinen Einheiten wird das Profil so weit verkleinert, dass Glas übrig bleibt.
+  const BLEND_MM = 50, GAP_MM = 10, SASH_MM = 45;
+  const fit = Math.min(1, (u * 0.40) / Math.max(1, (BLEND_MM + GAP_MM + SASH_MM) * scale));
+  const blendW = Math.max(6, BLEND_MM * scale * fit);
+  const gap = Math.max(1.5, GAP_MM * scale * fit);
+  const sashW = Math.max(5, SASH_MM * scale * fit);
   const istFest = g?.open === 'fest';
   const blendIn = inset(win, blendW);
   const miterBlend = gehrung(win, blendIn);
