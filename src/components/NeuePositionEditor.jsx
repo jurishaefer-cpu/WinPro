@@ -606,12 +606,23 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
 
           {istKombi && (
             <>
-              <div className="np-group-label" style={{ marginTop: 24 }}>GESAMTHÖHE</div>
-              <label className="np-field-label">Gesamthöhe (mm)</label>
-              <input className="np-input" type="number" key={'gh' + Math.round(hoeheGes)}
-                     defaultValue={Math.round(hoeheGes)}
-                     onBlur={e => setTotalHoehe(e.target.value)}
-                     onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); }} />
+              <div className="np-group-label" style={{ marginTop: 24 }}>GESAMTMASS (RAHMEN)</div>
+              <div className="np-row">
+                <div>
+                  <label className="np-field-label">Gesamtbreite (mm)</label>
+                  <input className="np-input" type="number" key={'gb' + Math.round(breiteGes)}
+                         defaultValue={Math.round(breiteGes)}
+                         onBlur={e => setTotalBreite(e.target.value)}
+                         onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); }} />
+                </div>
+                <div>
+                  <label className="np-field-label">Gesamthöhe (mm)</label>
+                  <input className="np-input" type="number" key={'gh' + Math.round(hoeheGes)}
+                         defaultValue={Math.round(hoeheGes)}
+                         onBlur={e => setTotalHoehe(e.target.value)}
+                         onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); }} />
+                </div>
+              </div>
             </>
           )}
           <div className="np-group-label" style={{ marginTop: 24 }}>{istKombi ? `MASSE – ELEMENT ${aktivIndex + 1}` : 'MASSE'}</div>
