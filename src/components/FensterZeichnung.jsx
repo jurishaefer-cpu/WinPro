@@ -47,6 +47,16 @@ export const GEOMETRIEN = [
     panes: [{ open: 'drehkipp', din: 'links' }, { open: 'drehkipp', din: 'rechts' }] },
   { code: 'T08', kategorie: 'tuer', gruppe: 'Türen', label: 'Zweiflügelige Balkontür Dreh', teilung: 'stulp', tuer: true,
     panes: [{ open: 'dreh', din: 'links' }, { open: 'dreh', din: 'rechts' }] },
+  { code: 'T09', kategorie: 'tuer', gruppe: 'Schiebetüren', label: 'Hebe-Schiebe-Tür (HST), Fest links / Schiebe rechts', teilung: 'pfosten', tuer: true,
+    panes: [{ fest: true }, { open: 'schiebe', din: 'links' }] },
+  { code: 'T10', kategorie: 'tuer', gruppe: 'Schiebetüren', label: 'Hebe-Schiebe-Tür (HST), Schiebe links / Fest rechts', teilung: 'pfosten', tuer: true,
+    panes: [{ open: 'schiebe', din: 'rechts' }, { fest: true }] },
+  { code: 'T11', kategorie: 'tuer', gruppe: 'Schiebetüren', label: 'Hebe-Schiebe-Tür (HST), Fest / Schiebe / Fest', teilung: 'pfosten', tuer: true, cols: 3,
+    panes: [{ fest: true }, { open: 'schiebe', din: 'links' }, { fest: true }] },
+  { code: 'T12', kategorie: 'tuer', gruppe: 'Schiebetüren', label: 'Parallel-Schiebe-Kipp-Tür (PSK) DIN Links', teilung: 'pfosten', tuer: true,
+    panes: [{ open: 'psk', din: 'links' }, { fest: true }] },
+  { code: 'T13', kategorie: 'tuer', gruppe: 'Schiebetüren', label: 'Parallel-Schiebe-Kipp-Tür (PSK) DIN Rechts', teilung: 'pfosten', tuer: true,
+    panes: [{ fest: true }, { open: 'psk', din: 'rechts' }] },
 ];
 
 export function geometrieByCode(code) {
@@ -68,6 +78,8 @@ function fluegelArt(p) {
   if (p.open === 'kipp') return 'Kipp';
   if (p.open === 'dreh') return 'Dreh';
   if (p.open === 'tuer') return 'Tür';
+  if (p.open === 'schiebe') return 'Hebe-Schiebe';
+  if (p.open === 'psk') return 'Parallel-Schiebe-Kipp';
   return 'Fest';
 }
 
@@ -129,9 +141,22 @@ function oeffnungsLinien(g, r) {
   };
   // Kippstellung: Bänder unten, Dreieck-Spitze zeigt nach oben
   const kipp = () => { linien.push([BL, midT], [BR, midT]); };
+  // Schiebe-Pfeil: horizontaler Pfeil in Schieberichtung (Hebe-Schiebe / Parallel-Schiebe)
+  const schiebe = (din, fy = 0.5) => {
+    const cy = y + h * fy;
+    const ax0 = x + w * 0.22, ax1 = x + w * 0.78;
+    const hd = Math.min(w, h) * 0.09;
+    if (din === 'links') {
+      linien.push([[ax1, cy], [ax0, cy]], [[ax0, cy], [ax0 + hd, cy - hd]], [[ax0, cy], [ax0 + hd, cy + hd]]);
+    } else {
+      linien.push([[ax0, cy], [ax1, cy]], [[ax1, cy], [ax1 - hd, cy - hd]], [[ax1, cy], [ax1 - hd, cy + hd]]);
+    }
+  };
   if (g.open === 'dreh' || g.open === 'tuer') dreh(g.din || 'links');
   else if (g.open === 'kipp') kipp();
   else if (g.open === 'drehkipp') { dreh(g.din || 'links'); kipp(); }
+  else if (g.open === 'schiebe') schiebe(g.din || 'rechts');           // Hebe-Schiebe-Tür (HST)
+  else if (g.open === 'psk') { kipp(); schiebe(g.din || 'links', 0.78); } // Parallel-Schiebe-Kipp (PSK)
   return linien;
 }
 

@@ -19,6 +19,10 @@ const PANE_OPTIONEN = [
   { label: 'Dreh DIN Links', cfg: { open: 'dreh', din: 'links' } },
   { label: 'Dreh DIN Rechts', cfg: { open: 'dreh', din: 'rechts' } },
   { label: 'Kippfenster', cfg: { open: 'kipp' } },
+  { label: 'Hebe-Schiebe links', cfg: { open: 'schiebe', din: 'links' } },
+  { label: 'Hebe-Schiebe rechts', cfg: { open: 'schiebe', din: 'rechts' } },
+  { label: 'Parallel-Schiebe-Kipp links', cfg: { open: 'psk', din: 'links' } },
+  { label: 'Parallel-Schiebe-Kipp rechts', cfg: { open: 'psk', din: 'rechts' } },
   { label: 'Festverglasung', cfg: { fest: true } },
 ];
 
