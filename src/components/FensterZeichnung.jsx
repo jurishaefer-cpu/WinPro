@@ -277,16 +277,21 @@ export function computeUnit(r0, scale, { geometrie, breite, hoehe, panes: panesP
   const gap = Math.max(1.5, GAP_MM * scale * fit);
   const sashW = Math.max(5, SASH_MM * scale * fit);
   const istFest = g?.open === 'fest';
-  const blendIn = inset(win, blendW);
+  const effPanes = panesProp || g?.panes;
+  // Haustür (Tür-Flügel): unten nur eine schmale Schwelle statt vollem Rahmen –
+  // Umlauf oben/links/rechts bleibt gleich.
+  const istHaustuer = g?.open === 'tuer' || (Array.isArray(effPanes) && effPanes.some(p => p?.open === 'tuer'));
+  const schwelleW = istHaustuer ? Math.max(3, blendW * 0.32) : blendW;
+  const insetTRBL = (r, t, ri, b, l) => ({ x: r.x + l, y: r.y + t, w: r.w - l - ri, h: r.h - t - b });
+  const blendIn = insetTRBL(win, blendW, blendW, schwelleW, blendW);
   const miterBlend = gehrung(win, blendIn);
-  const inner = inset(win, blendW + gap);
+  const inner = insetTRBL(win, blendW + gap, blendW + gap, schwelleW + gap, blendW + gap);
   const istTuer = g?.open === 'tuer' || g?.kategorie === 'tuer';
 
   const machFluegel = (rect, geo) => {
     const gl = inset(rect, sashW);
     return { sash: rect, rect, glas: gl, miter: gehrung(rect, gl), lines: geo ? oeffnungsLinien(geo, gl) : [], tuer: geo?.open === 'tuer' };
   };
-  const effPanes = panesProp || g?.panes;
   let leaves = [];
   const pfostenList = [];
   let subCols = [];
