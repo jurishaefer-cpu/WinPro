@@ -254,7 +254,7 @@ export function GeometrieThumb({ geometrie, glasFarbe = '#cfe3ef' }) {
 
 // Berechnet die Pixel-Geometrie EINER Einheit (Rahmen, Flügel, Glas, Pfosten, Sub-Maße)
 // in das vorgegebene Gesamt-Rechteck r0 (px) bei Maßstab scale (px pro mm).
-export function computeUnit(r0, scale, { geometrie, breite, hoehe, panes: panesProp, cols: colsProp, colWidths, rowHeights, verbreiterung, aufsatzkasten }) {
+export function computeUnit(r0, scale, { geometrie, breite, hoehe, panes: panesProp, cols: colsProp, colWidths, rowHeights, verbreiterung, aufsatzkasten, schwelle }) {
   const g = geometrie;
   const vo = Math.max(0, Number(verbreiterung?.oben) || 0) * scale;
   const vu = Math.max(0, Number(verbreiterung?.unten) || 0) * scale;
@@ -278,13 +278,25 @@ export function computeUnit(r0, scale, { geometrie, breite, hoehe, panes: panesP
   const sashW = Math.max(5, SASH_MM * scale * fit);
   const istFest = g?.open === 'fest';
   const effPanes = panesProp || g?.panes;
-  // Haustür (Tür-Flügel): unten nur eine schmale Schwelle statt vollem Rahmen –
-  // Umlauf oben/links/rechts bleibt gleich.
+  // Schwelle (schmaler Bodenabschluss statt vollem Rahmen unten): Haustüren haben sie immer,
+  // Balkon-/Terrassentüren optional (Schalter im Editor → prop `schwelle`).
+  // Umlauf oben/links/rechts bleibt jeweils gleich.
   const istHaustuer = g?.open === 'tuer' || (Array.isArray(effPanes) && effPanes.some(p => p?.open === 'tuer'));
-  const schwelleW = istHaustuer ? Math.max(3, blendW * 0.32) : blendW;
+  const hatSchwelle = istHaustuer || !!schwelle;
+  const schwelleW = hatSchwelle ? Math.max(3, blendW * 0.32) : blendW;
   const insetTRBL = (r, t, ri, b, l) => ({ x: r.x + l, y: r.y + t, w: r.w - l - ri, h: r.h - t - b });
   const blendIn = insetTRBL(win, blendW, blendW, schwelleW, blendW);
-  const miterBlend = gehrung(win, blendIn);
+  let miterBlend = gehrung(win, blendIn);
+  if (hatSchwelle) {
+    // Seitenrahmen laufen gerade nach unten durch; der Stoß zur Schwelle ist eine durchgehende
+    // horizontale Linie (kein 45°-Gehrungsschnitt an den unteren Ecken → keine schräge Schwelle).
+    const by = blendIn.y + blendIn.h;
+    miterBlend = [
+      miterBlend[0], miterBlend[1],
+      [[win.x + win.w, by], [blendIn.x + blendIn.w, by]],
+      [[win.x, by], [blendIn.x, by]],
+    ];
+  }
   const inner = insetTRBL(win, blendW + gap, blendW + gap, schwelleW + gap, blendW + gap);
   const istTuer = g?.open === 'tuer' || g?.kategorie === 'tuer';
 
@@ -434,7 +446,7 @@ export function UnitBody({ c, glasFarbe = '#cfe3ef', onPaneClick, selectedPane, 
   );
 }
 
-function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkasten, glasFarbe = '#cfe3ef', onBreite, onHoehe, panes: panesProp, cols: colsProp, colWidths, rowHeights, onColWidth, onRowHeight, onPaneClick, selectedPane }) {
+function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkasten, schwelle, glasFarbe = '#cfe3ef', onBreite, onHoehe, panes: panesProp, cols: colsProp, colWidths, rowHeights, onColWidth, onRowHeight, onPaneClick, selectedPane }) {
   const b = Math.max(200, Number(breite) || 1000);
   const hh = Math.max(200, Number(hoehe) || 1200);
 
@@ -447,7 +459,7 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
   const x = cx - rw / 2, y = cy - rh / 2;
 
   const r0 = { x, y, w: rw, h: rh };                            // Gesamtmaß (mit Verbreiterung/Kasten)
-  const c = computeUnit(r0, scale, { geometrie, breite, hoehe, panes: panesProp, cols: colsProp, colWidths, rowHeights, verbreiterung, aufsatzkasten });
+  const c = computeUnit(r0, scale, { geometrie, breite, hoehe, panes: panesProp, cols: colsProp, colWidths, rowHeights, verbreiterung, aufsatzkasten, schwelle });
   const hatSubB = c.subCols.length > 0;
   const hatSubH = c.subRows.length > 0;
 
@@ -664,6 +676,7 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
       geometrie: geometrieByCode(e.code), breite: elBmm, hoehe: elHmm,
       panes: e.panes, cols: e.cols, colWidths: e.colWidths, rowHeights: e.rowHeights,
       verbreiterung: e.verbreiterung ? e.verb : null, aufsatzkasten: e.aufsatzkasten ? e.kasten : null,
+      schwelle: e.schwelle,
     });
     // rechtsbündig letztes Element seiner Zeile? → Höhenbemaßung rechts
     const rightmost = !els.some(o => (o.row ?? 0) === rr && (o.col ?? 0) > cc);

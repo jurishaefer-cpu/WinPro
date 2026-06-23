@@ -46,6 +46,14 @@ function panesFromGeo(geo) {
   return [{ open: geo.open, din: geo.din }];
 }
 
+// Balkon-/Terrassentür = Tür ohne Haustür-Flügel (Dreh-/Dreh-Kipp-/Schiebetür).
+// Für diese ist die Schwelle frei wählbar; Haustüren haben sie ohnehin immer.
+function istBalkonTuer(geo, panes) {
+  if (!geo || geo.kategorie !== 'tuer') return false;
+  const ps = panes && panes.length ? panes : (geo.panes || [{ open: geo.open }]);
+  return !ps.some(p => p?.open === 'tuer');
+}
+
 const DEFAULT_KASTEN = { kastenhoehe: 165, bedienung: 'Gurt', bedienungsseite: 'rechts', lamellenfarbe: '', lamellentyp: 'Alulamelle' };
 
 // Baut ein einzelnes Element aus (Teil-)Konfig oder Defaults.
@@ -75,6 +83,7 @@ function makeElement(src, id) {
     verb: src?.verb ?? { oben: 0, unten: 0, links: 0, rechts: 0 },
     aufsatzkasten: src?.aufsatzkasten ?? false,
     kasten: src?.kasten ?? { ...DEFAULT_KASTEN },
+    schwelle: src?.schwelle ?? false,
     rollladen: src?.rollladen && src.rollladen !== 'ohne' ? src.rollladen : '',
     innenfarbe: src?.innenfarbe ?? 'WEISS',
     aussenfarbe: src?.aussenfarbe ?? 'WEISS',
@@ -520,6 +529,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
           + (el.kasten.lamellentyp ? `, ${el.kasten.lamellentyp}` : '')
           + (el.kasten.lamellenfarbe ? ` ${el.kasten.lamellenfarbe}` : ''));
       }
+      if (el.schwelle && istBalkonTuer(geometrie, el.panes)) teile.push('mit Schwelle');
       if (el.rollladen && el.rollladen !== 'ohne') teile.push(`Rollladenführung ${el.rollladen}`);
       const komText = (el.kommentar || '').replace(/<[^>]*>/g, '').trim();
       if (komText) teile.push(`Kommentar: ${el.kommentar}`);
@@ -548,7 +558,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
       colWidths: main.colWidths, rowHeights: main.rowHeights,
       breite: Number(main.breite), hoehe: Number(main.hoehe),
       verbreiterung: main.verbreiterung, verb: main.verb,
-      aufsatzkasten: main.aufsatzkasten, kasten: main.kasten, rollladen: main.rollladen,
+      aufsatzkasten: main.aufsatzkasten, kasten: main.kasten, schwelle: main.schwelle, rollladen: main.rollladen,
       innenfarbe: main.innenfarbe, aussenfarbe: main.aussenfarbe, verglasung: main.verglasung, vsg: main.vsg,
       ornament: main.ornament, ornamentArt: main.ornamentArt,
       dichtungInnen: main.dichtungInnen, dichtungAussen: main.dichtungAussen,
@@ -727,6 +737,15 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
                      onChange={e => updAktiv({ kasten: { ...aktiv.kasten, lamellentyp: e.target.value } })} />
             </div>
           )}
+          {istBalkonTuer(geometrie, aktiv.panes) && (
+            <>
+              <label className="np-field-label">Schwelle</label>
+              <div className="np-segmented">
+                <button className={!aktiv.schwelle ? 'active' : ''} onClick={() => updAktiv({ schwelle: false })}>nein</button>
+                <button className={aktiv.schwelle ? 'active' : ''} onClick={() => updAktiv({ schwelle: true })}>ja</button>
+              </div>
+            </>
+          )}
           <label className="np-field-label">Rollladenführung</label>
           <input
             className="np-input"
@@ -771,6 +790,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
               <FensterZeichnung geometrie={geometrie} breite={aktiv.breite} hoehe={aktiv.hoehe}
                 verbreiterung={aktiv.verbreiterung ? aktiv.verb : null}
                 aufsatzkasten={aktiv.aufsatzkasten ? aktiv.kasten : null}
+                schwelle={aktiv.schwelle}
                 glasFarbe={aktiv.ornament ? '#7fb0cc' : undefined}
                 onBreite={setMainBreite} onHoehe={setMainHoehe}
                 panes={aktiv.panes} cols={aktiv.cols}
