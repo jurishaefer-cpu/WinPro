@@ -314,6 +314,14 @@ export function UnitBody({ c, glasFarbe = '#cfe3ef', onPaneClick, selectedPane, 
         <rect x={kasten.x} y={kasten.y} width={kasten.w} height={kasten.h} fill="#fff" stroke="#0f1f3d" strokeWidth="2.5" />
       )}
       <rect x={win.x} y={win.y} width={win.w} height={win.h} fill="#fff" stroke="#0f1f3d" strokeWidth="2.5" />
+      {/* Verbreiterung: obere/untere Trennlinie laeuft ueber die volle Breite bis zum Aussenrahmen
+          (oben/unten liegendes Profil durchgehend, seitliche Verbreiterung setzt darunter an). */}
+      {hatVerb && (win.y - r0.y > 0.5) && (
+        <line x1={r0.x} y1={win.y} x2={r0.x + r0.w} y2={win.y} stroke="#0f1f3d" strokeWidth="2.5" />
+      )}
+      {hatVerb && ((r0.y + r0.h) - (win.y + win.h) > 0.5) && (
+        <line x1={r0.x} y1={win.y + win.h} x2={r0.x + r0.w} y2={win.y + win.h} stroke="#0f1f3d" strokeWidth="2.5" />
+      )}
       <rect x={blendIn.x} y={blendIn.y} width={blendIn.w} height={blendIn.h} fill="#fff" stroke="#0f1f3d" strokeWidth="1.6" />
       {miterBlend.map((l, i) => (
         <line key={keyPrefix + 'mb' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="1.4" />
