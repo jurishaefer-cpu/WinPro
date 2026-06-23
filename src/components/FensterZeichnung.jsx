@@ -53,10 +53,10 @@ export const GEOMETRIEN = [
     panes: [{ open: 'schiebe', din: 'rechts' }, { fest: true }] },
   { code: 'T11', kategorie: 'tuer', gruppe: 'Schiebetüren', label: 'Hebe-Schiebe-Tür (HST), Fest / Schiebe / Fest', teilung: 'pfosten', tuer: true, cols: 3,
     panes: [{ fest: true }, { open: 'schiebe', din: 'links' }, { fest: true }] },
-  { code: 'T12', kategorie: 'tuer', gruppe: 'Schiebetüren', label: 'Parallel-Schiebe-Kipp-Tür (PSK) DIN Links', teilung: 'pfosten', tuer: true,
-    panes: [{ open: 'psk', din: 'links' }, { fest: true }] },
-  { code: 'T13', kategorie: 'tuer', gruppe: 'Schiebetüren', label: 'Parallel-Schiebe-Kipp-Tür (PSK) DIN Rechts', teilung: 'pfosten', tuer: true,
-    panes: [{ fest: true }, { open: 'psk', din: 'rechts' }] },
+  { code: 'T12', kategorie: 'tuer', gruppe: 'Schiebetüren', label: 'Parallel-Schiebe-Kipp-Tür (PSK), Fest links / Schiebe rechts', teilung: 'pfosten', tuer: true,
+    panes: [{ fest: true }, { open: 'psk', din: 'links' }] },
+  { code: 'T13', kategorie: 'tuer', gruppe: 'Schiebetüren', label: 'Parallel-Schiebe-Kipp-Tür (PSK), Schiebe links / Fest rechts', teilung: 'pfosten', tuer: true,
+    panes: [{ open: 'psk', din: 'rechts' }, { fest: true }] },
 ];
 
 export function geometrieByCode(code) {
@@ -66,6 +66,11 @@ export function geometrieByCode(code) {
 // Hat der Flügel eine Kippfunktion? (Dreh-Kipp oder reines Kippfenster)
 function istKippbar(p) {
   return !!p && !p.fest && (p.open === 'drehkipp' || p.open === 'kipp');
+}
+
+// Bewegliches Schiebeelement (Hebe-Schiebe / Parallel-Schiebe-Kipp)?
+function istSchiebe(p) {
+  return !!p && !p.fest && (p.open === 'schiebe' || p.open === 'psk');
 }
 
 const TEIL_ADJ = { 2: 'Zweiteiliges', 3: 'Dreiteiliges', 4: 'Vierteiliges', 5: 'Fünfteiliges', 6: 'Sechsteiliges' };
@@ -203,15 +208,23 @@ export function GeometrieThumb({ geometrie, glasFarbe = '#cfe3ef' }) {
     const rowH = (inner.h - dH * (rows - 1)) / rows;
     const colX = []; for (let c = 0; c < cols; c++) colX.push(inner.x + c * (colW + dW));
     const rowY = []; for (let r = 0; r < rows; r++) rowY.push(inner.y + r * (rowH + dH));
+    const ueberlapp = dW + sashW;
     g.panes.forEach((p, idx) => {
       const c = idx % cols, r = Math.floor(idx / cols);
-      const rect = { x: colX[c], y: rowY[r], w: colW, h: rowH };
+      let rect = { x: colX[c], y: rowY[r], w: colW, h: rowH };
+      const schiebt = istSchiebe(p) && rows === 1;
+      if (schiebt && p.din === 'links' && c > 0) rect = { ...rect, x: rect.x - ueberlapp, w: rect.w + ueberlapp };
+      else if (schiebt && p.din !== 'links' && c < cols - 1) rect = { ...rect, w: rect.w + ueberlapp };
       if (p.fest) leaves.push({ sash: null, glas: inset(rect, 2.5), miter: [], lines: [], tuer: false });
-      else leaves.push(mk(rect, { open: p.open, din: p.din }));
+      else { const lf = mk(rect, { open: p.open, din: p.din }); lf.zTop = schiebt; leaves.push(lf); }
     });
     const istStulp = g?.teilung === 'stulp';
     for (let c = 1; c < cols; c++) {
       if (istStulp && !stulpPfostenZeigen(g.panes, cols, c)) continue;
+      if (rows === 1) {
+        const li = g.panes[c - 1], re = g.panes[c];
+        if ((istSchiebe(li) && li.din !== 'links') || (istSchiebe(re) && re.din === 'links')) continue;
+      }
       pfostenList.push({ x: colX[c] - dW, y: inner.y, w: dW, h: inner.h });
     }
     for (let r = 1; r < rows; r++) pfostenList.push({ x: inner.x, y: rowY[r] - dH, w: inner.w, h: dH });
@@ -225,7 +238,7 @@ export function GeometrieThumb({ geometrie, glasFarbe = '#cfe3ef' }) {
       <rect x={blendIn.x} y={blendIn.y} width={blendIn.w} height={blendIn.h} fill="#fff" stroke="#0f1f3d" strokeWidth="1.1" />
       {miterBlend.map((l, i) => <line key={'mb' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="0.8" />)}
       {pfostenList.map((pf, i) => <rect key={'pf' + i} x={pf.x} y={pf.y} width={pf.w} height={pf.h} fill="#fff" stroke="#0f1f3d" strokeWidth="1.1" />)}
-      {leaves.map((lf, li) => (
+      {leaves.map((lf, li) => ({ lf, li })).sort((a, b) => (a.lf.zTop ? 1 : 0) - (b.lf.zTop ? 1 : 0)).map(({ lf, li }) => (
         <g key={'lf' + li}>
           {lf.sash && <rect x={lf.sash.x} y={lf.sash.y} width={lf.sash.w} height={lf.sash.h} fill="#fff" stroke="#0f1f3d" strokeWidth="1.1" />}
           {lf.miter.map((l, i) => <line key={'ms' + li + '-' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="0.8" />)}
@@ -290,15 +303,24 @@ export function computeUnit(r0, scale, { geometrie, breite, hoehe, panes: panesP
     const rowHpx = rhMM.map(r => availH * r / sumH);
     const colX = []; { let xa = inner.x; for (let c = 0; c < cols; c++) { colX.push(xa); xa += colWpx[c] + dW; } }
     const rowY = []; { let ya = inner.y; for (let r = 0; r < rows; r++) { rowY.push(ya); ya += rowHpx[r] + dH; } }
+    const ueberlapp = dW + sashW;   // Schiebeflügel ragt über den Pfosten leicht in den Nachbarflügel
     effPanes.forEach((p, idx) => {
       const c = idx % cols, r = Math.floor(idx / cols);
-      const rect = { x: colX[c], y: rowY[r], w: colWpx[c], h: rowHpx[r] };
+      let rect = { x: colX[c], y: rowY[r], w: colWpx[c], h: rowHpx[r] };
+      const schiebt = istSchiebe(p) && rows === 1;
+      if (schiebt && p.din === 'links' && c > 0) rect = { ...rect, x: rect.x - ueberlapp, w: rect.w + ueberlapp };
+      else if (schiebt && p.din !== 'links' && c < cols - 1) rect = { ...rect, w: rect.w + ueberlapp };
       if (p.fest) leaves.push({ sash: null, rect, glas: inset(rect, Math.max(4, sashW * 0.5)), miter: [], lines: [], tuer: false });
-      else leaves.push(machFluegel(rect, { open: p.open, din: p.din }));
+      else { const lf = machFluegel(rect, { open: p.open, din: p.din }); lf.zTop = schiebt; leaves.push(lf); }
     });
     const istStulp = g?.teilung === 'stulp';
     for (let c = 1; c < cols; c++) {
       if (istStulp && !stulpPfostenZeigen(effPanes, cols, c)) continue;
+      // Schiebe-Überlappung: Pfosten entfällt, wenn ein bewegliches Element über diese Grenze ragt
+      if (rows === 1) {
+        const li = effPanes[c - 1], re = effPanes[c];
+        if ((istSchiebe(li) && li.din !== 'links') || (istSchiebe(re) && re.din === 'links')) continue;
+      }
       pfostenList.push({ x: colX[c] - dW, y: inner.y, w: dW, h: inner.h, fest: !istStulp });
     }
     for (let r = 1; r < rows; r++) pfostenList.push({ x: inner.x, y: rowY[r] - dH, w: inner.w, h: dH, fest: true });
@@ -355,7 +377,7 @@ export function UnitBody({ c, glasFarbe = '#cfe3ef', onPaneClick, selectedPane, 
         <rect key={keyPrefix + 'pf' + i} x={pf.x} y={pf.y} width={pf.w} height={pf.h}
               fill="#fff" stroke="#0f1f3d" strokeWidth={pf.fest ? 2 : 1.6} />
       ))}
-      {leaves.map((lf, li) => (
+      {leaves.map((lf, li) => ({ lf, li })).sort((a, b) => (a.lf.zTop ? 1 : 0) - (b.lf.zTop ? 1 : 0)).map(({ lf, li }) => (
         <g key={keyPrefix + 'lf' + li}>
           {lf.sash && (
             <rect x={lf.sash.x} y={lf.sash.y} width={lf.sash.w} height={lf.sash.h} fill="#fff" stroke="#0f1f3d" strokeWidth="2" />
