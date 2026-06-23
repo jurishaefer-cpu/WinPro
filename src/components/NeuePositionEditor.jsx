@@ -104,6 +104,7 @@ function makeElement(src, id) {
     aufsatzkasten: src?.aufsatzkasten ?? false,
     kasten: src?.kasten ?? { ...DEFAULT_KASTEN },
     schwelle: src?.schwelle ?? false,
+    oberlichtHoehe: src?.oberlichtHoehe ?? geo?.oberlichtMm ?? null,
     rollladen: src?.rollladen && src.rollladen !== 'ohne' ? src.rollladen : '',
     innenfarbe: src?.innenfarbe ?? 'WEISS',
     aussenfarbe: src?.aussenfarbe ?? 'WEISS',
@@ -291,6 +292,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
       hoehe: nh,
       colWidths: verteileNachRatio(nb, c, geo?.colRatio),
       rowHeights: Array(r).fill(Math.round(nh / r)),
+      oberlichtHoehe: geo?.oberlichtMm ?? null,
     });
     setSelectedPane(null);
   }
@@ -306,6 +308,18 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
   function setColWidth(i, val) {
     const next = aktiv.colWidths.map((c, idx) => (idx === i ? (Number(val) || 0) : c));
     updAktiv({ colWidths: next, breite: next.reduce((a, c) => a + c, 0) });
+  }
+  // Oberlicht-Höhe ändern: unterer Abschnitt (Tür/Seitenteile) bleibt, Gesamthöhe wächst/schrumpft mit.
+  function setOberlichtHoehe(val) {
+    const newOl = Math.max(50, Math.round(Number(val) || 0));
+    const oldOl = Math.round(Number(aktiv.oberlichtHoehe) || 0);
+    updAktiv({ oberlichtHoehe: newOl, hoehe: Math.max(400, Math.round(Number(aktiv.hoehe) || 0) + (newOl - oldOl)) });
+  }
+  // Höhe des unteren Abschnitts (Tür/Seitenteile) ändern: Gesamthöhe = Unterteil + Oberlicht.
+  function setBottomHoehe(val) {
+    const ol = Math.round(Number(aktiv.oberlichtHoehe) || 0);
+    const bottom = Math.max(200, Math.round(Number(val) || 0));
+    updAktiv({ hoehe: ol + bottom });
   }
   function setRowHeight(i, val) {
     const next = aktiv.rowHeights.map((rr, idx) => (idx === i ? (Number(val) || 0) : rr));
@@ -600,7 +614,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
       colWidths: main.colWidths, rowHeights: main.rowHeights,
       breite: Number(main.breite), hoehe: Number(main.hoehe),
       verbreiterung: main.verbreiterung, verb: main.verb,
-      aufsatzkasten: main.aufsatzkasten, kasten: main.kasten, schwelle: main.schwelle, rollladen: main.rollladen,
+      aufsatzkasten: main.aufsatzkasten, kasten: main.kasten, schwelle: main.schwelle, oberlichtHoehe: main.oberlichtHoehe, rollladen: main.rollladen,
       innenfarbe: main.innenfarbe, aussenfarbe: main.aussenfarbe, verglasung: main.verglasung, vsg: main.vsg,
       ornament: main.ornament, ornamentArt: main.ornamentArt,
       dichtungInnen: main.dichtungInnen, dichtungAussen: main.dichtungAussen,
@@ -839,8 +853,10 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
                 verbreiterung={aktiv.verbreiterung ? aktiv.verb : null}
                 aufsatzkasten={aktiv.aufsatzkasten ? aktiv.kasten : null}
                 schwelle={aktiv.schwelle}
+                oberlichtHoehe={aktiv.oberlichtHoehe}
                 glasFarbe={aktiv.ornament ? '#7fb0cc' : undefined}
                 onBreite={setMainBreite} onHoehe={setMainHoehe}
+                onOberlichtHoehe={setOberlichtHoehe} onBottomHoehe={setBottomHoehe}
                 panes={aktiv.panes} cols={aktiv.cols}
                 colWidths={aktiv.colWidths} rowHeights={aktiv.rowHeights}
                 onColWidth={setColWidth} onRowHeight={setRowHeight}

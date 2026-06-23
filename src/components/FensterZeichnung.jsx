@@ -295,7 +295,7 @@ export function GeometrieThumb({ geometrie, glasFarbe = '#cfe3ef' }) {
 
 // Berechnet die Pixel-Geometrie EINER Einheit (Rahmen, Flügel, Glas, Pfosten, Sub-Maße)
 // in das vorgegebene Gesamt-Rechteck r0 (px) bei Maßstab scale (px pro mm).
-export function computeUnit(r0, scale, { geometrie, breite, hoehe, panes: panesProp, cols: colsProp, colWidths, rowHeights, verbreiterung, aufsatzkasten, schwelle }) {
+export function computeUnit(r0, scale, { geometrie, breite, hoehe, panes: panesProp, cols: colsProp, colWidths, rowHeights, verbreiterung, aufsatzkasten, schwelle, oberlichtHoehe }) {
   const g = geometrie;
   const vo = Math.max(0, Number(verbreiterung?.oben) || 0) * scale;
   const vu = Math.max(0, Number(verbreiterung?.unten) || 0) * scale;
@@ -345,7 +345,8 @@ export function computeUnit(r0, scale, { geometrie, breite, hoehe, panes: panesP
   // Die eigentliche Flügel-/Seitenteil-Aufteilung sitzt darunter (unverändertes Raster).
   let oberlichtRect = null, kaempferRect = null;
   if (g?.oberlicht) {
-    const olH = Math.min(Math.max(0, (g.oberlichtMm ?? 400)) * scale, inner.h * 0.42);
+    const olMM = Math.max(50, Number(oberlichtHoehe) || g.oberlichtMm || 400);
+    const olH = Math.min(olMM * scale, inner.h * 0.6);  // mind. unteren Bereich erhalten
     const kH = blendW;                                  // Kämpfer (waagrechter Rahmen) unter dem Oberlicht
     oberlichtRect = { x: inner.x, y: inner.y, w: inner.w, h: olH };
     kaempferRect = { x: inner.x, y: inner.y + olH, w: inner.w, h: kH, fest: true };
@@ -426,7 +427,9 @@ export function computeUnit(r0, scale, { geometrie, breite, hoehe, panes: panesP
     text: aufsatzkasten.bedienung === 'Motor' ? 'M' : 'G',
   } : null;
 
-  return { g, r0, win, kasten, blendIn, miterBlend, leaves, pfostenList, subCols, subRows, lamellen, badge, glasMinX, glasMaxX, hatVerb, hatKasten, istTuer, effPanes };
+  const oberlichtBand = oberlichtRect ? { y0: oberlichtRect.y, y1: oberlichtRect.y + oberlichtRect.h } : null;
+  const bottomBand = oberlichtRect ? { y0: inner.y, y1: inner.y + inner.h } : null;
+  return { g, r0, win, kasten, blendIn, miterBlend, leaves, pfostenList, subCols, subRows, lamellen, badge, glasMinX, glasMaxX, hatVerb, hatKasten, istTuer, effPanes, hatOberlicht: !!oberlichtRect, oberlichtBand, bottomBand };
 }
 
 // Zeichnet den Körper EINER Einheit (ohne Maßketten) aus dem computeUnit-Ergebnis.
@@ -506,7 +509,7 @@ export function UnitBody({ c, glasFarbe = '#cfe3ef', onPaneClick, selectedPane, 
   );
 }
 
-function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkasten, schwelle, glasFarbe = '#cfe3ef', onBreite, onHoehe, panes: panesProp, cols: colsProp, colWidths, rowHeights, onColWidth, onRowHeight, onPaneClick, selectedPane }) {
+function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkasten, schwelle, oberlichtHoehe, glasFarbe = '#cfe3ef', onBreite, onHoehe, onOberlichtHoehe, onBottomHoehe, panes: panesProp, cols: colsProp, colWidths, rowHeights, onColWidth, onRowHeight, onPaneClick, selectedPane }) {
   const b = Math.max(200, Number(breite) || 1000);
   const hh = Math.max(200, Number(hoehe) || 1200);
 
@@ -519,9 +522,9 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
   const x = cx - rw / 2, y = cy - rh / 2;
 
   const r0 = { x, y, w: rw, h: rh };                            // Gesamtmaß (mit Verbreiterung/Kasten)
-  const c = computeUnit(r0, scale, { geometrie, breite, hoehe, panes: panesProp, cols: colsProp, colWidths, rowHeights, verbreiterung, aufsatzkasten, schwelle });
+  const c = computeUnit(r0, scale, { geometrie, breite, hoehe, panes: panesProp, cols: colsProp, colWidths, rowHeights, verbreiterung, aufsatzkasten, schwelle, oberlichtHoehe });
   const hatSubB = c.subCols.length > 0;
-  const hatSubH = c.subRows.length > 0;
+  const hatSubH = c.subRows.length > 0 || c.hatOberlicht;
 
   // Maß-Positionen: Hauptmaß weiter außen, wenn Zwischenmaße vorhanden
   const mainTopY = hatSubB ? y - 78 : y - 34;
@@ -626,6 +629,36 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
           </g>
         );
       })}
+
+      {/* Oberlicht-/Unterteil-Höhen (links, innen) – wie Zeilenhöhen editierbar */}
+      {c.hatOberlicht && (() => {
+        const olVal = Math.round(Number(oberlichtHoehe) || (c.g?.oberlichtMm ?? 400));
+        const bottomVal = Math.max(0, Math.round(hh - olVal));
+        const bands = [
+          { band: c.oberlichtBand, val: olVal, on: onOberlichtHoehe, key: 'olm' },
+          { band: c.bottomBand, val: bottomVal, on: onBottomHoehe, key: 'bom' },
+        ];
+        return bands.map(({ band, val, on, key }) => {
+          const mid = (band.y0 + band.y1) / 2;
+          const cxr = subLeftX - 22;
+          return (
+            <g key={key}>
+              <line x1={subLeftX} y1={band.y0} x2={subLeftX} y2={band.y1} stroke="#0f1f3d" strokeWidth="1" />
+              <line x1={subLeftX - 5} y1={band.y0} x2={subLeftX + 5} y2={band.y0} stroke="#0f1f3d" strokeWidth="1" />
+              <line x1={subLeftX - 5} y1={band.y1} x2={subLeftX + 5} y2={band.y1} stroke="#0f1f3d" strokeWidth="1" />
+              {on ? (
+                <foreignObject x={cxr - 42} y={mid - 15} width={84} height={30} transform={`rotate(-90 ${cxr} ${mid})`}>
+                  <input className="fz-massinput fz-massinput--sub" type="number" value={val}
+                         onChange={e => on(e.target.value)} />
+                </foreignObject>
+              ) : (
+                <text x={subLeftX - 7} y={mid} textAnchor="middle" fontSize={fSub} fill="#0f1f3d" fontWeight="700"
+                      transform={`rotate(-90 ${subLeftX - 7} ${mid})`}>{val}</text>
+              )}
+            </g>
+          );
+        });
+      })()}
 
       {/* Fensterkörper (Rahmen, Flügel, Glas, Pfosten, Lamellen, Griffe, Klickflächen) */}
       <UnitBody c={c} glasFarbe={glasFarbe} onPaneClick={onPaneClick} selectedPane={selectedPane} />
@@ -736,7 +769,7 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
       geometrie: geometrieByCode(e.code), breite: elBmm, hoehe: elHmm,
       panes: e.panes, cols: e.cols, colWidths: e.colWidths, rowHeights: e.rowHeights,
       verbreiterung: e.verbreiterung ? e.verb : null, aufsatzkasten: e.aufsatzkasten ? e.kasten : null,
-      schwelle: e.schwelle,
+      schwelle: e.schwelle, oberlichtHoehe: e.oberlichtHoehe,
     });
     // rechtsbündig letztes Element seiner Zeile? → Höhenbemaßung rechts
     const rightmost = !els.some(o => (o.row ?? 0) === rr && (o.col ?? 0) > cc);
