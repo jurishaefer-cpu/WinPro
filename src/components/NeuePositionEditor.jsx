@@ -126,6 +126,45 @@ function partsOf(e) {
   return [{ paneCount: e.panes.length, cols: e.cols || 1, code: e.code, kategorie: e.kategorie }];
 }
 
+// Breite eines Elements setzen und die Sub-Spaltenbreiten proportional mitskalieren.
+function scaleBreite(e, nbRaw) {
+  const n = e.cols || 1;
+  const nb = Math.max(200, Math.round(Number(nbRaw) || 0));
+  const old = (e.colWidths && e.colWidths.length === n) ? e.colWidths.map(x => Number(x) || 0) : Array(n).fill((Number(e.breite) || nb) / n);
+  const sum = old.reduce((a, c) => a + c, 0) || 1;
+  const cw = old.map(c => Math.round(nb * c / sum));
+  cw[n - 1] += nb - cw.reduce((a, c) => a + c, 0);
+  return { ...e, breite: nb, colWidths: cw };
+}
+// Höhe eines Elements setzen und die Sub-Zeilenhöhen proportional mitskalieren.
+function scaleHoehe(e, nhRaw) {
+  const r = Math.max(1, Math.ceil((e.panes?.length || 1) / (e.cols || 1)));
+  const nh = Math.max(200, Math.round(Number(nhRaw) || 0));
+  const old = (e.rowHeights && e.rowHeights.length === r) ? e.rowHeights.map(x => Number(x) || 0) : Array(r).fill((Number(e.hoehe) || nh) / r);
+  const sum = old.reduce((a, c) => a + c, 0) || 1;
+  const rh = old.map(c => Math.round(nh * c / sum));
+  rh[r - 1] += nh - rh.reduce((a, c) => a + c, 0);
+  return { ...e, hoehe: nh, rowHeights: rh };
+}
+// Elemente gleichmäßig so verteilen, dass die Spalten zusammen genau die Rahmenbreite Tw ergeben.
+function verteileBreite(els, Tw) {
+  const cols = [...new Set(els.map(e => e.col ?? 0))].sort((a, b) => a - b);
+  const k = cols.length || 1;
+  const base = Math.max(200, Math.round(Tw / k));
+  const wByCol = {}; cols.forEach(c => { wByCol[c] = base; });
+  wByCol[cols[k - 1]] = Math.max(200, Math.round(Tw) - base * (k - 1));   // Rundungsrest in die letzte Spalte
+  return els.map(e => scaleBreite(e, wByCol[e.col ?? 0]));
+}
+// Elemente gleichmäßig so verteilen, dass die Zeilen zusammen genau die Rahmenhöhe Th ergeben.
+function verteileHoehe(els, Th) {
+  const rows = [...new Set(els.map(e => e.row ?? 0))].sort((a, b) => a - b);
+  const k = rows.length || 1;
+  const base = Math.max(200, Math.round(Th / k));
+  const hByRow = {}; rows.forEach(r => { hByRow[r] = base; });
+  hByRow[rows[k - 1]] = Math.max(200, Math.round(Th) - base * (k - 1));
+  return els.map(e => scaleHoehe(e, hByRow[e.row ?? 0]));
+}
+
 function buildInitElemente(cfg) {
   if (cfg?.elemente?.length) {
     return cfg.elemente.map((e, i) => makeElement(e, e.id ?? `el${i}`));
@@ -239,24 +278,28 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
     const main = elemente[0];
     const isT = kat === 'tuer';
     const code = isT ? 'T01' : 'F01';
-    const breite = isT ? 1000 : 600;
-    const hoehe = Number(main.hoehe) || 1200;           // gleiche Höhe → kein Spalt (eine Zeile)
+    // Der Rahmen (Gesamtmaß) bleibt fest – die Spalten teilen sich die Breite gleichmäßig.
+    const { w: Tw, h: Th } = kombiMass(elemente);
     const maxCol = Math.max(...elemente.map(e => e.col ?? 0));
     const neu = makeElement({
-      kategorie: kat, code, breite, hoehe, row: 0, col: maxCol + 1,
+      kategorie: kat, code, breite: 600, hoehe: Th, row: 0, col: maxCol + 1,
       innenfarbe: main.innenfarbe, aussenfarbe: main.aussenfarbe,
       verglasung: main.verglasung, dichtungInnen: main.dichtungInnen, dichtungAussen: main.dichtungAussen,
     }, id);
-    setElemente(prev => [...prev, neu]);
+    setElemente(prev => verteileBreite([...prev, neu], Tw));
     setActiveId(id);
     setSelectedPane(null);
     setAddMenu(false);
   }
   function removeElement(id) {
     if (id === elemente[0].id) return;                  // Hauptelement bleibt
-    const rest = elemente.filter(e => e.id !== id);
-    setElemente(rest);
-    if (activeId === id) setActiveId(rest[0].id);
+    setElemente(prev => {
+      const { w: Tw, h: Th } = kombiMass(prev);         // Rahmen bleibt fest
+      const rest = prev.filter(e => e.id !== id);
+      if (!rest.length) return prev;
+      return verteileHoehe(verteileBreite(rest, Tw), Th); // verbleibende Elemente füllen den Rahmen
+    });
+    if (activeId === id) setActiveId(elemente[0].id);
     setSelectedPane(null);
   }
 
@@ -369,6 +412,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
   // Element an eine Seite des Hauptfensters andocken (Drag im Canvas)
   function dockElement(id, side, targetId) {
     setElemente(prev => {
+      const { w: Tw, h: Th } = kombiMass(prev);         // Rahmen bleibt fest
       // An die freie Kante des Ziel-Elements docken (Fallback: Hauptelement).
       const target = (targetId != null && prev.find(e => e.id === targetId)) || prev[0];
       let row = target.row ?? 0, col = target.col ?? 0;
@@ -376,58 +420,64 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
       else if (side === 'links') col = (target.col ?? 0) - 1;
       else if (side === 'unten') row = (target.row ?? 0) + 1;
       else if (side === 'oben') row = (target.row ?? 0) - 1;
-      // Maße bleiben unabhängig – nur die Rasterposition ändert sich; Versatz zurücksetzen.
       let next = prev.map(e => (e.id === id ? { ...e, row, col, offset: undefined } : e));
       const minR = Math.min(...next.map(e => e.row ?? 0));
       const minC = Math.min(...next.map(e => e.col ?? 0));
       next = next.map(e => ({ ...e, row: (e.row ?? 0) - minR, col: (e.col ?? 0) - minC }));
-      return next;
+      // Spalten/Zeilen teilen sich Rahmen gleichmäßig auf, sodass alle Elemente im Rahmen bleiben.
+      return verteileHoehe(verteileBreite(next, Tw), Th);
     });
   }
   // Element entlang seiner Andock-Kante verschieben (Versatz in mm)
   function slideElement(id, offsetMm) {
     setElemente(prev => prev.map(e => (e.id === id ? { ...e, offset: offsetMm } : e)));
   }
-  // Maße in der Kombi-Zeichnung editieren
+  // Einzelmaß in der Kombi-Zeichnung ändern: Rahmen bleibt fest, der Nachbar passt sich an.
   function setElementBreite(id, val) {
-    setElemente(prev => prev.map(e => {
-      if (e.id !== id) return e;
-      const n = e.cols || 1;
-      return { ...e, breite: val, colWidths: Array(n).fill(Math.round((Number(val) || 0) / n)) };
-    }));
+    setElemente(prev => {
+      const el = prev.find(e => e.id === id);
+      if (!el) return prev;
+      const c = el.col ?? 0, r = el.row ?? 0;
+      const nb = prev.find(e => (e.row ?? 0) === r && (e.col ?? 0) === c + 1)
+              || prev.find(e => (e.row ?? 0) === r && (e.col ?? 0) === c - 1);
+      let w = Math.max(200, Math.round(Number(val) || 0));
+      if (!nb) return prev.map(e => e.id === id ? scaleBreite(e, w) : e);   // kein Nachbar → Rahmen folgt
+      const paar = (Number(el.breite) || 0) + (Number(nb.breite) || 0);     // Spaltenpaar-Summe bleibt
+      w = Math.min(paar - 200, w);
+      return prev.map(e => e.id === id ? scaleBreite(e, w) : e.id === nb.id ? scaleBreite(e, paar - w) : e);
+    });
   }
   function setElementHoehe(id, val) {
-    setElemente(prev => prev.map(e => {
-      if (e.id !== id) return e;
-      const r = Math.ceil(e.panes.length / e.cols);
-      return { ...e, hoehe: val, rowHeights: Array(r).fill(Math.round((Number(val) || 0) / r)) };
-    }));
+    setElemente(prev => {
+      const el = prev.find(e => e.id === id);
+      if (!el) return prev;
+      const c = el.col ?? 0, r = el.row ?? 0;
+      const nb = prev.find(e => (e.col ?? 0) === c && (e.row ?? 0) === r + 1)
+              || prev.find(e => (e.col ?? 0) === c && (e.row ?? 0) === r - 1);
+      let h = Math.max(200, Math.round(Number(val) || 0));
+      if (!nb) return prev.map(e => e.id === id ? scaleHoehe(e, h) : e);
+      const paar = (Number(el.hoehe) || 0) + (Number(nb.hoehe) || 0);
+      h = Math.min(paar - 200, h);
+      return prev.map(e => e.id === id ? scaleHoehe(e, h) : e.id === nb.id ? scaleHoehe(e, paar - h) : e);
+    });
   }
+  // Gesamtmaß (Rahmen) ändern: alle Spalten/Zeilen proportional mitskalieren.
   function setTotalBreite(val) {
     const v = Number(val);
     setElemente(prev => {
       const cur = kombiMass(prev).w;
       if (!Number.isFinite(v) || v <= 0 || cur <= 0) return prev;
       const f = v / cur;
-      return prev.map(e => {
-        const nb = Math.max(200, Math.round((Number(e.breite) || 1000) * f));
-        const n = e.cols || 1;
-        return { ...e, breite: nb, colWidths: Array(n).fill(Math.round(nb / n)) };
-      });
+      return prev.map(e => scaleBreite(e, (Number(e.breite) || 1000) * f));
     });
   }
   function setTotalHoehe(val) {
     const v = Number(val);
     setElemente(prev => {
-      if (!Number.isFinite(v) || v <= 0) return prev;
-      // Gesamthöhe = höchstes Element → dieses (bzw. die gleichhohen) auf den neuen Wert setzen,
-      // niedrigere Elemente behalten ihre eigene Höhe.
-      const maxH = Math.max(...prev.map(e => Number(e.hoehe) || 0));
-      return prev.map(e => {
-        if ((Number(e.hoehe) || 0) !== maxH) return e;
-        const r = Math.ceil(e.panes.length / e.cols);
-        return { ...e, hoehe: v, rowHeights: Array(r).fill(Math.round(v / r)) };
-      });
+      const cur = kombiMass(prev).h;
+      if (!Number.isFinite(v) || v <= 0 || cur <= 0) return prev;
+      const f = v / cur;
+      return prev.map(e => scaleHoehe(e, (Number(e.hoehe) || 1200) * f));
     });
   }
 
@@ -553,15 +603,23 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
           <label className="np-field-label">Geometrie</label>
           <GeometrieSelect optionen={geomOptionen} value={aktiv.code} onChange={waehleGeometrie} panes={aktiv.panes} cols={aktiv.cols} />
 
-          <div className="np-group-label" style={{ marginTop: 24 }}>MASSE</div>
+          <div className="np-group-label" style={{ marginTop: 24 }}>{istKombi ? 'GESAMTMASS (RAHMEN)' : 'MASSE'}</div>
           <div className="np-row">
             <div>
-              <label className="np-field-label">Breite (mm)</label>
-              <input className="np-input" type="number" value={aktiv.breite} onChange={e => setMainBreite(e.target.value)} />
+              <label className="np-field-label">{istKombi ? 'Gesamtbreite (mm)' : 'Breite (mm)'}</label>
+              <input className="np-input" type="number" key={istKombi ? 'gb' + Math.round(breiteGes) : 'b'}
+                     defaultValue={istKombi ? Math.round(breiteGes) : undefined}
+                     value={istKombi ? undefined : aktiv.breite}
+                     onChange={istKombi ? undefined : (e => setMainBreite(e.target.value))}
+                     onBlur={istKombi ? (e => setTotalBreite(e.target.value)) : undefined} />
             </div>
             <div>
-              <label className="np-field-label">Höhe (mm)</label>
-              <input className="np-input" type="number" value={aktiv.hoehe} onChange={e => setMainHoehe(e.target.value)} />
+              <label className="np-field-label">{istKombi ? 'Gesamthöhe (mm)' : 'Höhe (mm)'}</label>
+              <input className="np-input" type="number" key={istKombi ? 'gh' + Math.round(hoeheGes) : 'h'}
+                     defaultValue={istKombi ? Math.round(hoeheGes) : undefined}
+                     value={istKombi ? undefined : aktiv.hoehe}
+                     onChange={istKombi ? undefined : (e => setMainHoehe(e.target.value))}
+                     onBlur={istKombi ? (e => setTotalHoehe(e.target.value)) : undefined} />
             </div>
           </div>
           <div className="np-row">
