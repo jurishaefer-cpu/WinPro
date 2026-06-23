@@ -12,19 +12,31 @@ const VERGLASUNGEN = [
 const DICHTUNGEN = ['Grau', 'Schwarz'];
 const ROLLLADEN = ['42x42mm'];
 
-// Öffnungsarten je Flügel (Auswahlmenü)
-const PANE_OPTIONEN = [
-  { label: 'Drehkipp DIN Links', cfg: { open: 'drehkipp', din: 'links' } },
-  { label: 'Drehkipp DIN Rechts', cfg: { open: 'drehkipp', din: 'rechts' } },
-  { label: 'Dreh DIN Links', cfg: { open: 'dreh', din: 'links' } },
-  { label: 'Dreh DIN Rechts', cfg: { open: 'dreh', din: 'rechts' } },
-  { label: 'Kippfenster', cfg: { open: 'kipp' } },
-  { label: 'Hebe-Schiebe links', cfg: { open: 'schiebe', din: 'links' } },
-  { label: 'Hebe-Schiebe rechts', cfg: { open: 'schiebe', din: 'rechts' } },
-  { label: 'Parallel-Schiebe-Kipp links', cfg: { open: 'psk', din: 'links' } },
-  { label: 'Parallel-Schiebe-Kipp rechts', cfg: { open: 'psk', din: 'rechts' } },
-  { label: 'Festverglasung', cfg: { fest: true } },
-];
+// Öffnungsarten je Flügel – Bausteine
+const OPT = {
+  dkl: { label: 'Drehkipp DIN Links', cfg: { open: 'drehkipp', din: 'links' } },
+  dkr: { label: 'Drehkipp DIN Rechts', cfg: { open: 'drehkipp', din: 'rechts' } },
+  dl:  { label: 'Dreh DIN Links', cfg: { open: 'dreh', din: 'links' } },
+  dr:  { label: 'Dreh DIN Rechts', cfg: { open: 'dreh', din: 'rechts' } },
+  k:   { label: 'Kippfenster', cfg: { open: 'kipp' } },
+  tl:  { label: 'Tür DIN Links', cfg: { open: 'tuer', din: 'links' } },
+  tr:  { label: 'Tür DIN Rechts', cfg: { open: 'tuer', din: 'rechts' } },
+  hl:  { label: 'Hebe-Schiebe links', cfg: { open: 'schiebe', din: 'links' } },
+  hr:  { label: 'Hebe-Schiebe rechts', cfg: { open: 'schiebe', din: 'rechts' } },
+  pl:  { label: 'Parallel-Schiebe-Kipp links', cfg: { open: 'psk', din: 'links' } },
+  pr:  { label: 'Parallel-Schiebe-Kipp rechts', cfg: { open: 'psk', din: 'rechts' } },
+  f:   { label: 'Festverglasung', cfg: { fest: true } },
+};
+
+// Welche Öffnungsarten stehen für dieses Element (je nach Typ) zur Auswahl?
+function paneOptionenFuer(geo) {
+  if (!geo || geo.kategorie !== 'tuer') return [OPT.dkl, OPT.dkr, OPT.dl, OPT.dr, OPT.k, OPT.f]; // Fenster: alles außer Schieben
+  const ps = geo.panes || [{ open: geo.open }];
+  if (ps.some(p => p.open === 'schiebe')) return [OPT.hl, OPT.hr];          // HST: nur Schiebe-Pfeil links/rechts
+  if (ps.some(p => p.open === 'psk')) return [OPT.pl, OPT.pr];              // PSK: nur Schiebe-Kipp links/rechts
+  if (ps.some(p => p.open === 'tuer')) return [OPT.tl, OPT.tr];            // Haustür: nur Drehen links/rechts
+  return [OPT.dkl, OPT.dkr, OPT.dl, OPT.dr, OPT.k, OPT.pl, OPT.pr];        // Balkontür: alles außer Festverglasung & HST
+}
 
 function panesFromGeo(geo) {
   if (!geo) return [{ open: 'drehkipp', din: 'links' }];
@@ -678,7 +690,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
                   <span>Feld {selectedPane + 1} – Öffnungsart</span>
                   <button className="pane-menu-close" onClick={() => setSelectedPane(null)}>✕</button>
                 </div>
-                {PANE_OPTIONEN.map(opt => {
+                {paneOptionenFuer(geometrieByCode(aktiv.code)).map(opt => {
                   const ja = JSON.stringify(aktiv.panes[selectedPane]) === JSON.stringify(opt.cfg);
                   return (
                     <button key={opt.label} className={'pane-option' + (ja ? ' aktiv' : '')} onClick={() => setzePane(opt.cfg)}>
