@@ -68,7 +68,7 @@ function AngebotEditorPage() {
       setLoading(false);
     }
     laden();
-  }, [angebotId, kundeId, navigate, user]);
+  }, [angebotId, kundeId, navigate, user?.id]);
 
   // Belegnummer einmalig vergeben (Format JJJJ-NNNN)
   async function sichereBelegnummer() {
