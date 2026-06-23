@@ -206,6 +206,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
 
   const profil = profile.find(p => p.id === profilId);
   const aktiv = elemente.find(e => e.id === activeId) || elemente[0];
+  const aktivIndex = Math.max(0, elemente.findIndex(e => e.id === aktiv.id));
   const istMain = aktiv && aktiv.id === elemente[0].id;
   const geometrie = geometrieByCode(aktiv.code);
   const geomOptionen = GEOMETRIEN.filter(g => g.kategorie === aktiv.kategorie);
@@ -603,23 +604,39 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
           <label className="np-field-label">Geometrie</label>
           <GeometrieSelect optionen={geomOptionen} value={aktiv.code} onChange={waehleGeometrie} panes={aktiv.panes} cols={aktiv.cols} />
 
-          <div className="np-group-label" style={{ marginTop: 24 }}>{istKombi ? 'GESAMTMASS (RAHMEN)' : 'MASSE'}</div>
+          {istKombi && (
+            <>
+              <div className="np-group-label" style={{ marginTop: 24 }}>GESAMTHÖHE</div>
+              <label className="np-field-label">Gesamthöhe (mm)</label>
+              <input className="np-input" type="number" key={'gh' + Math.round(hoeheGes)}
+                     defaultValue={Math.round(hoeheGes)}
+                     onBlur={e => setTotalHoehe(e.target.value)}
+                     onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); }} />
+            </>
+          )}
+          <div className="np-group-label" style={{ marginTop: 24 }}>{istKombi ? `MASSE – ELEMENT ${aktivIndex + 1}` : 'MASSE'}</div>
           <div className="np-row">
             <div>
-              <label className="np-field-label">{istKombi ? 'Gesamtbreite (mm)' : 'Breite (mm)'}</label>
-              <input className="np-input" type="number" key={istKombi ? 'gb' + Math.round(breiteGes) : 'b'}
-                     defaultValue={istKombi ? Math.round(breiteGes) : undefined}
-                     value={istKombi ? undefined : aktiv.breite}
-                     onChange={istKombi ? undefined : (e => setMainBreite(e.target.value))}
-                     onBlur={istKombi ? (e => setTotalBreite(e.target.value)) : undefined} />
+              <label className="np-field-label">Breite (mm)</label>
+              {istKombi ? (
+                <input className="np-input" type="number" key={'eb' + activeId + '_' + Math.round(aktiv.breite)}
+                       defaultValue={Math.round(aktiv.breite)}
+                       onBlur={e => setElementBreite(activeId, e.target.value)}
+                       onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); }} />
+              ) : (
+                <input className="np-input" type="number" value={aktiv.breite} onChange={e => setMainBreite(e.target.value)} />
+              )}
             </div>
             <div>
-              <label className="np-field-label">{istKombi ? 'Gesamthöhe (mm)' : 'Höhe (mm)'}</label>
-              <input className="np-input" type="number" key={istKombi ? 'gh' + Math.round(hoeheGes) : 'h'}
-                     defaultValue={istKombi ? Math.round(hoeheGes) : undefined}
-                     value={istKombi ? undefined : aktiv.hoehe}
-                     onChange={istKombi ? undefined : (e => setMainHoehe(e.target.value))}
-                     onBlur={istKombi ? (e => setTotalHoehe(e.target.value)) : undefined} />
+              <label className="np-field-label">Höhe (mm)</label>
+              {istKombi ? (
+                <input className="np-input" type="number" key={'eh' + activeId + '_' + Math.round(aktiv.hoehe)}
+                       defaultValue={Math.round(aktiv.hoehe)}
+                       onBlur={e => setElementHoehe(activeId, e.target.value)}
+                       onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); }} />
+              ) : (
+                <input className="np-input" type="number" value={aktiv.hoehe} onChange={e => setMainHoehe(e.target.value)} />
+              )}
             </div>
           </div>
           <div className="np-row">
