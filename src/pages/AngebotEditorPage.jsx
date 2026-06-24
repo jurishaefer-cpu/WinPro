@@ -249,7 +249,7 @@ function AngebotEditorPage() {
           />
         </div>
         <div className="editor-pos-buttons">
-          <button className="btn btn-dark" onClick={() => setStrukturPos('neu')}>+ Position</button>
+          <button className="btn btn-primary btn-red" onClick={() => setStrukturPos('neu')}>+ Position</button>
           <button className="btn btn-outline" onClick={() => setEditPos('neu')}>+ Manuelle Position</button>
         </div>
       </div>
