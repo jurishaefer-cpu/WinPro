@@ -1029,15 +1029,28 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
 
         <div className="np-footer-preis">
           <div className="np-netto">
-            <label>{istKombi ? `NETTO ${istMain ? 'HAUPTELEMENT' : 'ELEMENT ' + (elemente.findIndex(e => e.id === activeId) + 1)}` : 'NETTOPREIS JE STÜCK'}</label>
+            <label>{istKombi ? `NETTO ${istMain ? 'HAUPTELEMENT' : 'ELEMENT ' + (elemente.findIndex(e => e.id === activeId) + 1)}` : 'GESAMT JE STÜCK INKL. MONTAGE, AUSBAU & ENTSORGUNG'}</label>
             <div className="np-euro-input np-euro-input--lg"><span>€</span>
-              <input type="number" value={aktiv.nettoJeStueck} onChange={e => updAktiv({ nettoJeStueck: e.target.value })} />
+              {istKombi ? (
+                <input type="number" value={aktiv.nettoJeStueck} onChange={e => updAktiv({ nettoJeStueck: e.target.value })} />
+              ) : (
+                <input type="number"
+                  value={(Number(aktiv.nettoJeStueck) || 0) + zuschlag}
+                  onChange={e => updAktiv({ nettoJeStueck: Math.max(0, (Number(e.target.value) || 0) - zuschlag) })} />
+              )}
             </div>
-            {istKombi && <span className="np-netto-summe">Σ alle Elemente: {summeNetto.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}</span>}
-            <span className="np-netto-gesamt">
-              Gesamt je Stück inkl. Montage, Ausbau &amp; Entsorgung: <b>{proStueck.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}</b>
-              {ohneMontage && <em> (ohne Montage)</em>}
-            </span>
+            {istKombi && (
+              <span className="np-netto-summe">
+                Σ alle Elemente: {summeNetto.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}
+                {!ohneMontage && zuschlag > 0 && ` + Montage/Ausbau/Entsorgung ${zuschlag.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })} = ${proStueck.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}`}
+              </span>
+            )}
+            {!istKombi && !ohneMontage && zuschlag > 0 && (
+              <span className="np-netto-gesamt">
+                davon Fensterpreis <b>{(Number(aktiv.nettoJeStueck) || 0).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}</b>
+                {' '}+ Montage/Ausbau/Entsorgung <b>{zuschlag.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}</b>
+              </span>
+            )}
           </div>
           <div className="np-footer-actions">
             <button className="btn btn-outline" onClick={onClose}>Abbrechen</button>
