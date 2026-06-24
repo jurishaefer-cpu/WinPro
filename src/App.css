@@ -1959,7 +1959,8 @@ body {
   min-height: 0;
   overflow: hidden;
 }
-.np-col { padding: 22px 24px; overflow-y: auto; }
+.np-col { padding: 22px 24px; overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none; }
+.np-col::-webkit-scrollbar { width: 0; height: 0; display: none; }
 .np-col--left { border-right: 1px solid #eef0f2; }
 .np-col--right { border-left: 1px solid #eef0f2; }
 .np-col--center {
@@ -2256,7 +2257,9 @@ body {
     display: flex; flex-direction: column;
     flex: 1; min-height: 0;
     overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
+    scrollbar-width: none; -ms-overflow-style: none;
   }
+  .np-body::-webkit-scrollbar { width: 0; height: 0; display: none; }
   /* Spalten behalten ihre natürliche Höhe (nicht stauchen) → Body scrollt sauber */
   .np-col { overflow-y: visible; flex: 0 0 auto; }
   .np-canvas { flex: 0 0 auto; }
