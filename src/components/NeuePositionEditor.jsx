@@ -234,6 +234,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
   // Positions-Ebene (für alle Elemente gemeinsam)
   const [stueckzahl, setStueckzahl] = useState(initial?.stueckzahl ?? 1);
   const [standort, setStandort] = useState(initial?.standort ?? '');
+  const [standortOffen, setStandortOffen] = useState(false);
   const [montage, setMontage] = useState(initial?.montage ?? 140);
   const [ausbau, setAusbau] = useState(initial?.ausbau ?? 30);
   const [entsorgung, setEntsorgung] = useState(initial?.entsorgung ?? 15);
@@ -807,12 +808,22 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
             {!istHaustuerAktiv && (
               <div>
                 <label className="np-field-label">Standort</label>
-                <input className="np-input" value={standort} onChange={e => setStandort(e.target.value)} placeholder="z. B. EG Küche" list="standort-vorschlaege" />
-                <datalist id="standort-vorschlaege">
-                  {['Wohnzimmer', 'Schlafzimmer', 'Kinderzimmer', 'Bad', 'WC', 'Küche', 'Hauswirtschaftsraum'].map(o => (
-                    <option key={o} value={o} />
-                  ))}
-                </datalist>
+                <div className="np-combo">
+                  <input className="np-input" value={standort} placeholder="z. B. EG Küche"
+                         onChange={e => setStandort(e.target.value)}
+                         onFocus={() => setStandortOffen(true)}
+                         onBlur={() => setTimeout(() => setStandortOffen(false), 120)} />
+                  {standortOffen && (
+                    <div className="np-combo-menu">
+                      {['Wohnzimmer', 'Schlafzimmer', 'Kinderzimmer', 'Bad', 'WC', 'Küche', 'Hauswirtschaftsraum'].map(o => (
+                        <button type="button" key={o} className={'np-combo-opt' + (standort === o ? ' aktiv' : '')}
+                                onMouseDown={e => { e.preventDefault(); setStandort(o); setStandortOffen(false); }}>
+                          {o}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>

@@ -1993,6 +1993,20 @@ body {
 .np-input:focus, .np-select:focus, .np-textarea:focus { border-color: #0f1f3d; }
 .np-textarea { resize: vertical; min-height: 96px; padding: 12px 14px; }
 .np-input { height: 50px; }
+/* Standort-Combobox: Freitext-Input mit immer vollständiger Vorschlagsliste */
+.np-combo { position: relative; }
+.np-combo-menu {
+  position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 40;
+  background: #fff; border: 1px solid #e3e6ea; border-radius: 12px;
+  box-shadow: 0 12px 28px rgba(15, 31, 61, 0.14); padding: 6px;
+  max-height: 240px; overflow-y: auto;
+}
+.np-combo-opt {
+  display: block; width: 100%; text-align: left; border: 0; background: transparent;
+  padding: 9px 12px; border-radius: 8px; font-size: 15px; color: #1a1a1a; cursor: pointer;
+}
+.np-combo-opt:hover { background: #f1f4f8; }
+.np-combo-opt.aktiv { background: #eef2f8; font-weight: 700; }
 .np-input--rot { color: #8b1a1a; border-color: #d2a3a3; }
 .np-input--rot::placeholder { color: #c08b8b; }
 .np-input--rot:focus { border-color: #8b1a1a; }
