@@ -2126,6 +2126,9 @@ body {
 }
 .np-aktiv-remove:hover { background: #fdeef0; }
 .np-netto-summe { display: block; margin-top: 6px; font-size: 13px; font-weight: 700; color: #1a1a1a; }
+.np-netto-gesamt { display: block; margin-top: 6px; font-size: 12px; color: #4a4f57; }
+.np-netto-gesamt b { color: #1a1a1a; }
+.np-netto-gesamt em { font-style: normal; color: #8b1a1a; }
 
 .np-canvas-caption { text-align: center; padding: 8px 0 16px; }
 .np-canvas-title { font-size: 17px; font-weight: 700; color: #1a1a1a; }

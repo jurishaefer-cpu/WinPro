@@ -1034,6 +1034,10 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
               <input type="number" value={aktiv.nettoJeStueck} onChange={e => updAktiv({ nettoJeStueck: e.target.value })} />
             </div>
             {istKombi && <span className="np-netto-summe">Σ alle Elemente: {summeNetto.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}</span>}
+            <span className="np-netto-gesamt">
+              Gesamt je Stück inkl. Montage, Ausbau &amp; Entsorgung: <b>{proStueck.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}</b>
+              {ohneMontage && <em> (ohne Montage)</em>}
+            </span>
           </div>
           <div className="np-footer-actions">
             <button className="btn btn-outline" onClick={onClose}>Abbrechen</button>
