@@ -13,6 +13,12 @@ const DICHTUNGEN = ['Grau', 'Schwarz'];
 const ROLLLADEN = ['42x42mm'];
 const BEDIENUNGEN = ['Gurt', 'Kurbel', 'Motor (Schalter)', 'Funk-Motor'];
 const BEHANG = ['Aluminium', 'Kunststoff (PVC)'];
+// Lamellengröße je nach Behang-Material
+const LAMELLEN = {
+  'Aluminium': ['Mini 37mm', 'Maxi 53mm'],
+  'Kunststoff (PVC)': ['Mini 37mm', 'Maxi 52mm'],
+};
+const lamellenOptionen = (behang) => LAMELLEN[behang] || LAMELLEN['Aluminium'];
 
 // Öffnungsarten je Flügel – Bausteine
 const OPT = {
@@ -129,6 +135,7 @@ function makeElement(src, id) {
     bedienung: src?.bedienung ?? 'Gurt',
     bedienungsseiteRollo: src?.bedienungsseiteRollo ?? 'rechts',
     behang: src?.behang ?? 'Aluminium',
+    lamelle: src?.lamelle ?? 'Mini 37mm',
     kastenhoeheRollo: src?.kastenhoeheRollo ?? 165,
     kastenfarbe: src?.kastenfarbe ?? 'WEISS',
     behangfarbe: src?.behangfarbe ?? 'WEISS',
@@ -623,7 +630,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
       teile.push(`<strong>${panzerOnly ? 'Rollo Panzer' : 'Vorbau Rollladen'}</strong>`);
       teile.push(`${Math.round(el.breite)} × ${Math.round(el.hoehe)} mm`);
       if (!panzerOnly) teile.push(`Kastenhöhe: ${Math.round(Number(el.kastenhoeheRollo) || 0)} mm`);
-      teile.push(`Rollopanzer: ${el.behang}`);
+      teile.push(`Rollopanzer: ${el.behang}${el.lamelle ? `, ${el.lamelle}` : ''}`);
       if (!panzerOnly) teile.push(`Bedienung: ${el.bedienung} (${el.bedienungsseiteRollo})`);
       teile.push(panzerOnly ? `Lamellen ${farbe(el.behangfarbe)}` : `Kasten ${farbe(el.kastenfarbe)} / Lamellen ${farbe(el.behangfarbe)}`);
       const komText = (el.kommentar || '').replace(/<[^>]*>/g, '').trim();
@@ -691,7 +698,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
       ornament: main.ornament, ornamentArt: main.ornamentArt,
       dichtungInnen: main.dichtungInnen, dichtungAussen: main.dichtungAussen,
       // Rollladen-Felder
-      bedienung: main.bedienung, bedienungsseiteRollo: main.bedienungsseiteRollo, behang: main.behang, kastenhoeheRollo: Number(main.kastenhoeheRollo) || 0,
+      bedienung: main.bedienung, bedienungsseiteRollo: main.bedienungsseiteRollo, behang: main.behang, lamelle: main.lamelle, kastenhoeheRollo: Number(main.kastenhoeheRollo) || 0,
       kastenfarbe: main.kastenfarbe, behangfarbe: main.behangfarbe,
       kommentar: main.kommentar, nettoJeStueck: Number(main.nettoJeStueck),
       // Mehrteilig (immer mitgespeichert)
@@ -851,8 +858,17 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
                 </>
               )}
               <label className="np-field-label">Rollopanzer</label>
-              <select className="np-select np-select--block" value={aktiv.behang} onChange={e => updAktiv({ behang: e.target.value })}>
+              <select className="np-select np-select--block" value={aktiv.behang} onChange={e => {
+                const b = e.target.value;
+                const idx = Math.max(0, lamellenOptionen(aktiv.behang).indexOf(aktiv.lamelle));
+                const neu = lamellenOptionen(b);
+                updAktiv({ behang: b, lamelle: neu[idx] ?? neu[0] });
+              }}>
                 {BEHANG.map(x => <option key={x} value={x}>{x}</option>)}
+              </select>
+              <label className="np-field-label">Lamellengröße</label>
+              <select className="np-select np-select--block" value={aktiv.lamelle} onChange={e => updAktiv({ lamelle: e.target.value })}>
+                {lamellenOptionen(aktiv.behang).map(x => <option key={x} value={x}>{x}</option>)}
               </select>
               {!geometrie?.panzerOnly && (
                 <>
