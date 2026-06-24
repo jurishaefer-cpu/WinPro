@@ -1571,7 +1571,7 @@ body {
 }
 .stepper-step--klick .stepper-dot { transition: box-shadow 0.12s, transform 0.12s; }
 .stepper-step--klick:hover .stepper-dot {
-  box-shadow: 0 0 0 4px rgba(15, 31, 61, 0.10);
+  box-shadow: 0 0 0 4px rgba(192, 21, 46, 0.12);
   transform: translateY(-1px);
 }
 .stepper-step--klick:hover .stepper-label { color: #0f1f3d; }
@@ -1589,13 +1589,13 @@ body {
   justify-content: center;
 }
 .stepper-step.active .stepper-dot {
-  border-color: #0f1f3d;
-  color: #0f1f3d;
-  box-shadow: 0 0 0 4px rgba(15, 31, 61, 0.08);
+  border-color: #c0152e;
+  color: #c0152e;
+  box-shadow: 0 0 0 4px rgba(192, 21, 46, 0.10);
 }
 .stepper-step.done .stepper-dot {
-  border-color: #0f1f3d;
-  background: #0f1f3d;
+  border-color: #c0152e;
+  background: #c0152e;
   color: white;
 }
 .stepper-label {
