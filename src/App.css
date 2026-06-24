@@ -27,6 +27,11 @@ body {
   align-items: center;
 }
 
+.logo-link {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
 .logo-img {
   height: 34px;
   width: auto;

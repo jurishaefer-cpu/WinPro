@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, Link } from 'react-router-dom';
 import UserMenu from './UserMenu';
 
 const navItems = [
@@ -21,7 +21,9 @@ function Header() {
       </button>
 
       <div className="header-left">
-        <img src="/logo-white.png" alt="WinPro" className="logo-img" />
+        <Link to="/" className="logo-link" aria-label="Zum Dashboard">
+          <img src="/logo-white.png" alt="WinPro" className="logo-img" />
+        </Link>
       </div>
 
       <div className="header-right">
