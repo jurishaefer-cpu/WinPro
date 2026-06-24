@@ -322,7 +322,7 @@ function AngebotEditorPage() {
                     {c.kategorie === 'rollo' ? (
                       <RolloZeichnung breite={c.breite} hoehe={c.hoehe} kastenhoehe={c.kastenhoeheRollo}
                         bedienung={c.bedienung} bedienungsseite={c.bedienungsseiteRollo}
-                        panzerOnly={!!geometrieByCode(c.code)?.panzerOnly} />
+                        panzerOnly={!!geometrieByCode(c.code)?.panzerOnly} kompakt />
                     ) : c.elemente?.length > 1 ? (
                       <KombinationsZeichnung elemente={c.elemente} />
                     ) : (

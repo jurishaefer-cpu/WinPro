@@ -233,23 +233,44 @@ export function bedienungKuerzel(b) {
 
 // Eigenständige Rollladen-Skizze: Kasten oben, Rollopanzer (Lamellen) mit Führungsschienen darunter.
 // panzerOnly = nur der Behang (Rollo Panzer) ohne Vorbaukasten.
-export function RolloZeichnung({ breite = 1000, hoehe = 1400, kastenhoehe = 165, bedienung = 'Gurt', bedienungsseite = 'rechts', panzerOnly = false, beleg = false }) {
+export function RolloZeichnung({ breite = 1000, hoehe = 1400, kastenhoehe = 165, bedienung = 'Gurt', bedienungsseite = 'rechts', panzerOnly = false, beleg = false, kompakt = false }) {
   const b = Math.max(200, Number(breite) || 1000);
   const h = Math.max(200, Number(hoehe) || 1400);
   const kh = panzerOnly ? 0 : Math.min(h * 0.5, Math.max(40, Number(kastenhoehe) || 0));
   const maxW = 360, maxH = 300;
   const scale = Math.min(maxW / b, maxH / h);
-  const PAD = beleg ? 12 : 46;
   const rw = b * scale, rh = h * scale, khpx = kh * scale;
-  const ox = PAD, oy = PAD;
-  const VB_W = rw + PAD * 2, VB_H = rh + PAD * 2;
+  // Layout + Maß-Schrift: in der kompakten Übersicht exakt wie FensterZeichnung skalieren,
+  // damit die Maße nach dem Einpassen (preserveAspectRatio) gleich groß erscheinen wie bei
+  // den Fensterkarten. Editor- (PAD 46) und Beleg-Darstellung (PAD 12) bleiben unverändert.
+  const rightMargin = (f) => (panzerOnly ? 14 : 16 + f * 0.8);
+  let fMain, ox, oy, VB_W, VB_H;
+  if (kompakt) {
+    const BOX_W = 185, BOX_H = 150, ZIEL_FONT = 13;
+    let f = 30, rand;
+    for (let i = 0; i < 4; i++) {
+      rand = 12 + f * 0.85;
+      const vbW = 34 + rand + rw + rightMargin(f);
+      const vbH = 34 + rand + rh + 14;
+      f = ZIEL_FONT * Math.max(vbW / BOX_W, vbH / BOX_H);
+    }
+    fMain = Math.round(f);
+    rand = Math.round(12 + fMain * 0.85);
+    ox = 34 + rand; oy = 34 + rand;
+    VB_W = ox + rw + Math.round(rightMargin(fMain));
+    VB_H = oy + rh + 14;
+  } else {
+    const PAD = beleg ? 12 : 46;
+    fMain = 13; ox = PAD; oy = PAD;
+    VB_W = rw + PAD * 2; VB_H = rh + PAD * 2;
+  }
   const rail = panzerOnly ? 0 : Math.max(6, Math.min(rw * 0.05, 14));
   const pz = { x: ox + rail, y: oy + khpx, w: rw - rail * 2, h: rh - khpx };
   // Lamellen als gefüllte Bänder (statt dünner Linien) – rastern in jedem Renderer (Bildschirm + html2canvas/PDF) gleichmäßig.
   const panzerMm = Math.max(1, h - kh);
   const bandCount = Math.max(6, Math.min(26, Math.round(panzerMm / 110)));
   const bandH = pz.h / bandCount;
-  const txt = { fontSize: 13, fill: '#0f1f3d', fontWeight: 700 };
+  const txt = { fontSize: fMain, fill: '#0f1f3d', fontWeight: 700 };
   // Symbol-Position: bei Kasten an dessen Unterkante, beim reinen Panzer oben im Behang.
   const r = Math.max(11, Math.min((khpx || rh * 0.12) * 0.62, 17));
   const bcx = bedienungsseite === 'links' ? ox + rail + r * 0.4 : ox + rw - rail - r * 0.4;
@@ -288,13 +309,32 @@ export function RolloZeichnung({ breite = 1000, hoehe = 1400, kastenhoehe = 165,
           </g>
         );
       })()}
-      {!beleg && (
+      {/* Maße – feste Variante (Editor) */}
+      {!beleg && !kompakt && (
         <>
           <text x={ox + rw / 2} y={oy - 16} textAnchor="middle" {...txt}>{Math.round(b)}</text>
           <line x1={ox} y1={oy - 8} x2={ox + rw} y2={oy - 8} stroke="#0f1f3d" strokeWidth="1" />
           <text x={ox - 14} y={oy + rh / 2} textAnchor="middle" transform={`rotate(-90 ${ox - 14} ${oy + rh / 2})`} {...txt}>{Math.round(h)}</text>
           {!panzerOnly && (
             <text x={ox + rw + 16} y={oy + khpx / 2 + 4} textAnchor="middle" transform={`rotate(-90 ${ox + rw + 16} ${oy + khpx / 2})`} fontSize="11" fill="#667085" fontWeight="600">Kasten {Math.round(kh)}</text>
+          )}
+        </>
+      )}
+      {/* Maße – skalierte Variante (Übersicht, identisch zu FensterZeichnung) */}
+      {!beleg && kompakt && (
+        <>
+          {/* Breite oben */}
+          <line x1={ox} y1={oy - 34} x2={ox + rw} y2={oy - 34} stroke="#0f1f3d" strokeWidth="1.2" />
+          <line x1={ox} y1={oy - 40} x2={ox} y2={oy - 28} stroke="#0f1f3d" strokeWidth="1.2" />
+          <line x1={ox + rw} y1={oy - 40} x2={ox + rw} y2={oy - 28} stroke="#0f1f3d" strokeWidth="1.2" />
+          <text x={ox + rw / 2} y={oy - 44} textAnchor="middle" {...txt}>{Math.round(b)}</text>
+          {/* Höhe links */}
+          <line x1={ox - 34} y1={oy} x2={ox - 34} y2={oy + rh} stroke="#0f1f3d" strokeWidth="1.2" />
+          <line x1={ox - 40} y1={oy} x2={ox - 28} y2={oy} stroke="#0f1f3d" strokeWidth="1.2" />
+          <line x1={ox - 40} y1={oy + rh} x2={ox - 28} y2={oy + rh} stroke="#0f1f3d" strokeWidth="1.2" />
+          <text x={ox - 44} y={oy + rh / 2} textAnchor="middle" transform={`rotate(-90 ${ox - 44} ${oy + rh / 2})`} {...txt}>{Math.round(h)}</text>
+          {!panzerOnly && (
+            <text x={ox + rw + 16} y={oy + khpx / 2 + 4} textAnchor="middle" transform={`rotate(-90 ${ox + rw + 16} ${oy + khpx / 2})`} fontSize={Math.round(fMain * 0.55)} fill="#667085" fontWeight="600">Kasten {Math.round(kh)}</text>
           )}
         </>
       )}
