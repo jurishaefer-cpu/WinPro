@@ -1258,9 +1258,9 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
               {istKombi ? (
                 <input type="number" value={aktiv.nettoJeStueck} onChange={e => updAktiv({ nettoJeStueck: e.target.value })} />
               ) : (
-                <input type="number"
+                <input type="number" min="0"
                   value={(Number(aktiv.nettoJeStueck) || 0) + zuschlag}
-                  onChange={e => updAktiv({ nettoJeStueck: Math.max(0, (Number(e.target.value) || 0) - zuschlag) })} />
+                  onChange={e => updAktiv({ nettoJeStueck: (Number(e.target.value) || 0) - zuschlag })} />
               )}
             </div>
             {istKombi && (
