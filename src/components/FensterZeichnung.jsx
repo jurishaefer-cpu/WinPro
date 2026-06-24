@@ -235,7 +235,7 @@ export function RolloZeichnung({ breite = 1000, hoehe = 1400, kastenhoehe = 165,
   const rw = b * scale, rh = h * scale, khpx = kh * scale;
   const ox = PAD, oy = PAD;
   const VB_W = rw + PAD * 2, VB_H = rh + PAD * 2;
-  const rail = Math.max(6, Math.min(rw * 0.05, 14));
+  const rail = panzerOnly ? 0 : Math.max(6, Math.min(rw * 0.05, 14));
   const pz = { x: ox + rail, y: oy + khpx, w: rw - rail * 2, h: rh - khpx };
   const slatGap = Math.max(7, pz.h / 14);
   const slats = [];
@@ -247,9 +247,13 @@ export function RolloZeichnung({ breite = 1000, hoehe = 1400, kastenhoehe = 165,
   const bcy = panzerOnly ? oy + r + 4 : oy + khpx;
   return (
     <svg viewBox={`0 0 ${VB_W} ${VB_H}`} preserveAspectRatio="xMidYMid meet" className="fz-svg">
-      {/* Führungsschienen */}
-      <rect x={ox} y={oy + khpx} width={rail} height={rh - khpx} fill="#eef1f5" stroke="#0f1f3d" strokeWidth="1.5" />
-      <rect x={ox + rw - rail} y={oy + khpx} width={rail} height={rh - khpx} fill="#eef1f5" stroke="#0f1f3d" strokeWidth="1.5" />
+      {/* Führungsschienen (nur Vorbau-Variante) */}
+      {!panzerOnly && (
+        <>
+          <rect x={ox} y={oy + khpx} width={rail} height={rh - khpx} fill="#eef1f5" stroke="#0f1f3d" strokeWidth="1.5" />
+          <rect x={ox + rw - rail} y={oy + khpx} width={rail} height={rh - khpx} fill="#eef1f5" stroke="#0f1f3d" strokeWidth="1.5" />
+        </>
+      )}
       {/* Behang (Panzer) mit Lamellen */}
       <rect x={pz.x} y={pz.y} width={pz.w} height={pz.h} fill="#f4f6f8" stroke="#0f1f3d" strokeWidth="1.5" />
       {slats.map((y, i) => <line key={'s' + i} x1={pz.x} y1={y} x2={pz.x + pz.w} y2={y} stroke="#0f1f3d" strokeWidth="0.8" opacity="0.55" />)}
@@ -260,8 +264,8 @@ export function RolloZeichnung({ breite = 1000, hoehe = 1400, kastenhoehe = 165,
           <line x1={ox} y1={oy + khpx} x2={ox + rw} y2={oy + khpx} stroke="#0f1f3d" strokeWidth="2" />
         </>
       )}
-      {/* Bedienungs-Symbol (Kreis + Buchstabe) auf der gewählten Seite */}
-      {(() => {
+      {/* Bedienungs-Symbol (Kreis + Buchstabe) auf der gewählten Seite – nur Vorbau-Variante */}
+      {!panzerOnly && (() => {
         const kuerzel = bedienungKuerzel(bedienung);
         if (!kuerzel) return null;
         return (

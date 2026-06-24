@@ -598,7 +598,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
       teile.push(`${Math.round(el.breite)} × ${Math.round(el.hoehe)} mm`);
       if (!panzerOnly) teile.push(`Kastenhöhe: ${Math.round(Number(el.kastenhoeheRollo) || 0)} mm`);
       teile.push(`Rollopanzer: ${el.behang}`);
-      teile.push(`Bedienung: ${el.bedienung} (${el.bedienungsseiteRollo})`);
+      if (!panzerOnly) teile.push(`Bedienung: ${el.bedienung} (${el.bedienungsseiteRollo})`);
       teile.push(`Kasten ${farbe(el.kastenfarbe)} / Lamellen ${farbe(el.behangfarbe)}`);
       const komText = (el.kommentar || '').replace(/<[^>]*>/g, '').trim();
       if (komText) teile.push(`Kommentar: ${el.kommentar}`);
@@ -813,15 +813,19 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
               <select className="np-select np-select--block" value={aktiv.behang} onChange={e => updAktiv({ behang: e.target.value })}>
                 {BEHANG.map(x => <option key={x} value={x}>{x}</option>)}
               </select>
-              <label className="np-field-label">Bedienung</label>
-              <select className="np-select np-select--block" value={aktiv.bedienung} onChange={e => updAktiv({ bedienung: e.target.value })}>
-                {BEDIENUNGEN.map(x => <option key={x} value={x}>{x}</option>)}
-              </select>
-              <label className="np-field-label">Bedienungsseite</label>
-              <div className="np-segmented">
-                <button className={aktiv.bedienungsseiteRollo === 'links' ? 'active' : ''} onClick={() => updAktiv({ bedienungsseiteRollo: 'links' })}>links</button>
-                <button className={aktiv.bedienungsseiteRollo === 'rechts' ? 'active' : ''} onClick={() => updAktiv({ bedienungsseiteRollo: 'rechts' })}>rechts</button>
-              </div>
+              {!geometrie?.panzerOnly && (
+                <>
+                  <label className="np-field-label">Bedienung</label>
+                  <select className="np-select np-select--block" value={aktiv.bedienung} onChange={e => updAktiv({ bedienung: e.target.value })}>
+                    {BEDIENUNGEN.map(x => <option key={x} value={x}>{x}</option>)}
+                  </select>
+                  <label className="np-field-label">Bedienungsseite</label>
+                  <div className="np-segmented">
+                    <button className={aktiv.bedienungsseiteRollo === 'links' ? 'active' : ''} onClick={() => updAktiv({ bedienungsseiteRollo: 'links' })}>links</button>
+                    <button className={aktiv.bedienungsseiteRollo === 'rechts' ? 'active' : ''} onClick={() => updAktiv({ bedienungsseiteRollo: 'rechts' })}>rechts</button>
+                  </div>
+                </>
+              )}
             </>
           )}
 
