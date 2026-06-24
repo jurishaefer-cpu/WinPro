@@ -282,6 +282,15 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
   function updAktiv(patch) {
     setElemente(prev => prev.map(e => (e.id === activeId ? { ...e, ...patch } : e)));
   }
+  // Farbauswahl: Listenwert übernehmen oder bei „Manuell eingeben…" zur Texteingabe wechseln
+  function waehleFarbe(feld, val) {
+    if (val === '__manuell__') {
+      const eingabe = window.prompt('Farbe manuell eingeben:', aktiv?.[feld] ?? '');
+      if (eingabe != null && eingabe.trim() !== '') updAktiv({ [feld]: eingabe.trim() });
+    } else {
+      updAktiv({ [feld]: val });
+    }
+  }
   function switchActive(id) {
     setActiveId(id);
     setSelectedPane(null);
@@ -939,17 +948,17 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
         <aside className="np-col np-col--right">
           <div className="np-group-label">FARBEN</div>
           <label className="np-field-label">Innenfarbe</label>
-          <select className="np-select np-select--block np-select--tall" value={farbOptionen.some(o => o.value === aktiv.innenfarbe) ? aktiv.innenfarbe : ''} onChange={e => updAktiv({ innenfarbe: e.target.value })}>
-            {!farbOptionen.some(o => o.value === aktiv.innenfarbe) && <option value="">— Farbe wählen —</option>}
+          <select className="np-select np-select--block np-select--tall" value={aktiv.innenfarbe} onChange={e => waehleFarbe('innenfarbe', e.target.value)}>
+            {aktiv.innenfarbe && !farbOptionen.some(o => o.value === aktiv.innenfarbe) && <option value={aktiv.innenfarbe}>{aktiv.innenfarbe}</option>}
             {farbOptionen.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            <option value="__manuell__">✏️ Manuell eingeben…</option>
           </select>
-          <input className="np-input np-select--block" style={{ marginTop: 6 }} value={aktiv.innenfarbe} placeholder="oder manuell eingeben" onChange={e => updAktiv({ innenfarbe: e.target.value })} />
           <label className="np-field-label">Außenfarbe</label>
-          <select className="np-select np-select--block np-select--tall" value={farbOptionen.some(o => o.value === aktiv.aussenfarbe) ? aktiv.aussenfarbe : ''} onChange={e => updAktiv({ aussenfarbe: e.target.value })}>
-            {!farbOptionen.some(o => o.value === aktiv.aussenfarbe) && <option value="">— Farbe wählen —</option>}
+          <select className="np-select np-select--block np-select--tall" value={aktiv.aussenfarbe} onChange={e => waehleFarbe('aussenfarbe', e.target.value)}>
+            {aktiv.aussenfarbe && !farbOptionen.some(o => o.value === aktiv.aussenfarbe) && <option value={aktiv.aussenfarbe}>{aktiv.aussenfarbe}</option>}
             {farbOptionen.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            <option value="__manuell__">✏️ Manuell eingeben…</option>
           </select>
-          <input className="np-input np-select--block" style={{ marginTop: 6 }} value={aktiv.aussenfarbe} placeholder="oder manuell eingeben" onChange={e => updAktiv({ aussenfarbe: e.target.value })} />
 
           <div className="np-group-label" style={{ marginTop: 24 }}>VERGLASUNG</div>
           <label className="np-field-label">Verglasung</label>
