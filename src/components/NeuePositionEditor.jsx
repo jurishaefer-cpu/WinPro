@@ -252,6 +252,19 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
     laden();
   }, [initial]);
 
+  // Solange der Editor (Vollbild-Overlay) offen ist, das Scrollen der dahinterliegenden
+  // Seite sperren – sonst zeigt Safari deren Dokument-Scrollbalken am rechten Rand.
+  useEffect(() => {
+    const prevHtml = document.documentElement.style.overflow;
+    const prevBody = document.body.style.overflow;
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.documentElement.style.overflow = prevHtml;
+      document.body.style.overflow = prevBody;
+    };
+  }, []);
+
   const profil = profile.find(p => p.id === profilId);
   const aktiv = elemente.find(e => e.id === activeId) || elemente[0];
   const aktivIndex = Math.max(0, elemente.findIndex(e => e.id === aktiv.id));
