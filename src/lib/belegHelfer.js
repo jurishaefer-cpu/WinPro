@@ -35,6 +35,7 @@ export function montageZeile(config) {
 // Beschreibungszeilen einer Fenster-Position für den Beleg (HTML-Strings)
 export function positionZeilen(config, profil, mitMontage = true) {
   if (!config) return [];
+  if (config.kategorie === 'rollo') return rolloZeilen(config, profil, mitMontage);
   if (config.elemente?.length > 1) return kombiZeilen(config, profil, mitMontage);
   const z = [];
   if (profil?.material) z.push(`Material: ${esc(profil.material.toLowerCase())}`);
@@ -69,6 +70,26 @@ export function positionZeilen(config, profil, mitMontage = true) {
     z.push(`Aufsatzkasten: ${Number(config.kasten.kastenhoehe) || 0} mm, ${config.kasten.bedienung} (${config.kasten.bedienungsseite})`);
   }
   if (config.rollladen) z.push(`Rollladenführung: ${esc(config.rollladen)}`);
+  if (mitMontage) { const mz = montageZeile(config); if (mz) z.push(mz); }
+  return z;
+}
+
+// Beschreibungszeilen einer Rollladen-Position
+function rolloZeilen(config, profil, mitMontage = true) {
+  const z = [];
+  if (profil?.material) z.push(`Material: ${esc(profil.material.toLowerCase())}`);
+  const profilTeile = [profil?.hersteller, profil?.system].filter(Boolean).join(' ');
+  if (profilTeile || profil?.bautiefe) {
+    z.push(`Profil: ${esc(profilTeile)}${profil?.bautiefe ? ` · ${profil.bautiefe} mm Bautiefe` : ''}`);
+  }
+  z.push('Ausführung: Rollladen');
+  z.push(`Maß: ${Math.round(config.breite)} × ${Math.round(config.hoehe)} mm`);
+  if (config.kastenhoeheRollo) z.push(`Kastenhöhe: ${Math.round(config.kastenhoeheRollo)} mm`);
+  if (config.behang) z.push(`Behang: ${esc(config.behang)}`);
+  if (config.bedienung) z.push(`Bedienung: ${esc(config.bedienung)}`);
+  if (config.kastenfarbe || config.behangfarbe) {
+    z.push(`Farbe: Kasten ${esc(config.kastenfarbe ?? '')} / Lamellen ${esc(config.behangfarbe ?? '')}`);
+  }
   if (mitMontage) { const mz = montageZeile(config); if (mz) z.push(mz); }
   return z;
 }

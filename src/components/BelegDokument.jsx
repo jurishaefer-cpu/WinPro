@@ -1,4 +1,4 @@
-import FensterZeichnung, { geometrieByCode, KombinationsZeichnung } from './FensterZeichnung';
+import FensterZeichnung, { geometrieByCode, KombinationsZeichnung, RolloZeichnung } from './FensterZeichnung';
 import { euro, datumDE, positionZeilen, montageZeile, BELEG_ART } from '../lib/belegHelfer';
 
 const MWST = 0.19;
@@ -88,7 +88,9 @@ function BelegDokument({ art, angebot, kunde, positionen, profileMap, einstellun
                 <td className="pos-skizze">
                   {istFenster && (
                     <div className="beleg-zeichnung">
-                      {c.elemente?.length > 1 ? (
+                      {c.kategorie === 'rollo' ? (
+                        <RolloZeichnung breite={c.breite} hoehe={c.hoehe} kastenhoehe={c.kastenhoeheRollo} beleg />
+                      ) : c.elemente?.length > 1 ? (
                         <KombinationsZeichnung elemente={c.elemente} weissesGlas />
                       ) : (
                         <FensterZeichnung

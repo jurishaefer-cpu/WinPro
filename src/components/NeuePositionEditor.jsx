@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import FensterZeichnung, { GEOMETRIEN, geometrieByCode, GeometrieThumb, fensterBezeichnung, KombinationsZeichnung, istAluCode } from './FensterZeichnung';
+import FensterZeichnung, { GEOMETRIEN, geometrieByCode, GeometrieThumb, fensterBezeichnung, KombinationsZeichnung, istAluCode, RolloZeichnung } from './FensterZeichnung';
 import GeometrieSelect from './GeometrieSelect';
 import RichTextEditor from './RichTextEditor';
 import { kombiMass } from '../lib/belegHelfer';
@@ -11,6 +11,8 @@ const VERGLASUNGEN = [
 ];
 const DICHTUNGEN = ['Grau', 'Schwarz'];
 const ROLLLADEN = ['42x42mm'];
+const BEDIENUNGEN = ['Gurt', 'Kurbel', 'Motor (Schalter)', 'Funk-Motor'];
+const BEHANG = ['Aluminium', 'Kunststoff (PVC)'];
 
 // Öffnungsarten je Flügel – Bausteine
 const OPT = {
@@ -123,6 +125,12 @@ function makeElement(src, id) {
     ornamentArt: src?.ornamentArt ?? '',
     dichtungInnen: src?.dichtungInnen ?? 'Grau',
     dichtungAussen: src?.dichtungAussen ?? 'Grau',
+    // Rollladen-Felder (Kategorie „rollo")
+    bedienung: src?.bedienung ?? 'Gurt',
+    behang: src?.behang ?? 'Aluminium',
+    kastenhoeheRollo: src?.kastenhoeheRollo ?? 165,
+    kastenfarbe: src?.kastenfarbe ?? 'WEISS',
+    behangfarbe: src?.behangfarbe ?? 'WEISS',
     kommentar: src?.kommentar ?? '',
     nettoJeStueck: src?.nettoJeStueck ?? 0,
     // Verbinden/Trennen: aus zwei benachbarten Teilen zusammengeführtes Element
@@ -252,6 +260,8 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
   const istAluSystem = istAluHaustuerProfil(profil);
   // Haustüren (ALU-System oder Haustür-Geometrie): Standort, Aufsatzkasten/Rollladen, Dichtungen ausblenden.
   const istHaustuerAktiv = istAluSystem || istHaustuerGeo(geometrie, aktiv.panes);
+  // Rollladen: andere Skizze + Felder, Fenster-spezifische Bereiche ausblenden.
+  const istRollo = aktiv.kategorie === 'rollo';
   const geomOptionen = istAluSystem
     ? GEOMETRIEN.filter(g => g.aluHaustuer)
     : GEOMETRIEN.filter(g => g.kategorie === aktiv.kategorie && !g.aluHaustuer);
@@ -580,6 +590,20 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
   function buildBeschreibung() {
     const farbe = (name) => katalog[name] ? `${katalog[name]} ${name}` : name;
     const teile = [];
+    if (istRollo) {
+      const el = aktiv;
+      teile.push('<strong>Rollladen</strong>');
+      teile.push(`${Math.round(el.breite)} × ${Math.round(el.hoehe)} mm`);
+      teile.push(`Kastenhöhe: ${Math.round(Number(el.kastenhoeheRollo) || 0)} mm`);
+      teile.push(`Behang: ${el.behang}`);
+      teile.push(`Bedienung: ${el.bedienung}`);
+      teile.push(`Kasten ${farbe(el.kastenfarbe)} / Lamellen ${farbe(el.behangfarbe)}`);
+      const komText = (el.kommentar || '').replace(/<[^>]*>/g, '').trim();
+      if (komText) teile.push(`Kommentar: ${el.kommentar}`);
+      if (standort) teile.push(`Standort: ${standort}`);
+      if (ohneMontage) teile.push('ohne Montage');
+      return `<div>${teile.join('<br>')}</div>`;
+    }
     if (istKombi) {
       teile.push('<strong>Fensterkombination</strong>');
       teile.push(`Gesamtmaß ${Math.round(breiteGes)} × ${Math.round(hoeheGes)} mm · ${flaeche.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} m²`);
@@ -638,6 +662,9 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
       innenfarbe: main.innenfarbe, aussenfarbe: main.aussenfarbe, verglasung: main.verglasung, vsg: main.vsg,
       ornament: main.ornament, ornamentArt: main.ornamentArt,
       dichtungInnen: main.dichtungInnen, dichtungAussen: main.dichtungAussen,
+      // Rollladen-Felder
+      bedienung: main.bedienung, behang: main.behang, kastenhoeheRollo: Number(main.kastenhoeheRollo) || 0,
+      kastenfarbe: main.kastenfarbe, behangfarbe: main.behangfarbe,
       kommentar: main.kommentar, nettoJeStueck: Number(main.nettoJeStueck),
       // Mehrteilig (immer mitgespeichert)
       elemente: elementeClean,
@@ -696,9 +723,10 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
           {!istAluSystem && (
             <>
               <label className="np-field-label">Kategorie</label>
-              <div className="np-segmented">
+              <div className="np-segmented np-segmented--3">
                 <button className={aktiv.kategorie === 'fenster' ? 'active' : ''} onClick={() => wechselKategorie('fenster')}>Fenster</button>
                 <button className={aktiv.kategorie === 'tuer' ? 'active' : ''} onClick={() => wechselKategorie('tuer')}>Tür</button>
+                <button className={aktiv.kategorie === 'rollo' ? 'active' : ''} onClick={() => wechselKategorie('rollo')}>Rollo</button>
               </div>
             </>
           )}
@@ -765,6 +793,25 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
             )}
           </div>
 
+          {istRollo && (
+            <>
+              <div className="np-group-label" style={{ marginTop: 24 }}>ROLLLADEN</div>
+              <label className="np-field-label">Kastenhöhe (mm)</label>
+              <input className="np-input" type="number" min="0" value={aktiv.kastenhoeheRollo}
+                     onChange={e => updAktiv({ kastenhoeheRollo: e.target.value })} placeholder="z. B. 165" />
+              <label className="np-field-label">Behang</label>
+              <select className="np-select np-select--block" value={aktiv.behang} onChange={e => updAktiv({ behang: e.target.value })}>
+                {BEHANG.map(x => <option key={x} value={x}>{x}</option>)}
+              </select>
+              <label className="np-field-label">Bedienung</label>
+              <select className="np-select np-select--block" value={aktiv.bedienung} onChange={e => updAktiv({ bedienung: e.target.value })}>
+                {BEDIENUNGEN.map(x => <option key={x} value={x}>{x}</option>)}
+              </select>
+            </>
+          )}
+
+          {!istRollo && (
+          <>
           <div className="np-group-label" style={{ marginTop: 24 }}>ANBAUTEN</div>
           <label className="np-field-label">Verbreiterung</label>
           <div className="np-segmented">
@@ -843,6 +890,8 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
           </datalist>
           </>
           )}
+          </>
+          )}
         </aside>
 
         {/* Mitte: Zeichnung */}
@@ -869,11 +918,13 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
             ) : null}
           </div>
           {/* Mobiler In-Fluss-Knopf oben (Desktop nutzt den runden FAB in der Zeichnung) */}
-          {!istAluSystem && (
+          {!istAluSystem && !istRollo && (
             <button className="np-add-inline" onClick={() => setAddMenu(v => !v)}>+ Element hinzufügen</button>
           )}
           <div className="np-canvas">
-            {istKombi ? (
+            {istRollo ? (
+              <RolloZeichnung breite={aktiv.breite} hoehe={aktiv.hoehe} kastenhoehe={aktiv.kastenhoeheRollo} />
+            ) : istKombi ? (
               <KombinationsZeichnung elemente={elemente} activeId={activeId}
                 onUnitClick={switchActive} onPaneClick={setSelectedPane} selectedPane={selectedPane}
                 onDock={dockElement} onSlide={slideElement}
@@ -925,7 +976,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
           </div>
 
           {/* + Element hinzufügen — Desktop: runder Knopf unten links in der Ecke */}
-          {!istAluSystem && (
+          {!istAluSystem && !istRollo && (
             <button className="np-add-fab" onClick={() => setAddMenu(v => !v)} title="Element hinzufügen">+</button>
           )}
           {addMenu && (
@@ -952,19 +1003,40 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
         {/* Rechte Spalte */}
         <aside className="np-col np-col--right">
           <div className="np-group-label">FARBEN</div>
-          <label className="np-field-label">Innenfarbe</label>
-          <select className="np-select np-select--block np-select--tall" value={aktiv.innenfarbe} onChange={e => waehleFarbe('innenfarbe', e.target.value)}>
-            {aktiv.innenfarbe && !farbOptionen.some(o => o.value === aktiv.innenfarbe) && <option value={aktiv.innenfarbe}>{aktiv.innenfarbe}</option>}
-            {farbOptionen.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-            <option value="__manuell__">✏️ Manuell eingeben…</option>
-          </select>
-          <label className="np-field-label">Außenfarbe</label>
-          <select className="np-select np-select--block np-select--tall" value={aktiv.aussenfarbe} onChange={e => waehleFarbe('aussenfarbe', e.target.value)}>
-            {aktiv.aussenfarbe && !farbOptionen.some(o => o.value === aktiv.aussenfarbe) && <option value={aktiv.aussenfarbe}>{aktiv.aussenfarbe}</option>}
-            {farbOptionen.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-            <option value="__manuell__">✏️ Manuell eingeben…</option>
-          </select>
+          {istRollo ? (
+            <>
+              <label className="np-field-label">Kastenfarbe</label>
+              <select className="np-select np-select--block np-select--tall" value={aktiv.kastenfarbe} onChange={e => waehleFarbe('kastenfarbe', e.target.value)}>
+                {aktiv.kastenfarbe && !farbOptionen.some(o => o.value === aktiv.kastenfarbe) && <option value={aktiv.kastenfarbe}>{aktiv.kastenfarbe}</option>}
+                {farbOptionen.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                <option value="__manuell__">✏️ Manuell eingeben…</option>
+              </select>
+              <label className="np-field-label">Farbe Lamellen/Behang</label>
+              <select className="np-select np-select--block np-select--tall" value={aktiv.behangfarbe} onChange={e => waehleFarbe('behangfarbe', e.target.value)}>
+                {aktiv.behangfarbe && !farbOptionen.some(o => o.value === aktiv.behangfarbe) && <option value={aktiv.behangfarbe}>{aktiv.behangfarbe}</option>}
+                {farbOptionen.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                <option value="__manuell__">✏️ Manuell eingeben…</option>
+              </select>
+            </>
+          ) : (
+            <>
+              <label className="np-field-label">Innenfarbe</label>
+              <select className="np-select np-select--block np-select--tall" value={aktiv.innenfarbe} onChange={e => waehleFarbe('innenfarbe', e.target.value)}>
+                {aktiv.innenfarbe && !farbOptionen.some(o => o.value === aktiv.innenfarbe) && <option value={aktiv.innenfarbe}>{aktiv.innenfarbe}</option>}
+                {farbOptionen.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                <option value="__manuell__">✏️ Manuell eingeben…</option>
+              </select>
+              <label className="np-field-label">Außenfarbe</label>
+              <select className="np-select np-select--block np-select--tall" value={aktiv.aussenfarbe} onChange={e => waehleFarbe('aussenfarbe', e.target.value)}>
+                {aktiv.aussenfarbe && !farbOptionen.some(o => o.value === aktiv.aussenfarbe) && <option value={aktiv.aussenfarbe}>{aktiv.aussenfarbe}</option>}
+                {farbOptionen.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                <option value="__manuell__">✏️ Manuell eingeben…</option>
+              </select>
+            </>
+          )}
 
+          {!istRollo && (
+          <>
           <div className="np-group-label" style={{ marginTop: 24 }}>VERGLASUNG</div>
           <label className="np-field-label">Verglasung</label>
           <select className="np-select np-select--block" value={aktiv.verglasung} onChange={e => updAktiv({ verglasung: e.target.value })}>
@@ -1001,6 +1073,8 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
               </select>
             </div>
           </div>
+          </>
+          )}
           </>
           )}
 

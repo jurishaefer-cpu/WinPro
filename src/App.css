@@ -2011,6 +2011,7 @@ body {
   display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
   background: #f0f1f3; border-radius: 10px; padding: 4px;
 }
+.np-segmented--3 { grid-template-columns: 1fr 1fr 1fr; }
 .np-segmented button {
   border: none; background: transparent; cursor: pointer;
   padding: 10px 0; border-radius: 7px;
