@@ -74,6 +74,13 @@ export function positionZeilen(config, profil, mitMontage = true) {
   return z;
 }
 
+// Lamellen-/Behangfarbe je Material; WEISS gibt es bei Rollladen nicht (mehr) → auf Standardfarbe ziehen.
+function rolloLamellenFarbe(config) {
+  const standard = config.behang === 'Kunststoff (PVC)' ? 'Hellgrau' : 'Samtgrau';
+  const f = config.behangfarbe;
+  return (!f || f === 'WEISS') ? standard : f;
+}
+
 // Beschreibungszeilen einer Rollladen-Position
 function rolloZeilen(config, profil, mitMontage = true) {
   const z = [];
@@ -84,10 +91,11 @@ function rolloZeilen(config, profil, mitMontage = true) {
   if (!panzerOnly && config.kastenhoeheRollo) z.push(`Kastenhöhe: ${Math.round(config.kastenhoeheRollo)} mm`);
   if (config.behang) z.push(`Rollopanzer: ${esc(config.behang)}${config.lamelle ? `, ${esc(config.lamelle)}` : ''}`);
   if (!panzerOnly && config.bedienung) z.push(`Bedienung: ${esc(config.bedienung)}${config.bedienungsseiteRollo ? ` (${esc(config.bedienungsseiteRollo)})` : ''}`);
+  const lamFarbe = rolloLamellenFarbe(config);
   if (panzerOnly) {
-    if (config.behangfarbe) z.push(`Farbe: Lamellen ${esc(config.behangfarbe)}`);
-  } else if (config.kastenfarbe || config.behangfarbe) {
-    z.push(`Farbe: Kasten ${esc(config.kastenfarbe ?? '')} / Lamellen ${esc(config.behangfarbe ?? '')}`);
+    z.push(`Farbe: Lamellen ${esc(lamFarbe)}`);
+  } else {
+    z.push(`Farbe: Kasten ${esc(config.kastenfarbe ?? '')} / Lamellen ${esc(lamFarbe)}`);
   }
   if (mitMontage) { const mz = montageZeile(config); if (mz) z.push(mz); }
   return z;
