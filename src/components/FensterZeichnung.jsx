@@ -1135,10 +1135,20 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
         const aktiv = activeId != null && u.e._key === activeId;
         const istMainUnit = u.e._key === mainKey;
         const hw = Math.max(64, Math.min(96, u.r0.w * 0.7));
+        const uGeo = geometrieByCode(u.e.code);
+        const uSonder = uGeo?.form ? sonderformPfade(u.r0, uGeo, Math.max(5, 60 * scale)) : null;
+        const uGlas = weissesGlas ? '#ffffff' : (u.e.ornament ? '#7fb0cc' : glasFarbe);
         return (
           <g key={'u' + u.e._key}>
-            <UnitBody c={u.c} glasFarbe={weissesGlas ? '#ffffff' : (u.e.ornament ? '#7fb0cc' : glasFarbe)} keyPrefix={'u' + u.e._key + '-'}
-              onPaneClick={interaktiv && aktiv ? onPaneClick : undefined} selectedPane={aktiv ? selectedPane : null} />
+            {uSonder ? (
+              <g>
+                <path d={uSonder.outer} fill="#fff" stroke="#0f1f3d" strokeWidth="2.5" strokeLinejoin="round" />
+                <path d={uSonder.inner} fill={uGlas} stroke="#0f1f3d" strokeWidth="1.6" strokeLinejoin="round" opacity="0.95" />
+              </g>
+            ) : (
+              <UnitBody c={u.c} glasFarbe={uGlas} keyPrefix={'u' + u.e._key + '-'}
+                onPaneClick={interaktiv && aktiv ? onPaneClick : undefined} selectedPane={aktiv ? selectedPane : null} />
+            )}
             {aktiv && (
               <rect x={u.r0.x} y={u.r0.y} width={u.r0.w} height={u.r0.h} fill="none"
                     stroke="#c0152e" strokeWidth="2.5" strokeDasharray="6 4" pointerEvents="none" />

@@ -384,11 +384,11 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
   }
 
   // --- Elemente hinzufügen / entfernen ---
-  function addElement(kat) {
+  function addElement(kat, codeArg) {
     const id = `el${nextId.current++}`;
     const main = elemente[0];
     const isT = kat === 'tuer';
-    const code = isT ? 'T01' : 'F01';
+    const code = codeArg || (isT ? 'T01' : 'F01');
     // Der Rahmen (Gesamtmaß) bleibt fest – die Spalten teilen sich die Breite gleichmäßig.
     const { w: Tw, h: Th } = kombiMass(elemente);
     const maxCol = Math.max(...elemente.map(e => e.col ?? 0));
@@ -1053,7 +1053,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
                 const g = geometrieByCode(code);
                 return (
                   <button key={code} className="pane-option"
-                          onClick={() => { waehleGeometrie(code); setAddMenu(false); }}>
+                          onClick={() => addElement('fenster', code)}>
                     <span className="pane-option-thumb"><GeometrieThumb geometrie={g} /></span>
                     <span className="pane-option-label">{g.label}</span>
                   </button>
