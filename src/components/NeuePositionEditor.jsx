@@ -1009,7 +1009,6 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
             <div className="np-canvas-title">
               {istKombi ? `Fensterkombination · ${elemente.length} Elemente` : fensterBezeichnung(geometrie, aktiv.panes, aktiv.cols)}
             </div>
-            <span className="np-canvas-badge">{istKombi ? `aktiv: ${aktiv.code}` : aktiv.code}</span>
           </div>
 
           {/* + Element hinzufügen — Desktop: runder Knopf unten links in der Ecke */}
