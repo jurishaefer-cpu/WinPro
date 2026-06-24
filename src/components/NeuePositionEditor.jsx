@@ -314,13 +314,13 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [istAluSystem, profil]);
 
-  // Rollo Panzer kennt kein WEISS: Alt-/Leerwerte auf die Standardfarbe (Material-Preset) ziehen.
+  // Rollladen-Lamellenfarbe kennt kein WEISS: Alt-/Leerwerte auf die Standardfarbe (Material-Preset) ziehen.
   useEffect(() => {
-    if (istRollo && geometrie?.panzerOnly && (!aktiv.behangfarbe || aktiv.behangfarbe === 'WEISS')) {
+    if (istRollo && (!aktiv.behangfarbe || aktiv.behangfarbe === 'WEISS')) {
       updAktiv({ behangfarbe: rolloFarbe(aktiv.behang) });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [istRollo, geometrie, aktiv.behangfarbe, aktiv.behang, activeId]);
+  }, [istRollo, aktiv.behangfarbe, aktiv.behang, activeId]);
   const istKombi = elemente.length > 1;
   // Verbinden/Trennen: passender Nachbar zum aktiven Element (nur in einer Kombination)
   const mergePartner = istKombi ? findMergePartner(aktiv, elemente) : null;
@@ -357,10 +357,8 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
     // ALU-Haustür-Geometrien bringen sinnvolle Standardmaße mit; sonst aktuelle Maße behalten.
     const nb = Number(geo?.defBreite) || Number(aktiv.breite) || 1000;
     const nh = Number(geo?.defHoehe) || Number(aktiv.hoehe) || 1200;
-    // Rollo-Farben passend zur Variante: Rollo Panzer nutzt Material-Presets, Vorbau die globale Palette (Standard WEISS).
-    const farbPatch = geo?.kategorie === 'rollo'
-      ? (geo?.panzerOnly ? { behangfarbe: rolloFarbe(aktiv.behang) } : { behangfarbe: 'WEISS', kastenfarbe: 'WEISS' })
-      : {};
+    // Rollladen: Lamellenfarbe nutzt das Material-Preset (Samtgrau/Hellgrau); Kastenfarbe bleibt unverändert (globale Palette).
+    const farbPatch = geo?.kategorie === 'rollo' ? { behangfarbe: rolloFarbe(aktiv.behang) } : {};
     updAktiv({
       code: neuCode,
       panes: np,
@@ -878,9 +876,8 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
                 const b = e.target.value;
                 const idx = Math.max(0, lamellenOptionen(aktiv.behang).indexOf(aktiv.lamelle));
                 const neu = lamellenOptionen(b);
-                // Nur Rollo Panzer: Behangfarbe-Standard (Samtgrau/Hellgrau) beim Materialwechsel mitziehen.
-                const farbe = geometrie?.panzerOnly && aktiv.behangfarbe === rolloFarbe(aktiv.behang)
-                  ? rolloFarbe(b) : aktiv.behangfarbe;
+                // Lamellenfarbe-Standard (Samtgrau/Hellgrau) beim Materialwechsel mitziehen (außer manuell gewählt).
+                const farbe = aktiv.behangfarbe === rolloFarbe(aktiv.behang) ? rolloFarbe(b) : aktiv.behangfarbe;
                 updAktiv({ behang: b, lamelle: neu[idx] ?? neu[0], behangfarbe: farbe });
               }}>
                 {BEHANG.map(x => <option key={x} value={x}>{x}</option>)}
@@ -1143,19 +1140,11 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
                 </>
               )}
               <label className="np-field-label">Farbe Lamellen/Behang</label>
-              {geometrie?.panzerOnly ? (
-                <select className="np-select np-select--block np-select--tall" value={aktiv.behangfarbe === 'WEISS' ? rolloFarbe(aktiv.behang) : aktiv.behangfarbe} onChange={e => waehleFarbe('behangfarbe', e.target.value)}>
-                  <option value={rolloFarbe(aktiv.behang)}>{rolloFarbe(aktiv.behang)}</option>
-                  {aktiv.behangfarbe && aktiv.behangfarbe !== rolloFarbe(aktiv.behang) && aktiv.behangfarbe !== 'WEISS' && <option value={aktiv.behangfarbe}>{aktiv.behangfarbe}</option>}
-                  <option value="__manuell__">✏️ Manuell eingeben…</option>
-                </select>
-              ) : (
-                <select className="np-select np-select--block np-select--tall" value={aktiv.behangfarbe} onChange={e => waehleFarbe('behangfarbe', e.target.value)}>
-                  {aktiv.behangfarbe && !farbOptionen.some(o => o.value === aktiv.behangfarbe) && <option value={aktiv.behangfarbe}>{aktiv.behangfarbe}</option>}
-                  {farbOptionen.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                  <option value="__manuell__">✏️ Manuell eingeben…</option>
-                </select>
-              )}
+              <select className="np-select np-select--block np-select--tall" value={aktiv.behangfarbe === 'WEISS' ? rolloFarbe(aktiv.behang) : aktiv.behangfarbe} onChange={e => waehleFarbe('behangfarbe', e.target.value)}>
+                <option value={rolloFarbe(aktiv.behang)}>{rolloFarbe(aktiv.behang)}</option>
+                {aktiv.behangfarbe && aktiv.behangfarbe !== rolloFarbe(aktiv.behang) && aktiv.behangfarbe !== 'WEISS' && <option value={aktiv.behangfarbe}>{aktiv.behangfarbe}</option>}
+                <option value="__manuell__">✏️ Manuell eingeben…</option>
+              </select>
             </>
           ) : (
             <>
