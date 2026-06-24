@@ -938,14 +938,13 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
         {/* Rechte Spalte */}
         <aside className="np-col np-col--right">
           <div className="np-group-label">FARBEN</div>
+          <datalist id="np-farb-liste">
+            {farbOptionen.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </datalist>
           <label className="np-field-label">Innenfarbe</label>
-          <select className="np-select np-select--block np-select--tall" value={aktiv.innenfarbe} onChange={e => updAktiv({ innenfarbe: e.target.value })}>
-            {farbOptionen.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </select>
+          <input className="np-input np-select--block" list="np-farb-liste" value={aktiv.innenfarbe} placeholder="Auswählen oder eingeben" onChange={e => updAktiv({ innenfarbe: e.target.value })} />
           <label className="np-field-label">Außenfarbe</label>
-          <select className="np-select np-select--block np-select--tall" value={aktiv.aussenfarbe} onChange={e => updAktiv({ aussenfarbe: e.target.value })}>
-            {farbOptionen.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </select>
+          <input className="np-input np-select--block" list="np-farb-liste" value={aktiv.aussenfarbe} placeholder="Auswählen oder eingeben" onChange={e => updAktiv({ aussenfarbe: e.target.value })} />
 
           <div className="np-group-label" style={{ marginTop: 24 }}>VERGLASUNG</div>
           <label className="np-field-label">Verglasung</label>
