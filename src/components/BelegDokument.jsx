@@ -26,11 +26,9 @@ function BelegDokument({ art, angebot, kunde, positionen, profileMap, einstellun
       <div className="beleg-kopf">
         <div className="beleg-logo">{eb.logo && <img src={eb.logo} alt="Logo" />}</div>
         <div className="beleg-firma">
-          <strong>{firma.firmenname || 'Firmenname'}</strong>
-          <div>{firma.strasse}</div>
-          <div>{[firma.plz, firma.ort].filter(Boolean).join(' ')}</div>
-          {firma.telefon && <div>Tel. {firma.telefon}</div>}
-          {firma.email && <div>{firma.email}</div>}
+          {profil.name && <strong>Ansprechpartner: {profil.name}</strong>}
+          {profil.telefon && <div>Tel. {profil.telefon}</div>}
+          {profil.email && <div>{profil.email}</div>}
         </div>
       </div>
       <div className="beleg-akzentlinie" />
@@ -52,9 +50,6 @@ function BelegDokument({ art, angebot, kunde, positionen, profileMap, einstellun
           {meta.schluss && angebot?.ausfuehrungsdatum && (
             <div>Ausführungsdatum: {datumDE(angebot.ausfuehrungsdatum)}</div>
           )}
-          {profil.name && <div><strong>Ansprechpartner: {profil.name}</strong></div>}
-          {profil.telefon && <div><strong>Tel. {profil.telefon}</strong></div>}
-          {profil.email && <div><strong>E-Mail: {profil.email}</strong></div>}
         </div>
       </div>
 
