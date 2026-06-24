@@ -665,7 +665,7 @@ export function sonderformPfade(r, geo, frame) {
   return { outer, inner };
 }
 
-function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkasten, schwelle, oberlichtHoehe, glasFarbe = '#cfe3ef', onBreite, onHoehe, onOberlichtHoehe, onBottomHoehe, panes: panesProp, cols: colsProp, colWidths, rowHeights, onColWidth, onRowHeight, onPaneClick, selectedPane }) {
+function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkasten, schwelle, oberlichtHoehe, glasFarbe = '#cfe3ef', onBreite, onHoehe, onOberlichtHoehe, onBottomHoehe, panes: panesProp, cols: colsProp, colWidths, rowHeights, onColWidth, onRowHeight, onPaneClick, selectedPane, teile, dir: teilDir }) {
   const b = Math.max(200, Number(breite) || 1000);
   const hh = Math.max(200, Number(hoehe) || 1200);
 
@@ -680,6 +680,37 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
   const r0 = { x, y, w: rw, h: rh };                            // Gesamtmaß (mit Verbreiterung/Kasten)
   const istSonderform = !!geometrie?.form;
   const sonder = istSonderform ? sonderformPfade(r0, geometrie, Math.max(6, 60 * scale)) : null;
+  // Verbundenes Element mit Sonderform-Teil: gemeinsamer Rahmen, jedes Teil behält seine Form.
+  const formTeile = (Array.isArray(teile) && teile.length > 1 && teile.some(t => geometrieByCode(t.code)?.form)) ? teile : null;
+  let teilBodies = null;
+  if (formTeile) {
+    const tdir = teilDir || 'h';
+    const total = formTeile.reduce((a, t) => a + ((tdir === 'h' ? Number(t.breite) : Number(t.hoehe)) || 0), 0) || 1;
+    let acc = 0;
+    teilBodies = formTeile.map((t, ti) => {
+      const size = (tdir === 'h' ? Number(t.breite) : Number(t.hoehe)) || 0;
+      const sub = tdir === 'h'
+        ? { x: x + (acc / total) * rw, y, w: (size / total) * rw, h: rh }
+        : { x, y: y + (acc / total) * rh, w: rw, h: (size / total) * rh };
+      acc += size;
+      const tGeo = geometrieByCode(t.code);
+      const tGlas = t.ornament ? '#7fb0cc' : glasFarbe;
+      if (tGeo?.form) {
+        const sp = sonderformPfade(sub, tGeo, Math.max(6, 60 * scale));
+        return (
+          <g key={'t' + ti}>
+            <path d={sp.outer} fill="#fff" stroke="#0f1f3d" strokeWidth="2.5" strokeLinejoin="round" />
+            <path d={sp.inner} fill={tGlas} stroke="#0f1f3d" strokeWidth="1.6" strokeLinejoin="round" opacity="0.95" />
+          </g>
+        );
+      }
+      const tc = computeUnit(sub, scale, {
+        geometrie: tGeo, breite: tdir === 'h' ? size : Number(t.breite), hoehe: tdir === 'h' ? Number(t.hoehe) : size,
+        panes: t.panes, cols: t.cols, colWidths: t.colWidths,
+      });
+      return <UnitBody key={'t' + ti} c={tc} glasFarbe={tGlas} keyPrefix={'ft' + ti + '-'} />;
+    });
+  }
   const c = computeUnit(r0, scale, { geometrie, breite, hoehe, panes: panesProp, cols: colsProp, colWidths, rowHeights, verbreiterung, aufsatzkasten, schwelle, oberlichtHoehe });
   const hatSubB = c.subCols.length > 0;
   const hatSubH = c.subRows.length > 0 || c.hatOberlicht;
@@ -860,8 +891,10 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
         });
       })()}
 
-      {/* Fensterkörper: Sonderform (Bogen/Dreieck) oder normaler Rahmenkörper */}
-      {istSonderform ? (
+      {/* Fensterkörper: verbundene Teile (jedes mit eigener Form) / Sonderform / normaler Rahmen */}
+      {teilBodies ? (
+        <g>{teilBodies}</g>
+      ) : istSonderform ? (
         <g>
           <path d={sonder.outer} fill="#fff" stroke="#0f1f3d" strokeWidth="2.5" strokeLinejoin="round" />
           <path d={sonder.inner} fill={glasFarbe} stroke="#0f1f3d" strokeWidth="1.6" strokeLinejoin="round" opacity="0.95" />
@@ -1138,9 +1171,44 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
         const uGeo = geometrieByCode(u.e.code);
         const uSonder = uGeo?.form ? sonderformPfade(u.r0, uGeo, Math.max(5, 60 * scale)) : null;
         const uGlas = weissesGlas ? '#ffffff' : (u.e.ornament ? '#7fb0cc' : glasFarbe);
+        // Verbundenes Element mit Sonderform-Teil: gemeinsamer Rahmen, aber jedes Teil
+        // behält im Inneren seine eigene Form (statt zu einem rechteckigen Mehrfeld zu werden).
+        const teile = (u.e.verbunden && Array.isArray(u.e._teile) && u.e._teile.length > 1) ? u.e._teile : null;
+        const teilForm = teile && teile.some(t => geometrieByCode(t.code)?.form);
+        let teilBodies = null;
+        if (teilForm) {
+          const dir = u.e._dir || 'h';
+          const total = teile.reduce((a, t) => a + ((dir === 'h' ? Number(t.breite) : Number(t.hoehe)) || 0), 0) || 1;
+          let acc = 0;
+          teilBodies = teile.map((t, ti) => {
+            const size = (dir === 'h' ? Number(t.breite) : Number(t.hoehe)) || 0;
+            const sub = dir === 'h'
+              ? { x: u.r0.x + (acc / total) * u.r0.w, y: u.r0.y, w: (size / total) * u.r0.w, h: u.r0.h }
+              : { x: u.r0.x, y: u.r0.y + (acc / total) * u.r0.h, w: u.r0.w, h: (size / total) * u.r0.h };
+            acc += size;
+            const tGeo = geometrieByCode(t.code);
+            const tGlas = weissesGlas ? '#ffffff' : (t.ornament ? '#7fb0cc' : glasFarbe);
+            if (tGeo?.form) {
+              const sp = sonderformPfade(sub, tGeo, Math.max(5, 60 * scale));
+              return (
+                <g key={'t' + ti}>
+                  <path d={sp.outer} fill="#fff" stroke="#0f1f3d" strokeWidth="2.5" strokeLinejoin="round" />
+                  <path d={sp.inner} fill={tGlas} stroke="#0f1f3d" strokeWidth="1.6" strokeLinejoin="round" opacity="0.95" />
+                </g>
+              );
+            }
+            const tc = computeUnit(sub, scale, {
+              geometrie: tGeo, breite: dir === 'h' ? size : Number(t.breite), hoehe: dir === 'h' ? Number(t.hoehe) : size,
+              panes: t.panes, cols: t.cols, colWidths: t.colWidths,
+            });
+            return <UnitBody key={'t' + ti} c={tc} glasFarbe={tGlas} keyPrefix={'u' + u.e._key + '-t' + ti + '-'} />;
+          });
+        }
         return (
           <g key={'u' + u.e._key}>
-            {uSonder ? (
+            {teilBodies ? (
+              <g>{teilBodies}</g>
+            ) : uSonder ? (
               <g>
                 <path d={uSonder.outer} fill="#fff" stroke="#0f1f3d" strokeWidth="2.5" strokeLinejoin="round" />
                 <path d={uSonder.inner} fill={uGlas} stroke="#0f1f3d" strokeWidth="1.6" strokeLinejoin="round" opacity="0.95" />

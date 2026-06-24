@@ -138,6 +138,7 @@ function makeElement(src, id) {
     verbunden: src?.verbunden ?? false,
     _dir: src?._dir ?? null,          // 'h' = nebeneinander, 'v' = übereinander
     _parts: src?._parts ?? null,      // Bauteile zum späteren Trennen
+    _teile: src?._teile ?? null,      // Teil-Render-Infos: jedes Teil behält im gemeinsamen Rahmen seine Form
   };
 }
 
@@ -172,6 +173,13 @@ function findMergePartner(a, els) {
 function partsOf(e) {
   if (e.verbunden && Array.isArray(e._parts) && e._parts.length) return e._parts;
   return [{ paneCount: e.panes.length, cols: e.cols || 1, code: e.code, kategorie: e.kategorie }];
+}
+
+// Render-Teile eines Elements: jedes Teil behält im gemeinsamen Rahmen seine eigene Form.
+function teileOf(e) {
+  if (e.verbunden && Array.isArray(e._teile) && e._teile.length) return e._teile;
+  return [{ code: e.code, breite: Number(e.breite) || 0, hoehe: Number(e.hoehe) || 0,
+            panes: e.panes, cols: e.cols || 1, colWidths: e.colWidths, ornament: e.ornament }];
 }
 
 // Breite eines Elements setzen und die Sub-Spaltenbreiten proportional mitskalieren.
@@ -434,6 +442,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
           hoehe: Number(L.hoehe),
           row: L.row ?? 0, col: L.col ?? 0, offset: undefined,
           verbunden: true, _dir: 'h', _parts: [...partsOf(L), ...partsOf(R)],
+          _teile: [...teileOf(L), ...teileOf(R)],
           nettoJeStueck: (Number(L.nettoJeStueck) || 0) + (Number(R.nettoJeStueck) || 0),
         }, newId);
         const wasMain = prev[0].id === L.id || prev[0].id === R.id;
@@ -454,6 +463,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
         hoehe: (Number(T.hoehe) || 0) + (Number(B.hoehe) || 0),
         row: T.row ?? 0, col: T.col ?? 0, offset: undefined,
         verbunden: true, _dir: 'v', _parts: [...partsOf(T), ...partsOf(B)],
+        _teile: [...teileOf(T), ...teileOf(B)],
         nettoJeStueck: (Number(T.nettoJeStueck) || 0) + (Number(B.nettoJeStueck) || 0),
       }, newId);
       const wasMain = prev[0].id === T.id || prev[0].id === B.id;
@@ -995,6 +1005,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
                 panes={aktiv.panes} cols={aktiv.cols}
                 colWidths={aktiv.colWidths} rowHeights={aktiv.rowHeights}
                 onColWidth={setColWidth} onRowHeight={setRowHeight}
+                teile={aktiv.verbunden ? aktiv._teile : null} dir={aktiv._dir}
                 onPaneClick={setSelectedPane} selectedPane={selectedPane} />
             )}
 

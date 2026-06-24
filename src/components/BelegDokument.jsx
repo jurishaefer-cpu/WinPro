@@ -100,6 +100,7 @@ function BelegDokument({ art, angebot, kunde, positionen, profileMap, einstellun
                           aufsatzkasten={c.aufsatzkasten ? c.kasten : null}
                           schwelle={c.schwelle}
                           oberlichtHoehe={c.oberlichtHoehe}
+                          teile={c.verbunden ? c._teile : null} dir={c._dir}
                           glasFarbe="#ffffff"
                         />
                       )}
