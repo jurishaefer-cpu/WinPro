@@ -128,10 +128,9 @@ body {
 }
 .login-screen {
   min-height: 100svh;
-  background:
-    radial-gradient(900px 520px at 12% -10%, rgba(192, 21, 46, 0.22), transparent 60%),
-    radial-gradient(820px 520px at 100% 112%, rgba(70, 110, 190, 0.30), transparent 58%),
-    linear-gradient(160deg, #0b1830 0%, #0f1f3d 52%, #16284c 100%);
+  background: linear-gradient(135deg, #0a162e 0%, #0d1b38 45%, #16284c 100%);
+  background-size: 220% 220%;
+  animation: loginGradient 20s ease infinite;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -139,30 +138,41 @@ body {
   position: relative;
   overflow: hidden;
 }
-.login-screen::before,
-.login-screen::after {
+@keyframes loginGradient {
+  0%   { background-position: 0% 0%; }
+  50%  { background-position: 100% 100%; }
+  100% { background-position: 0% 0%; }
+}
+/* Sanft schwebende Fensterrahmen im Hintergrund */
+.login-bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+.login-window {
+  position: absolute;
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(120, 160, 220, 0.10), rgba(255, 255, 255, 0.03));
+  box-shadow: inset 0 0 40px rgba(120, 160, 220, 0.08);
+  animation-name: floatWin;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+}
+.login-window::before,
+.login-window::after {
   content: '';
   position: absolute;
-  border-radius: 50%;
-  filter: blur(70px);
-  opacity: 0.45;
-  pointer-events: none;
+  background: rgba(255, 255, 255, 0.10);
 }
-.login-screen::before {
-  width: 420px; height: 420px;
-  background: radial-gradient(circle, rgba(192, 21, 46, 0.55), transparent 70%);
-  top: -120px; left: -80px;
-  animation: loginDrift 14s ease-in-out infinite alternate;
-}
-.login-screen::after {
-  width: 480px; height: 480px;
-  background: radial-gradient(circle, rgba(80, 130, 220, 0.5), transparent 70%);
-  bottom: -160px; right: -100px;
-  animation: loginDrift 18s ease-in-out infinite alternate-reverse;
-}
-@keyframes loginDrift {
-  from { transform: translate(0, 0); }
-  to   { transform: translate(40px, 30px); }
+.login-window::before { left: 50%; top: 8%; bottom: 8%; width: 2px; transform: translateX(-50%); }
+.login-window::after  { top: 50%; left: 8%; right: 8%; height: 2px; transform: translateY(-50%); }
+@keyframes floatWin {
+  from { transform: translateY(0) rotate(-7deg); }
+  to   { transform: translateY(-30px) rotate(7deg); }
 }
 .login-card {
   position: relative;
@@ -189,11 +199,11 @@ body {
 }
 .login-logo {
   display: block;
-  width: 230px;
-  max-width: 78%;
+  width: 340px;
+  max-width: 92%;
   height: auto;
-  margin: 6px auto 22px;
-  border-radius: 14px;
+  margin: 4px auto 20px;
+  border-radius: 16px;
 }
 .login-title {
   font-size: 26px;
