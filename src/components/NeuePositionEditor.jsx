@@ -1045,12 +1045,6 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
                 {!ohneMontage && zuschlag > 0 && ` + Montage/Ausbau/Entsorgung ${zuschlag.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })} = ${proStueck.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}`}
               </span>
             )}
-            {!istKombi && !ohneMontage && zuschlag > 0 && (
-              <span className="np-netto-gesamt">
-                davon Fensterpreis <b>{(Number(aktiv.nettoJeStueck) || 0).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}</b>
-                {' '}+ Montage/Ausbau/Entsorgung <b>{zuschlag.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}</b>
-              </span>
-            )}
           </div>
           <div className="np-footer-actions">
             <button className="btn btn-outline" onClick={onClose}>Abbrechen</button>
