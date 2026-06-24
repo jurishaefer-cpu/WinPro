@@ -1123,13 +1123,14 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
   function buildZonen(dragId) {
     if (dragId == null) return [];
     const belegt = new Set(els.filter(e => e._key !== dragId).map(e => `${e.col ?? 0},${e.row ?? 0}`));
-    const gesehen = new Set();
     const zonen = [];
     els.forEach(e => {
       if (e._key === dragId) return;
       const cc = e.col ?? 0, rr = e.row ?? 0;
-      const cl = colXpx[cc], cw = colWmm[cc] * scale;
-      const ct = rowYpx[rr], ch = rowHmm[rr] * scale;
+      // Tatsächliche Element-Geometrie (nicht die Spalten-/Zeilengröße), damit die Andockstreifen
+      // an JEDER offenen Kante jedes Fensters erscheinen – auch wenn das Element kleiner als seine Zelle ist.
+      const cl = colXpx[cc], cw = (Number(e.breite) || colWmm[cc]) * scale;
+      const ct = rowYpx[rr], ch = (Number(e.hoehe) || rowHmm[rr]) * scale;
       const kanten = [
         ['rechts', cc + 1, rr, cl + cw + GAP, ct, STRIP, ch],
         ['links', cc - 1, rr, cl - STRIP - GAP, ct, STRIP, ch],
@@ -1137,11 +1138,8 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
         ['oben', cc, rr - 1, cl, ct - STRIP - GAP, cw, STRIP],
       ];
       kanten.forEach(([side, ncol, nrow, zx, zy, zw, zh]) => {
-        if (belegt.has(`${ncol},${nrow}`)) return;          // dort sitzt ein Element → keine Zone
-        const cellKey = `${ncol},${nrow}`;
-        if (gesehen.has(cellKey)) return;                   // Zielzelle nur einmal anbieten
-        gesehen.add(cellKey);
-        zonen.push([side, e._key, zx, zy, zw, zh]);
+        if (belegt.has(`${ncol},${nrow}`)) return;          // dort sitzt bereits ein Element → keine Zone
+        zonen.push([side, e._key, zx, zy, zw, zh]);         // jede freie Kante anbieten (kein Zielzellen-Dedup)
       });
     });
     return zonen;

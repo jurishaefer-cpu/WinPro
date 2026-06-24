@@ -565,7 +565,6 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
   // Element an eine Seite des Hauptfensters andocken (Drag im Canvas)
   function dockElement(id, side, targetId) {
     setElemente(prev => {
-      const { w: Tw, h: Th } = kombiMass(prev);         // Rahmen bleibt fest
       // An die freie Kante des Ziel-Elements docken (Fallback: Hauptelement).
       const target = (targetId != null && prev.find(e => e.id === targetId)) || prev[0];
       let row = target.row ?? 0, col = target.col ?? 0;
@@ -577,8 +576,9 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
       const minR = Math.min(...next.map(e => e.row ?? 0));
       const minC = Math.min(...next.map(e => e.col ?? 0));
       next = next.map(e => ({ ...e, row: (e.row ?? 0) - minR, col: (e.col ?? 0) - minC }));
-      // Spalten/Zeilen teilen sich Rahmen gleichmäßig auf, sodass alle Elemente im Rahmen bleiben.
-      return verteileHoehe(verteileBreite(next, Tw), Th);
+      // Elemente behalten ihre eigene Größe; sie passen sich NICHT ans Gesamtmaß an, dürfen aber
+      // auch nicht darüber hinausragen – das Gesamtmaß ergibt sich als umschließende Hülle.
+      return next;
     });
   }
   // Element entlang seiner Andock-Kante verschieben (Versatz in mm)
