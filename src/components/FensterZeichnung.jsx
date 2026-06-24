@@ -527,7 +527,17 @@ export function computeUnit(r0, scale, { geometrie, breite, hoehe, panes: panesP
 
   const oberlichtBand = oberlichtRect ? { y0: oberlichtRect.y, y1: oberlichtRect.y + oberlichtRect.h } : null;
   const bottomBand = oberlichtRect ? { y0: inner.y, y1: inner.y + inner.h } : null;
-  return { g, r0, win, kasten, blendIn, miterBlend, leaves, pfostenList, subCols, subRows, lamellen, badge, glasMinX, glasMaxX, hatVerb, hatKasten, istTuer, effPanes, hatOberlicht: !!oberlichtRect, oberlichtBand, bottomBand };
+
+  // Verbreiterungs-Bänder (für die separate Maß-Darstellung wie im WinPro-Beleg):
+  // oben/unten = waagrechtes Profil über die volle Breite → vertikales Maß (Höhe des Bandes);
+  // links/rechts = senkrechtes Profil neben dem Fenster → waagrechtes Maß (Breite des Bandes).
+  const verbBands = {
+    oben:   vo > 0.5 ? { dir: 'v', y0: r0.y + kh, y1: win.y, mm: Math.round(Number(verbreiterung?.oben) || 0) } : null,
+    unten:  vu > 0.5 ? { dir: 'v', y0: win.y + win.h, y1: r0.y + r0.h, mm: Math.round(Number(verbreiterung?.unten) || 0) } : null,
+    links:  vl > 0.5 ? { dir: 'h', x0: r0.x, x1: win.x, mm: Math.round(Number(verbreiterung?.links) || 0) } : null,
+    rechts: vr > 0.5 ? { dir: 'h', x0: win.x + win.w, x1: r0.x + r0.w, mm: Math.round(Number(verbreiterung?.rechts) || 0) } : null,
+  };
+  return { g, r0, win, kasten, blendIn, miterBlend, leaves, pfostenList, subCols, subRows, lamellen, badge, glasMinX, glasMaxX, hatVerb, hatKasten, istTuer, effPanes, hatOberlicht: !!oberlichtRect, oberlichtBand, bottomBand, verbBands };
 }
 
 // Zeichnet den Körper EINER Einheit (ohne Maßketten) aus dem computeUnit-Ergebnis.
@@ -654,8 +664,15 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
     randLO = 12 + Math.round(22 * 0.8);
   }
   const fSub = beleg ? Math.round(fMain * 0.76) : 17;
+  // Verbreiterungs-Maße: oben/unten rechts neben dem Rahmen (vertikal), links/rechts unter dem
+  // Rahmen (horizontal). Bei Bedarf den Beleg-viewBox dafür etwas weiter aufmachen.
+  const vb = c.verbBands || {};
+  const hatVertVerb = !!(vb.oben || vb.unten);
+  const hatHorizVerb = !!(vb.links || vb.rechts);
+  const fVerb = Math.round(fSub * 0.92);
   const vbLeft = mainLeftX - randLO, vbTop = mainTopY - randLO;
-  const vbRight = cRight, vbBottom = cBottom;
+  const vbRight = cRight + (hatVertVerb ? Math.round(fVerb * 1.6) : 0);
+  const vbBottom = cBottom + (hatHorizVerb ? Math.round(fVerb * 1.4) : 0);
   const viewBox = beleg
     ? `${vbLeft} ${vbTop} ${vbRight - vbLeft} ${vbBottom - vbTop}`
     : `0 0 ${VB_W} ${VB_H}`;
@@ -753,6 +770,41 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
                 <text x={subLeftX - 7} y={mid} textAnchor="middle" fontSize={fSub} fill="#0f1f3d" fontWeight="700"
                       transform={`rotate(-90 ${subLeftX - 7} ${mid})`}>{val}</text>
               )}
+            </g>
+          );
+        });
+      })()}
+
+      {/* Verbreiterungs-Maße (separat, wie im WinPro-Beleg):
+          oben/unten = vertikales Maß rechts neben dem Rahmen, links/rechts = waagrechtes Maß darunter. */}
+      {hatVertVerb && (() => {
+        const xV = x + rw + 12;
+        return ['oben', 'unten'].map(k => {
+          const band = vb[k]; if (!band) return null;
+          const mid = (band.y0 + band.y1) / 2;
+          const tx = xV + fVerb * 0.7;
+          return (
+            <g key={'vv' + k}>
+              <line x1={xV} y1={band.y0} x2={xV} y2={band.y1} stroke="#0f1f3d" strokeWidth="1" />
+              <line x1={xV - 4} y1={band.y0} x2={xV + 4} y2={band.y0} stroke="#0f1f3d" strokeWidth="1" />
+              <line x1={xV - 4} y1={band.y1} x2={xV + 4} y2={band.y1} stroke="#0f1f3d" strokeWidth="1" />
+              <text x={tx} y={mid} textAnchor="middle" fontSize={fVerb} fill="#0f1f3d" fontWeight="700"
+                    transform={`rotate(-90 ${tx} ${mid})`}>{band.mm}</text>
+            </g>
+          );
+        });
+      })()}
+      {hatHorizVerb && (() => {
+        const yV = y + rh + 12;
+        return ['links', 'rechts'].map(k => {
+          const band = vb[k]; if (!band) return null;
+          const mid = (band.x0 + band.x1) / 2;
+          return (
+            <g key={'hv' + k}>
+              <line x1={band.x0} y1={yV} x2={band.x1} y2={yV} stroke="#0f1f3d" strokeWidth="1" />
+              <line x1={band.x0} y1={yV - 4} x2={band.x0} y2={yV + 4} stroke="#0f1f3d" strokeWidth="1" />
+              <line x1={band.x1} y1={yV - 4} x2={band.x1} y2={yV + 4} stroke="#0f1f3d" strokeWidth="1" />
+              <text x={mid} y={yV + fVerb} textAnchor="middle" fontSize={fVerb} fill="#0f1f3d" fontWeight="700">{band.mm}</text>
             </g>
           );
         });
