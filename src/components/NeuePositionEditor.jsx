@@ -807,7 +807,12 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
             {!istHaustuerAktiv && (
               <div>
                 <label className="np-field-label">Standort</label>
-                <input className="np-input" value={standort} onChange={e => setStandort(e.target.value)} placeholder="z. B. EG Küche" />
+                <input className="np-input" value={standort} onChange={e => setStandort(e.target.value)} placeholder="z. B. EG Küche" list="standort-vorschlaege" />
+                <datalist id="standort-vorschlaege">
+                  {['Wohnzimmer', 'Schlafzimmer', 'Kinderzimmer', 'Bad', 'WC', 'Küche', 'Hauswirtschaftsraum'].map(o => (
+                    <option key={o} value={o} />
+                  ))}
+                </datalist>
               </div>
             )}
           </div>
