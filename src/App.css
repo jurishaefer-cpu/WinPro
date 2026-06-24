@@ -1227,7 +1227,7 @@ body {
    (das SVG skaliert per preserveAspectRatio in die Box und wird zentriert). */
 .beleg-zeichnung { width: 185px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 .beleg-zeichnung .fz-svg { width: 100%; height: 150px; }
-.beleg-zeichnung-untertitel { width: 100%; margin-top: 14px; font-size: 11px; color: #4a4f57; text-align: center; }
+.beleg-zeichnung-untertitel { width: 100%; margin-top: 24px; font-size: 11px; color: #4a4f57; text-align: center; }
 .pos-standort { font-weight: 700; margin-bottom: 2px; }
 .pos-beschr { font-size: 11px; line-height: 1.5; }
 .pos-manuell p { margin: 0 0 3px; }
