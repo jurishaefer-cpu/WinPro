@@ -255,11 +255,12 @@ export function RolloZeichnung({ breite = 1000, hoehe = 1400, kastenhoehe = 165,
           <rect x={ox + rw - rail} y={oy + khpx} width={rail} height={rh - khpx} fill="#eef1f5" stroke="#0f1f3d" strokeWidth="1.5" />
         </>
       )}
-      {/* Behang (Panzer): Lamellen als abwechselnd schattierte Bänder */}
-      {Array.from({ length: bandCount }).map((_, i) => (
-        <rect key={'b' + i} x={pz.x} y={pz.y + i * bandH} width={pz.w} height={bandH + 0.4}
-              fill={i % 2 ? '#e6ebf1' : '#f6f8fb'} stroke="none" />
-      ))}
+      {/* Behang (Panzer): weiße Lamellen mit schwarzen Trennstreifen (gefüllte Rechtecke → rastert gleichmäßig) */}
+      <rect x={pz.x} y={pz.y} width={pz.w} height={pz.h} fill="#ffffff" stroke="none" />
+      {Array.from({ length: bandCount - 1 }).map((_, i) => {
+        const sepH = Math.max(1, bandH * 0.09);
+        return <rect key={'s' + i} x={pz.x} y={Math.round(pz.y + (i + 1) * bandH - sepH / 2)} width={pz.w} height={sepH} fill="#0f1f3d" stroke="none" shapeRendering="crispEdges" />;
+      })}
       <rect x={pz.x} y={pz.y} width={pz.w} height={pz.h} fill="none" stroke="#0f1f3d" strokeWidth="1.5" />
       {/* Rollladenkasten oben (nur Vorbau-Variante) */}
       {!panzerOnly && (
