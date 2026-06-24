@@ -101,6 +101,7 @@ function BelegDokument({ art, angebot, kunde, positionen, profileMap, einstellun
                           glasFarbe="#ffffff"
                         />
                       )}
+                      <div className="beleg-zeichnung-untertitel">Innenansicht</div>
                     </div>
                   )}
                 </td>
