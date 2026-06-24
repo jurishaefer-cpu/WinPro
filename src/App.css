@@ -2012,6 +2012,7 @@ body {
   background: #f0f1f3; border-radius: 10px; padding: 4px;
 }
 .np-segmented--3 { grid-template-columns: 1fr 1fr 1fr; }
+.np-system-fest { background-image: none; cursor: default; display: inline-flex; align-items: center; }
 .np-segmented button {
   border: none; background: transparent; cursor: pointer;
   padding: 10px 0; border-radius: 7px;

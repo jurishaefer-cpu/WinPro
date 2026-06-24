@@ -85,7 +85,8 @@ export const GEOMETRIEN = [
     panes: [{ fest: true }, { open: 'tuer', din: 'links' }, { fest: true }] },
 
   // Rollladen (eigene Kategorie „rollo") – Skizze und Felder unterscheiden sich vom Fenster.
-  { code: 'R01', kategorie: 'rollo', gruppe: 'Rollladen', label: 'Rollladen', defBreite: 1000, defHoehe: 1400 },
+  { code: 'R01', kategorie: 'rollo', gruppe: 'Rollladen', label: 'Vorbau Rollladen', defBreite: 1000, defHoehe: 1400 },
+  { code: 'R02', kategorie: 'rollo', gruppe: 'Rollladen', label: 'Rollo Panzer', panzerOnly: true, defBreite: 1000, defHoehe: 1400 },
 ];
 
 // Codes der ALU-Haustür-Geometrien (nur im System „Aluminium Haustür" sichtbar).
@@ -223,10 +224,11 @@ export function bedienungKuerzel(b) {
 }
 
 // Eigenständige Rollladen-Skizze: Kasten oben, Rollopanzer (Lamellen) mit Führungsschienen darunter.
-export function RolloZeichnung({ breite = 1000, hoehe = 1400, kastenhoehe = 165, bedienung = 'Gurt', bedienungsseite = 'rechts', beleg = false }) {
+// panzerOnly = nur der Behang (Rollo Panzer) ohne Vorbaukasten.
+export function RolloZeichnung({ breite = 1000, hoehe = 1400, kastenhoehe = 165, bedienung = 'Gurt', bedienungsseite = 'rechts', panzerOnly = false, beleg = false }) {
   const b = Math.max(200, Number(breite) || 1000);
   const h = Math.max(200, Number(hoehe) || 1400);
-  const kh = Math.min(h * 0.5, Math.max(40, Number(kastenhoehe) || 0));
+  const kh = panzerOnly ? 0 : Math.min(h * 0.5, Math.max(40, Number(kastenhoehe) || 0));
   const maxW = 360, maxH = 300;
   const scale = Math.min(maxW / b, maxH / h);
   const PAD = beleg ? 12 : 46;
@@ -239,6 +241,10 @@ export function RolloZeichnung({ breite = 1000, hoehe = 1400, kastenhoehe = 165,
   const slats = [];
   for (let y = pz.y + slatGap; y < pz.y + pz.h - 1; y += slatGap) slats.push(y);
   const txt = { fontSize: 13, fill: '#0f1f3d', fontWeight: 700 };
+  // Symbol-Position: bei Kasten an dessen Unterkante, beim reinen Panzer oben im Behang.
+  const r = Math.max(11, Math.min((khpx || rh * 0.12) * 0.62, 17));
+  const bcx = bedienungsseite === 'links' ? ox + rail + r * 0.4 : ox + rw - rail - r * 0.4;
+  const bcy = panzerOnly ? oy + r + 4 : oy + khpx;
   return (
     <svg viewBox={`0 0 ${VB_W} ${VB_H}`} preserveAspectRatio="xMidYMid meet" className="fz-svg">
       {/* Führungsschienen */}
@@ -247,16 +253,17 @@ export function RolloZeichnung({ breite = 1000, hoehe = 1400, kastenhoehe = 165,
       {/* Behang (Panzer) mit Lamellen */}
       <rect x={pz.x} y={pz.y} width={pz.w} height={pz.h} fill="#f4f6f8" stroke="#0f1f3d" strokeWidth="1.5" />
       {slats.map((y, i) => <line key={'s' + i} x1={pz.x} y1={y} x2={pz.x + pz.w} y2={y} stroke="#0f1f3d" strokeWidth="0.8" opacity="0.55" />)}
-      {/* Rollladenkasten oben */}
-      <rect x={ox} y={oy} width={rw} height={khpx} fill="#fff" stroke="#0f1f3d" strokeWidth="2" />
-      <line x1={ox} y1={oy + khpx} x2={ox + rw} y2={oy + khpx} stroke="#0f1f3d" strokeWidth="2" />
+      {/* Rollladenkasten oben (nur Vorbau-Variante) */}
+      {!panzerOnly && (
+        <>
+          <rect x={ox} y={oy} width={rw} height={khpx} fill="#fff" stroke="#0f1f3d" strokeWidth="2" />
+          <line x1={ox} y1={oy + khpx} x2={ox + rw} y2={oy + khpx} stroke="#0f1f3d" strokeWidth="2" />
+        </>
+      )}
       {/* Bedienungs-Symbol (Kreis + Buchstabe) auf der gewählten Seite */}
       {(() => {
         const kuerzel = bedienungKuerzel(bedienung);
         if (!kuerzel) return null;
-        const r = Math.max(11, Math.min(khpx * 0.62, 17));
-        const bcx = bedienungsseite === 'links' ? ox + rail + r * 0.4 : ox + rw - rail - r * 0.4;
-        const bcy = oy + khpx;
         return (
           <g>
             <circle cx={bcx} cy={bcy} r={r} fill="#fff" stroke="#0f1f3d" strokeWidth="1.6" />
@@ -269,7 +276,9 @@ export function RolloZeichnung({ breite = 1000, hoehe = 1400, kastenhoehe = 165,
           <text x={ox + rw / 2} y={oy - 16} textAnchor="middle" {...txt}>{Math.round(b)}</text>
           <line x1={ox} y1={oy - 8} x2={ox + rw} y2={oy - 8} stroke="#0f1f3d" strokeWidth="1" />
           <text x={ox - 14} y={oy + rh / 2} textAnchor="middle" transform={`rotate(-90 ${ox - 14} ${oy + rh / 2})`} {...txt}>{Math.round(h)}</text>
-          <text x={ox + rw + 16} y={oy + khpx / 2 + 4} textAnchor="middle" transform={`rotate(-90 ${ox + rw + 16} ${oy + khpx / 2})`} fontSize="11" fill="#667085" fontWeight="600">Kasten {Math.round(kh)}</text>
+          {!panzerOnly && (
+            <text x={ox + rw + 16} y={oy + khpx / 2 + 4} textAnchor="middle" transform={`rotate(-90 ${ox + rw + 16} ${oy + khpx / 2})`} fontSize="11" fill="#667085" fontWeight="600">Kasten {Math.round(kh)}</text>
+          )}
         </>
       )}
     </svg>
@@ -278,9 +287,9 @@ export function RolloZeichnung({ breite = 1000, hoehe = 1400, kastenhoehe = 165,
 
 export function GeometrieThumb({ geometrie, glasFarbe = '#cfe3ef' }) {
   const g = geometrie;
-  // Rollladen: kompaktes Mini-Symbol (Kasten + Lamellen).
+  // Rollladen: kompaktes Mini-Symbol (Kasten + Lamellen); Panzer-Variante ohne Kasten.
   if (g?.kategorie === 'rollo') {
-    const W = 120, H = 92, m = 10, kh = 18;
+    const W = 120, H = 92, m = 10, kh = g?.panzerOnly ? 0 : 18;
     return (
       <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="100%">
         <rect x={m + 6} y={m + kh} width={W - 2 * m - 12} height={H - 2 * m - kh} fill="#f4f6f8" stroke="#0f1f3d" strokeWidth="1.4" />
@@ -288,7 +297,7 @@ export function GeometrieThumb({ geometrie, glasFarbe = '#cfe3ef' }) {
           const y = m + kh + 8 + i * ((H - 2 * m - kh - 8) / 5);
           return <line key={i} x1={m + 6} y1={y} x2={W - m - 6} y2={y} stroke="#0f1f3d" strokeWidth="0.7" opacity="0.55" />;
         })}
-        <rect x={m} y={m} width={W - 2 * m} height={kh} fill="#fff" stroke="#0f1f3d" strokeWidth="1.6" />
+        {!g?.panzerOnly && <rect x={m} y={m} width={W - 2 * m} height={kh} fill="#fff" stroke="#0f1f3d" strokeWidth="1.6" />}
       </svg>
     );
   }

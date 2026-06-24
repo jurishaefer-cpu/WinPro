@@ -77,14 +77,11 @@ export function positionZeilen(config, profil, mitMontage = true) {
 // Beschreibungszeilen einer Rollladen-Position
 function rolloZeilen(config, profil, mitMontage = true) {
   const z = [];
-  if (profil?.material) z.push(`Material: ${esc(profil.material.toLowerCase())}`);
-  const profilTeile = [profil?.hersteller, profil?.system].filter(Boolean).join(' ');
-  if (profilTeile || profil?.bautiefe) {
-    z.push(`Profil: ${esc(profilTeile)}${profil?.bautiefe ? ` · ${profil.bautiefe} mm Bautiefe` : ''}`);
-  }
-  z.push('Ausführung: Rollladen');
+  const panzerOnly = geometrieByCode(config.code)?.panzerOnly;
+  z.push('System: Rollladen');
+  z.push(`Ausführung: ${panzerOnly ? 'Rollo Panzer' : 'Vorbau Rollladen'}`);
   z.push(`Maß: ${Math.round(config.breite)} × ${Math.round(config.hoehe)} mm`);
-  if (config.kastenhoeheRollo) z.push(`Kastenhöhe: ${Math.round(config.kastenhoeheRollo)} mm`);
+  if (!panzerOnly && config.kastenhoeheRollo) z.push(`Kastenhöhe: ${Math.round(config.kastenhoeheRollo)} mm`);
   if (config.behang) z.push(`Rollopanzer: ${esc(config.behang)}`);
   if (config.bedienung) z.push(`Bedienung: ${esc(config.bedienung)}${config.bedienungsseiteRollo ? ` (${esc(config.bedienungsseiteRollo)})` : ''}`);
   if (config.kastenfarbe || config.behangfarbe) {

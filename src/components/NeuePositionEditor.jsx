@@ -593,9 +593,10 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
     const teile = [];
     if (istRollo) {
       const el = aktiv;
-      teile.push('<strong>Rollladen</strong>');
+      const panzerOnly = !!geometrie?.panzerOnly;
+      teile.push(`<strong>${panzerOnly ? 'Rollo Panzer' : 'Vorbau Rollladen'}</strong>`);
       teile.push(`${Math.round(el.breite)} × ${Math.round(el.hoehe)} mm`);
-      teile.push(`Kastenhöhe: ${Math.round(Number(el.kastenhoeheRollo) || 0)} mm`);
+      if (!panzerOnly) teile.push(`Kastenhöhe: ${Math.round(Number(el.kastenhoeheRollo) || 0)} mm`);
       teile.push(`Rollopanzer: ${el.behang}`);
       teile.push(`Bedienung: ${el.bedienung} (${el.bedienungsseiteRollo})`);
       teile.push(`Kasten ${farbe(el.kastenfarbe)} / Lamellen ${farbe(el.behangfarbe)}`);
@@ -689,9 +690,13 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
         </div>
         <div className="np-header-right">
           <span className="np-system-label">System</span>
-          <select className="np-select" value={profilId ?? ''} onChange={e => setProfilId(Number(e.target.value))}>
-            {profile.map(p => <option key={p.id} value={p.id}>{`${p.hersteller} ${p.system}`.trim()}</option>)}
-          </select>
+          {istRollo ? (
+            <span className="np-select np-system-fest">Rollladen</span>
+          ) : (
+            <select className="np-select" value={profilId ?? ''} onChange={e => setProfilId(Number(e.target.value))}>
+              {profile.map(p => <option key={p.id} value={p.id}>{`${p.hersteller} ${p.system}`.trim()}</option>)}
+            </select>
+          )}
           <button className="np-close" onClick={onClose} title="Schließen">✕</button>
         </div>
       </header>
@@ -797,9 +802,13 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
           {istRollo && (
             <>
               <div className="np-group-label" style={{ marginTop: 24 }}>ROLLLADEN</div>
-              <label className="np-field-label">Kastenhöhe (mm)</label>
-              <input className="np-input" type="number" min="0" value={aktiv.kastenhoeheRollo}
-                     onChange={e => updAktiv({ kastenhoeheRollo: e.target.value })} placeholder="z. B. 165" />
+              {!geometrie?.panzerOnly && (
+                <>
+                  <label className="np-field-label">Kastenhöhe (mm)</label>
+                  <input className="np-input" type="number" min="0" value={aktiv.kastenhoeheRollo}
+                         onChange={e => updAktiv({ kastenhoeheRollo: e.target.value })} placeholder="z. B. 165" />
+                </>
+              )}
               <label className="np-field-label">Rollopanzer</label>
               <select className="np-select np-select--block" value={aktiv.behang} onChange={e => updAktiv({ behang: e.target.value })}>
                 {BEHANG.map(x => <option key={x} value={x}>{x}</option>)}
@@ -903,12 +912,16 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
         {/* Mitte: Zeichnung */}
         <section className="np-col np-col--center">
           <div className="np-chips">
-            <label className="np-chip np-chip--select" title="System wechseln">
-              <span className="np-dot" />
-              <select className="np-chip-select" value={profilId ?? ''} onChange={e => setProfilId(Number(e.target.value))}>
-                {profile.map(p => <option key={p.id} value={p.id}>{`${p.hersteller} ${p.system}`.trim()}</option>)}
-              </select>
-            </label>
+            {istRollo ? (
+              <span className="np-chip"><span className="np-dot" /> Rollladen</span>
+            ) : (
+              <label className="np-chip np-chip--select" title="System wechseln">
+                <span className="np-dot" />
+                <select className="np-chip-select" value={profilId ?? ''} onChange={e => setProfilId(Number(e.target.value))}>
+                  {profile.map(p => <option key={p.id} value={p.id}>{`${p.hersteller} ${p.system}`.trim()}</option>)}
+                </select>
+              </label>
+            )}
             <span className="np-chip">Maß <b>{Math.round(breiteGes).toLocaleString('de-DE')} × {Math.round(hoeheGes).toLocaleString('de-DE')} mm</b></span>
             <span className="np-chip">Fläche <b>{flaeche.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} m²</b></span>
             {aktiv.verbunden ? (
@@ -930,7 +943,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
           <div className="np-canvas">
             {istRollo ? (
               <RolloZeichnung breite={aktiv.breite} hoehe={aktiv.hoehe} kastenhoehe={aktiv.kastenhoeheRollo}
-                bedienung={aktiv.bedienung} bedienungsseite={aktiv.bedienungsseiteRollo} />
+                bedienung={aktiv.bedienung} bedienungsseite={aktiv.bedienungsseiteRollo} panzerOnly={!!geometrie?.panzerOnly} />
             ) : istKombi ? (
               <KombinationsZeichnung elemente={elemente} activeId={activeId}
                 onUnitClick={switchActive} onPaneClick={setSelectedPane} selectedPane={selectedPane}
