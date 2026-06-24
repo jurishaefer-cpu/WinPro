@@ -237,9 +237,10 @@ export function RolloZeichnung({ breite = 1000, hoehe = 1400, kastenhoehe = 165,
   const VB_W = rw + PAD * 2, VB_H = rh + PAD * 2;
   const rail = panzerOnly ? 0 : Math.max(6, Math.min(rw * 0.05, 14));
   const pz = { x: ox + rail, y: oy + khpx, w: rw - rail * 2, h: rh - khpx };
-  const slatGap = Math.max(7, pz.h / 14);
-  const slats = [];
-  for (let y = pz.y + slatGap; y < pz.y + pz.h - 1; y += slatGap) slats.push(y);
+  // Lamellen als gefüllte Bänder (statt dünner Linien) – rastern in jedem Renderer (Bildschirm + html2canvas/PDF) gleichmäßig.
+  const panzerMm = Math.max(1, h - kh);
+  const bandCount = Math.max(6, Math.min(26, Math.round(panzerMm / 110)));
+  const bandH = pz.h / bandCount;
   const txt = { fontSize: 13, fill: '#0f1f3d', fontWeight: 700 };
   // Symbol-Position: bei Kasten an dessen Unterkante, beim reinen Panzer oben im Behang.
   const r = Math.max(11, Math.min((khpx || rh * 0.12) * 0.62, 17));
@@ -254,9 +255,12 @@ export function RolloZeichnung({ breite = 1000, hoehe = 1400, kastenhoehe = 165,
           <rect x={ox + rw - rail} y={oy + khpx} width={rail} height={rh - khpx} fill="#eef1f5" stroke="#0f1f3d" strokeWidth="1.5" />
         </>
       )}
-      {/* Behang (Panzer) mit Lamellen */}
-      <rect x={pz.x} y={pz.y} width={pz.w} height={pz.h} fill="#f4f6f8" stroke="#0f1f3d" strokeWidth="1.5" />
-      {slats.map((y, i) => <line key={'s' + i} x1={pz.x} y1={Math.round(y)} x2={pz.x + pz.w} y2={Math.round(y)} stroke="#0f1f3d" strokeWidth="1" opacity="0.6" shapeRendering="crispEdges" />)}
+      {/* Behang (Panzer): Lamellen als abwechselnd schattierte Bänder */}
+      {Array.from({ length: bandCount }).map((_, i) => (
+        <rect key={'b' + i} x={pz.x} y={pz.y + i * bandH} width={pz.w} height={bandH + 0.4}
+              fill={i % 2 ? '#e6ebf1' : '#f6f8fb'} stroke="none" />
+      ))}
+      <rect x={pz.x} y={pz.y} width={pz.w} height={pz.h} fill="none" stroke="#0f1f3d" strokeWidth="1.5" />
       {/* Rollladenkasten oben (nur Vorbau-Variante) */}
       {!panzerOnly && (
         <>
