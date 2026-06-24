@@ -26,7 +26,8 @@ function BelegDokument({ art, angebot, kunde, positionen, profileMap, einstellun
       <div className="beleg-kopf">
         <div className="beleg-logo">{eb.logo && <img src={eb.logo} alt="Logo" />}</div>
         <div className="beleg-firma">
-          {profil.name && <strong>Ansprechpartner: {profil.name}</strong>}
+          <strong>Ansprechpartner:</strong>
+          {profil.name && <div>{profil.name}</div>}
           {profil.telefon && <div>Tel. {profil.telefon}</div>}
           {profil.email && <div>{profil.email}</div>}
         </div>
