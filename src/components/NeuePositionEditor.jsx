@@ -313,6 +313,14 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
     else if (!istAluSystem && istAluCode(aktiv.code)) waehleGeometrie('F01');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [istAluSystem, profil]);
+
+  // Rollo Panzer kennt kein WEISS: Alt-/Leerwerte auf die Standardfarbe (Material-Preset) ziehen.
+  useEffect(() => {
+    if (istRollo && geometrie?.panzerOnly && (!aktiv.behangfarbe || aktiv.behangfarbe === 'WEISS')) {
+      updAktiv({ behangfarbe: rolloFarbe(aktiv.behang) });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [istRollo, geometrie, aktiv.behangfarbe, aktiv.behang, activeId]);
   const istKombi = elemente.length > 1;
   // Verbinden/Trennen: passender Nachbar zum aktiven Element (nur in einer Kombination)
   const mergePartner = istKombi ? findMergePartner(aktiv, elemente) : null;
@@ -1136,9 +1144,9 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
               )}
               <label className="np-field-label">Farbe Lamellen/Behang</label>
               {geometrie?.panzerOnly ? (
-                <select className="np-select np-select--block np-select--tall" value={aktiv.behangfarbe} onChange={e => waehleFarbe('behangfarbe', e.target.value)}>
+                <select className="np-select np-select--block np-select--tall" value={aktiv.behangfarbe === 'WEISS' ? rolloFarbe(aktiv.behang) : aktiv.behangfarbe} onChange={e => waehleFarbe('behangfarbe', e.target.value)}>
                   <option value={rolloFarbe(aktiv.behang)}>{rolloFarbe(aktiv.behang)}</option>
-                  {aktiv.behangfarbe && aktiv.behangfarbe !== rolloFarbe(aktiv.behang) && <option value={aktiv.behangfarbe}>{aktiv.behangfarbe}</option>}
+                  {aktiv.behangfarbe && aktiv.behangfarbe !== rolloFarbe(aktiv.behang) && aktiv.behangfarbe !== 'WEISS' && <option value={aktiv.behangfarbe}>{aktiv.behangfarbe}</option>}
                   <option value="__manuell__">✏️ Manuell eingeben…</option>
                 </select>
               ) : (
