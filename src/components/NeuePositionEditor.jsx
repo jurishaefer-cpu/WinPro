@@ -424,13 +424,19 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
         const L = prev.find(e => e.id === cand.left.id);
         const R = prev.find(e => e.id === cand.right.id);
         if (!L || !R) return prev;
+        // Ist eine Sonderform (Bogen/Dreieck) beteiligt → daraus EINE große Sonderform
+        // über die zusammengeführte Breite machen (statt rechteckiges Mehrfeld-Element).
+        const sg = geometrieByCode(L.code)?.form ? geometrieByCode(L.code)
+                 : (geometrieByCode(R.code)?.form ? geometrieByCode(R.code) : null);
+        const totalB = (Number(L.breite) || 0) + (Number(R.breite) || 0);
         const M = makeElement({
           ...L,
-          panes: [...L.panes, ...R.panes],
-          cols: (L.cols || 1) + (R.cols || 1),
-          colWidths: [...L.colWidths, ...R.colWidths],
+          code: sg ? sg.code : L.code,
+          panes: sg ? [{ fest: true }] : [...L.panes, ...R.panes],
+          cols: sg ? 1 : (L.cols || 1) + (R.cols || 1),
+          colWidths: sg ? [totalB] : [...L.colWidths, ...R.colWidths],
           rowHeights: [Number(L.hoehe)],
-          breite: (Number(L.breite) || 0) + (Number(R.breite) || 0),
+          breite: totalB,
           hoehe: Number(L.hoehe),
           row: L.row ?? 0, col: L.col ?? 0, offset: undefined,
           verbunden: true, _dir: 'h', _parts: [...partsOf(L), ...partsOf(R)],
@@ -444,14 +450,18 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
       const T = prev.find(e => e.id === cand.top.id);
       const B = prev.find(e => e.id === cand.bottom.id);
       if (!T || !B) return prev;
+      const sg = geometrieByCode(T.code)?.form ? geometrieByCode(T.code)
+               : (geometrieByCode(B.code)?.form ? geometrieByCode(B.code) : null);
+      const totalH = (Number(T.hoehe) || 0) + (Number(B.hoehe) || 0);
       const M = makeElement({
         ...T,
-        panes: [...T.panes, ...B.panes],
+        code: sg ? sg.code : T.code,
+        panes: sg ? [{ fest: true }] : [...T.panes, ...B.panes],
         cols: 1,
         colWidths: [Number(T.breite)],
-        rowHeights: [...T.rowHeights, ...B.rowHeights],
+        rowHeights: sg ? [totalH] : [...T.rowHeights, ...B.rowHeights],
         breite: Number(T.breite),
-        hoehe: (Number(T.hoehe) || 0) + (Number(B.hoehe) || 0),
+        hoehe: totalH,
         row: T.row ?? 0, col: T.col ?? 0, offset: undefined,
         verbunden: true, _dir: 'v', _parts: [...partsOf(T), ...partsOf(B)],
         nettoJeStueck: (Number(T.nettoJeStueck) || 0) + (Number(B.nettoJeStueck) || 0),
