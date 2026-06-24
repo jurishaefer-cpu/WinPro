@@ -256,7 +256,7 @@ export function RolloZeichnung({ breite = 1000, hoehe = 1400, kastenhoehe = 165,
       )}
       {/* Behang (Panzer) mit Lamellen */}
       <rect x={pz.x} y={pz.y} width={pz.w} height={pz.h} fill="#f4f6f8" stroke="#0f1f3d" strokeWidth="1.5" />
-      {slats.map((y, i) => <line key={'s' + i} x1={pz.x} y1={y} x2={pz.x + pz.w} y2={y} stroke="#0f1f3d" strokeWidth="0.8" opacity="0.55" />)}
+      {slats.map((y, i) => <line key={'s' + i} x1={pz.x} y1={Math.round(y)} x2={pz.x + pz.w} y2={Math.round(y)} stroke="#0f1f3d" strokeWidth="1" opacity="0.6" shapeRendering="crispEdges" />)}
       {/* Rollladenkasten oben (nur Vorbau-Variante) */}
       {!panzerOnly && (
         <>
