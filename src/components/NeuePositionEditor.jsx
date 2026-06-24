@@ -141,7 +141,7 @@ function makeElement(src, id) {
     lamelle: src?.lamelle ?? 'Mini 37mm',
     behangfarbe: src?.behangfarbe ?? 'Samtgrau',
     kastenhoeheRollo: src?.kastenhoeheRollo ?? 165,
-    kastenfarbe: src?.kastenfarbe ?? 'WEISS',
+    kastenfarbe: src?.kastenfarbe ?? 'Samtgrau',
     kommentar: src?.kommentar ?? '',
     nettoJeStueck: src?.nettoJeStueck ?? 0,
     // Verbinden/Trennen: aus zwei benachbarten Teilen zusammengeführtes Element
@@ -865,9 +865,10 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
                 const b = e.target.value;
                 const idx = Math.max(0, lamellenOptionen(aktiv.behang).indexOf(aktiv.lamelle));
                 const neu = lamellenOptionen(b);
-                // Behangfarbe: Standard mitziehen (außer der Nutzer hat manuell etwas Eigenes gewählt)
+                // Farben: Standard mitziehen (außer der Nutzer hat manuell etwas Eigenes gewählt)
                 const farbe = aktiv.behangfarbe === rolloFarbe(aktiv.behang) ? rolloFarbe(b) : aktiv.behangfarbe;
-                updAktiv({ behang: b, lamelle: neu[idx] ?? neu[0], behangfarbe: farbe });
+                const kfarbe = aktiv.kastenfarbe === rolloFarbe(aktiv.behang) ? rolloFarbe(b) : aktiv.kastenfarbe;
+                updAktiv({ behang: b, lamelle: neu[idx] ?? neu[0], behangfarbe: farbe, kastenfarbe: kfarbe });
               }}>
                 {BEHANG.map(x => <option key={x} value={x}>{x}</option>)}
               </select>
@@ -1122,8 +1123,8 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
                 <>
                   <label className="np-field-label">Kastenfarbe</label>
                   <select className="np-select np-select--block np-select--tall" value={aktiv.kastenfarbe} onChange={e => waehleFarbe('kastenfarbe', e.target.value)}>
-                    {aktiv.kastenfarbe && !farbOptionen.some(o => o.value === aktiv.kastenfarbe) && <option value={aktiv.kastenfarbe}>{aktiv.kastenfarbe}</option>}
-                    {farbOptionen.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                    <option value={rolloFarbe(aktiv.behang)}>{rolloFarbe(aktiv.behang)}</option>
+                    {aktiv.kastenfarbe && aktiv.kastenfarbe !== rolloFarbe(aktiv.behang) && <option value={aktiv.kastenfarbe}>{aktiv.kastenfarbe}</option>}
                     <option value="__manuell__">✏️ Manuell eingeben…</option>
                   </select>
                 </>
