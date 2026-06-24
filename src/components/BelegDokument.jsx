@@ -162,7 +162,8 @@ function BelegDokument({ art, angebot, kunde, positionen, profileMap, einstellun
           <strong>{firma.firmenname}</strong>
           <div>{firma.strasse}</div>
           <div>{[firma.plz, firma.ort].filter(Boolean).join(' ')}</div>
-          <div>{[firma.telefon && `Tel. ${firma.telefon}`, firma.email].filter(Boolean).join(' · ')}</div>
+          <div>{firma.telefon && `Tel. ${firma.telefon}`}</div>
+          <div>{firma.email}</div>
         </div>
         <div>
           <div>{firma.bank}</div>
