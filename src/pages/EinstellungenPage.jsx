@@ -38,7 +38,7 @@ const ICONS = {
 const BEREICHE = [
   { key: 'profil', to: '/einstellungen/profil', title: 'Mein Profil', text: 'Dein Name, Telefon und E-Mail als Ansprechpartner auf deinen Belegen.' },
   { key: 'firma', to: '/einstellungen/firma', title: 'Firmendaten', text: 'Name, Anschrift, Steuernummer und Bankverbindung für Belege.' },
-  { key: 'dokumente', to: '/einstellungen/dokumente', title: 'Dokumente und Nummernkreise', badge: 'in Vorbereitung', text: 'Angebots-, Auftrags- und Rechnungsnummern, Zahlungsbedingungen.' },
+  { key: 'dokumente', to: '/einstellungen/dokumente', title: 'Dokumente', text: 'Angebots-, Auftrags- und Rechnungsnummern, Zahlungsbedingungen.' },
   { key: 'erscheinungsbild', to: '/einstellungen/erscheinungsbild', title: 'Erscheinungsbild', text: 'Logo und Akzentfarbe für das eigene Unternehmen.' },
 ];
 

@@ -175,7 +175,7 @@ function BelegModal({ onClose, ...docProps }) {
       pdf.autoPrint();
       const url = pdf.output('bloburl');
       if (druckFenster) druckFenster.location.href = url;
-      else pdf.save(dateiName(docProps.art, docProps.angebot?.belegnummer));   // Fallback bei Popup-Blocker
+      else pdf.save(dateiName(docProps.art, docProps.angebot?.belegnummern?.[docProps.art] ?? docProps.angebot?.belegnummer));   // Fallback bei Popup-Blocker
     } catch (e) {
       console.error(e);
       if (druckFenster) druckFenster.close();
@@ -189,7 +189,7 @@ function BelegModal({ onClose, ...docProps }) {
   return (
     <div className="beleg-overlay">
       <div className="beleg-toolbar">
-        <span className="beleg-toolbar-titel">{docProps.art} {docProps.angebot?.belegnummer}</span>
+        <span className="beleg-toolbar-titel">{docProps.art} {docProps.angebot?.belegnummern?.[docProps.art] ?? docProps.angebot?.belegnummer}</span>
         <div className="beleg-toolbar-actions">
           <button className="btn btn-outline" onClick={onClose} disabled={busy}>Schließen</button>
           <button className="btn btn-primary btn-red" onClick={exportPdf} disabled={busy}>

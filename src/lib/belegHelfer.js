@@ -160,3 +160,34 @@ export const BELEG_ART = {
     preise: true, anzahlung: false, schluss: true, empfaenger: true, bauvorhaben: true,
   },
 };
+
+// ── Nummernkreise (Einstellungen → Dokumente) ───────────────────────────────
+// Standard-Konfiguration je Belegart: Präfix + Jahr + fortlaufende Nummer.
+export const DEFAULT_NUMMERN = {
+  Angebot: { praefix: 'AN-', jahr: true, stellen: 4 },
+  'Auftragsbestätigung': { praefix: 'AB-', jahr: true, stellen: 4 },
+  Rechnung: { praefix: 'RE-', jahr: true, stellen: 4 },
+};
+// Fallback für Belegarten ohne eigene Konfiguration (z. B. Bestellung): nur Jahr-Nummer.
+const FALLBACK_NUMMER = { praefix: '', jahr: true, stellen: 4 };
+
+// Effektive Nummern-Konfiguration einer Belegart (gespeicherte Werte überschreiben Standard).
+export function nummernConfig(einstellungen, art) {
+  const basis = DEFAULT_NUMMERN[art] ?? FALLBACK_NUMMER;
+  const gespeichert = einstellungen?.dokumente?.nummern?.[art];
+  return { ...basis, ...(gespeichert ?? {}) };
+}
+
+// Baut eine Belegnummer-Zeichenkette, z. B. AN-2026-0001.
+export function formatBelegnummer(cfg, n, jahr = new Date().getFullYear()) {
+  const seq = String(n).padStart(Math.max(1, Number(cfg.stellen) || 1), '0');
+  const mitte = cfg.jahr ? `${jahr}-` : '';
+  return `${cfg.praefix ?? ''}${mitte}${seq}`;
+}
+
+// Zahlungstext einer Belegart: eigener Text aus den Einstellungen, sonst Standard.
+export function zahlungText(einstellungen, art) {
+  const eigen = einstellungen?.dokumente?.zahlung?.[art];
+  if (eigen != null && String(eigen).trim() !== '') return eigen;
+  return BELEG_ART[art]?.zahlung ?? null;
+}

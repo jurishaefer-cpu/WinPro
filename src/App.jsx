@@ -12,6 +12,7 @@ import ProfilBearbeitenPage from './pages/ProfilBearbeitenPage';
 import EinstellungenPage from './pages/EinstellungenPage';
 import EinstellungProfilPage from './pages/EinstellungProfilPage';
 import EinstellungFirmaPage from './pages/EinstellungFirmaPage';
+import EinstellungDokumentePage from './pages/EinstellungDokumentePage';
 import EinstellungErscheinungsbildPage from './pages/EinstellungErscheinungsbildPage';
 import LoginPage from './pages/LoginPage';
 import NameSetupModal from './components/NameSetupModal';
@@ -48,6 +49,7 @@ function App() {
         <Route path="/einstellungen" element={<EinstellungenPage />} />
         <Route path="/einstellungen/profil" element={<EinstellungProfilPage />} />
         <Route path="/einstellungen/firma" element={<EinstellungFirmaPage />} />
+        <Route path="/einstellungen/dokumente" element={<EinstellungDokumentePage />} />
         <Route path="/einstellungen/erscheinungsbild" element={<EinstellungErscheinungsbildPage />} />
       </Routes>
       {nameFehlt && <NameSetupModal />}

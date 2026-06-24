@@ -7,6 +7,7 @@ import NeuePositionEditor from '../components/NeuePositionEditor';
 import FensterZeichnung, { geometrieByCode, KombinationsZeichnung, RolloZeichnung } from '../components/FensterZeichnung';
 import BelegModal from '../components/BelegModal';
 import { ladeEinstellungen } from '../lib/einstellungen';
+import { nummernConfig, formatBelegnummer } from '../lib/belegHelfer';
 
 const STUFEN = ['Angebot', 'Auftragsbestätigung', 'Bestellung', 'Rechnung'];
 const SUBTITLE = {
@@ -70,19 +71,25 @@ function AngebotEditorPage() {
     laden();
   }, [angebotId, kundeId, navigate, user?.id]);
 
-  // Belegnummer einmalig vergeben (Format JJJJ-NNNN)
-  async function sichereBelegnummer() {
-    if (angebot.belegnummer) return angebot.belegnummer;
+  // Belegnummer je Belegart einmalig vergeben (Nummernkreis aus den Einstellungen)
+  async function sichereBelegnummer(art) {
+    if (angebot.belegnummern?.[art]) return angebot.belegnummern[art];
+    const cfg = nummernConfig(einstellungen, art);
     const jahr = new Date().getFullYear();
-    const { data: alle } = await supabase.from('angebote').select('belegnummer').not('belegnummer', 'is', null);
+    const { data: alle } = await supabase.from('angebote').select('belegnummern');
     let max = 0;
     (alle ?? []).forEach(r => {
-      const m = /^(\d{4})-(\d+)$/.exec(r.belegnummer || '');
-      if (m && Number(m[1]) === jahr) max = Math.max(max, Number(m[2]));
+      const wert = r.belegnummern?.[art];
+      if (!wert) return;
+      const m = /(?:(\d{4})-)?(\d+)\s*$/.exec(wert);
+      if (!m) return;
+      if (cfg.jahr && m[1] && Number(m[1]) !== jahr) return;
+      max = Math.max(max, Number(m[2]));
     });
-    const nummer = `${jahr}-${String(max + 1).padStart(4, '0')}`;
-    await supabase.from('angebote').update({ belegnummer: nummer }).eq('id', angebotId);
-    setAngebot(a => ({ ...a, belegnummer: nummer }));
+    const nummer = formatBelegnummer(cfg, max + 1, jahr);
+    const neu = { ...(angebot.belegnummern ?? {}), [art]: nummer };
+    await supabase.from('angebote').update({ belegnummern: neu }).eq('id', angebotId);
+    setAngebot(a => ({ ...a, belegnummern: neu }));
     return nummer;
   }
 
@@ -91,7 +98,7 @@ function AngebotEditorPage() {
       setDatumPrompt(true);
       return;
     }
-    await sichereBelegnummer();
+    await sichereBelegnummer(art);
     setZeigeBeleg(art);
   }
 
@@ -100,7 +107,7 @@ function AngebotEditorPage() {
     await supabase.from('angebote').update({ ausfuehrungsdatum: ausfDatum }).eq('id', angebotId);
     setAngebot(a => ({ ...a, ausfuehrungsdatum: ausfDatum }));
     setDatumPrompt(false);
-    await sichereBelegnummer();
+    await sichereBelegnummer('Rechnung');
     setZeigeBeleg('Rechnung');
   }
 
@@ -115,7 +122,7 @@ function AngebotEditorPage() {
       setDatumPrompt(true);
       return;
     }
-    await sichereBelegnummer();
+    await sichereBelegnummer(art);
     setZeigeBeleg(art);
   }
 
@@ -225,12 +232,12 @@ function AngebotEditorPage() {
         </div>
         <div className="stepper-belege">
           <b>BELEGE</b>
-          {angebot.belegnummer ? (
+          {(angebot.belegnummern?.[angebot.status] ?? angebot.belegnummer) ? (
             <button className="beleg-chip" onClick={() => oeffneBeleg(angebot.status)}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
               </svg>
-              {angebot.status} {angebot.belegnummer}
+              {angebot.status} {angebot.belegnummern?.[angebot.status] ?? angebot.belegnummer}
             </button>
           ) : (
             <button className="beleg-erstellen" onClick={() => oeffneBeleg(angebot.status)}>

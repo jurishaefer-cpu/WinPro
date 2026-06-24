@@ -1,5 +1,5 @@
 import FensterZeichnung, { geometrieByCode, KombinationsZeichnung, RolloZeichnung } from './FensterZeichnung';
-import { euro, datumDE, positionZeilen, montageZeile, BELEG_ART } from '../lib/belegHelfer';
+import { euro, datumDE, positionZeilen, montageZeile, BELEG_ART, zahlungText } from '../lib/belegHelfer';
 
 const MWST = 0.19;
 const ANZAHLUNG = 0.40;
@@ -11,7 +11,8 @@ function BelegDokument({ art, angebot, kunde, positionen, profileMap, einstellun
   const eb = einstellungen?.erscheinungsbild ?? {};
   const akzent = eb.akzentfarbe || '#c0152e';
 
-  const nummer = angebot?.belegnummer || '—';
+  const nummer = angebot?.belegnummern?.[art] || angebot?.belegnummer || '—';
+  const zahlung = zahlungText(einstellungen, art);
   const netto = positionen.reduce((s, p) => s + Number(p.nettopreis || 0) * Number(p.menge || 1), 0);
   const mwst = netto * MWST;
   const brutto = netto + mwst;
@@ -147,10 +148,10 @@ function BelegDokument({ art, angebot, kunde, positionen, profileMap, einstellun
       )}
 
       {/* Zahlungsbedingungen */}
-      {meta.zahlung && (
+      {zahlung && (
         <div className="beleg-zahlung">
           <strong>Zahlungsbedingungen</strong>
-          <p>{meta.zahlung}</p>
+          <p>{zahlung}</p>
           {meta.anzahlung && <p>Anzahlung (40 %): <strong>{euro(anzahlung)}</strong></p>}
         </div>
       )}
