@@ -213,8 +213,17 @@ function gehrung(o, i) {
 }
 
 // Kleine Vorschau ohne Maßlinien (für das Geometrie-Dropdown)
-// Eigenständige Rollladen-Skizze: Kasten oben, Behang (Lamellen) mit Führungsschienen darunter.
-export function RolloZeichnung({ breite = 1000, hoehe = 1400, kastenhoehe = 165, beleg = false }) {
+// Kürzel der Bedienung für das Kasten-Symbol: Gurt→G, Kurbel→K, (Funk-)Motor→M.
+export function bedienungKuerzel(b) {
+  if (!b) return '';
+  if (/gurt/i.test(b)) return 'G';
+  if (/kurbel/i.test(b)) return 'K';
+  if (/motor/i.test(b)) return 'M';
+  return b.trim().charAt(0).toUpperCase();
+}
+
+// Eigenständige Rollladen-Skizze: Kasten oben, Rollopanzer (Lamellen) mit Führungsschienen darunter.
+export function RolloZeichnung({ breite = 1000, hoehe = 1400, kastenhoehe = 165, bedienung = 'Gurt', bedienungsseite = 'rechts', beleg = false }) {
   const b = Math.max(200, Number(breite) || 1000);
   const h = Math.max(200, Number(hoehe) || 1400);
   const kh = Math.min(h * 0.5, Math.max(40, Number(kastenhoehe) || 0));
@@ -241,6 +250,20 @@ export function RolloZeichnung({ breite = 1000, hoehe = 1400, kastenhoehe = 165,
       {/* Rollladenkasten oben */}
       <rect x={ox} y={oy} width={rw} height={khpx} fill="#fff" stroke="#0f1f3d" strokeWidth="2" />
       <line x1={ox} y1={oy + khpx} x2={ox + rw} y2={oy + khpx} stroke="#0f1f3d" strokeWidth="2" />
+      {/* Bedienungs-Symbol (Kreis + Buchstabe) auf der gewählten Seite */}
+      {(() => {
+        const kuerzel = bedienungKuerzel(bedienung);
+        if (!kuerzel) return null;
+        const r = Math.max(11, Math.min(khpx * 0.62, 17));
+        const bcx = bedienungsseite === 'links' ? ox + rail + r * 0.4 : ox + rw - rail - r * 0.4;
+        const bcy = oy + khpx;
+        return (
+          <g>
+            <circle cx={bcx} cy={bcy} r={r} fill="#fff" stroke="#0f1f3d" strokeWidth="1.6" />
+            <text x={bcx} y={bcy + r * 0.34} textAnchor="middle" fontSize={r * 1.05} fontWeight="700" fill="#0f1f3d">{kuerzel}</text>
+          </g>
+        );
+      })()}
       {!beleg && (
         <>
           <text x={ox + rw / 2} y={oy - 16} textAnchor="middle" {...txt}>{Math.round(b)}</text>

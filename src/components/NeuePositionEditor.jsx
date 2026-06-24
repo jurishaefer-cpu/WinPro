@@ -127,6 +127,7 @@ function makeElement(src, id) {
     dichtungAussen: src?.dichtungAussen ?? 'Grau',
     // Rollladen-Felder (Kategorie „rollo")
     bedienung: src?.bedienung ?? 'Gurt',
+    bedienungsseiteRollo: src?.bedienungsseiteRollo ?? 'rechts',
     behang: src?.behang ?? 'Aluminium',
     kastenhoeheRollo: src?.kastenhoeheRollo ?? 165,
     kastenfarbe: src?.kastenfarbe ?? 'WEISS',
@@ -595,8 +596,8 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
       teile.push('<strong>Rollladen</strong>');
       teile.push(`${Math.round(el.breite)} × ${Math.round(el.hoehe)} mm`);
       teile.push(`Kastenhöhe: ${Math.round(Number(el.kastenhoeheRollo) || 0)} mm`);
-      teile.push(`Behang: ${el.behang}`);
-      teile.push(`Bedienung: ${el.bedienung}`);
+      teile.push(`Rollopanzer: ${el.behang}`);
+      teile.push(`Bedienung: ${el.bedienung} (${el.bedienungsseiteRollo})`);
       teile.push(`Kasten ${farbe(el.kastenfarbe)} / Lamellen ${farbe(el.behangfarbe)}`);
       const komText = (el.kommentar || '').replace(/<[^>]*>/g, '').trim();
       if (komText) teile.push(`Kommentar: ${el.kommentar}`);
@@ -663,7 +664,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
       ornament: main.ornament, ornamentArt: main.ornamentArt,
       dichtungInnen: main.dichtungInnen, dichtungAussen: main.dichtungAussen,
       // Rollladen-Felder
-      bedienung: main.bedienung, behang: main.behang, kastenhoeheRollo: Number(main.kastenhoeheRollo) || 0,
+      bedienung: main.bedienung, bedienungsseiteRollo: main.bedienungsseiteRollo, behang: main.behang, kastenhoeheRollo: Number(main.kastenhoeheRollo) || 0,
       kastenfarbe: main.kastenfarbe, behangfarbe: main.behangfarbe,
       kommentar: main.kommentar, nettoJeStueck: Number(main.nettoJeStueck),
       // Mehrteilig (immer mitgespeichert)
@@ -799,7 +800,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
               <label className="np-field-label">Kastenhöhe (mm)</label>
               <input className="np-input" type="number" min="0" value={aktiv.kastenhoeheRollo}
                      onChange={e => updAktiv({ kastenhoeheRollo: e.target.value })} placeholder="z. B. 165" />
-              <label className="np-field-label">Behang</label>
+              <label className="np-field-label">Rollopanzer</label>
               <select className="np-select np-select--block" value={aktiv.behang} onChange={e => updAktiv({ behang: e.target.value })}>
                 {BEHANG.map(x => <option key={x} value={x}>{x}</option>)}
               </select>
@@ -807,6 +808,11 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
               <select className="np-select np-select--block" value={aktiv.bedienung} onChange={e => updAktiv({ bedienung: e.target.value })}>
                 {BEDIENUNGEN.map(x => <option key={x} value={x}>{x}</option>)}
               </select>
+              <label className="np-field-label">Bedienungsseite</label>
+              <div className="np-segmented">
+                <button className={aktiv.bedienungsseiteRollo === 'links' ? 'active' : ''} onClick={() => updAktiv({ bedienungsseiteRollo: 'links' })}>links</button>
+                <button className={aktiv.bedienungsseiteRollo === 'rechts' ? 'active' : ''} onClick={() => updAktiv({ bedienungsseiteRollo: 'rechts' })}>rechts</button>
+              </div>
             </>
           )}
 
@@ -923,7 +929,8 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
           )}
           <div className="np-canvas">
             {istRollo ? (
-              <RolloZeichnung breite={aktiv.breite} hoehe={aktiv.hoehe} kastenhoehe={aktiv.kastenhoeheRollo} />
+              <RolloZeichnung breite={aktiv.breite} hoehe={aktiv.hoehe} kastenhoehe={aktiv.kastenhoeheRollo}
+                bedienung={aktiv.bedienung} bedienungsseite={aktiv.bedienungsseiteRollo} />
             ) : istKombi ? (
               <KombinationsZeichnung elemente={elemente} activeId={activeId}
                 onUnitClick={switchActive} onPaneClick={setSelectedPane} selectedPane={selectedPane}

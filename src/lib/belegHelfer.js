@@ -85,8 +85,8 @@ function rolloZeilen(config, profil, mitMontage = true) {
   z.push('Ausführung: Rollladen');
   z.push(`Maß: ${Math.round(config.breite)} × ${Math.round(config.hoehe)} mm`);
   if (config.kastenhoeheRollo) z.push(`Kastenhöhe: ${Math.round(config.kastenhoeheRollo)} mm`);
-  if (config.behang) z.push(`Behang: ${esc(config.behang)}`);
-  if (config.bedienung) z.push(`Bedienung: ${esc(config.bedienung)}`);
+  if (config.behang) z.push(`Rollopanzer: ${esc(config.behang)}`);
+  if (config.bedienung) z.push(`Bedienung: ${esc(config.bedienung)}${config.bedienungsseiteRollo ? ` (${esc(config.bedienungsseiteRollo)})` : ''}`);
   if (config.kastenfarbe || config.behangfarbe) {
     z.push(`Farbe: Kasten ${esc(config.kastenfarbe ?? '')} / Lamellen ${esc(config.behangfarbe ?? '')}`);
   }
