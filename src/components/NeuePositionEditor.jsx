@@ -139,6 +139,7 @@ function makeElement(src, id) {
     _dir: src?._dir ?? null,          // 'h' = nebeneinander, 'v' = übereinander
     _parts: src?._parts ?? null,      // Bauteile zum späteren Trennen
     _teile: src?._teile ?? null,      // Teil-Render-Infos: jedes Teil behält im gemeinsamen Rahmen seine Form
+    durchgehend: src?.durchgehend ?? false,  // Trennrahmen entfernt → durchgehendes Glas
   };
 }
 
@@ -243,6 +244,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
   const [stueckzahl, setStueckzahl] = useState(initial?.stueckzahl ?? 1);
   const [standort, setStandort] = useState(initial?.standort ?? '');
   const [standortOffen, setStandortOffen] = useState(false);
+  const [dividerMenu, setDividerMenu] = useState(false);
   const [montage, setMontage] = useState(initial?.montage ?? 140);
   const [ausbau, setAusbau] = useState(initial?.ausbau ?? 30);
   const [entsorgung, setEntsorgung] = useState(initial?.entsorgung ?? 15);
@@ -1006,7 +1008,23 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
                 colWidths={aktiv.colWidths} rowHeights={aktiv.rowHeights}
                 onColWidth={setColWidth} onRowHeight={setRowHeight}
                 teile={aktiv.verbunden ? aktiv._teile : null} dir={aktiv._dir}
+                durchgehend={aktiv.durchgehend} onDivider={() => setDividerMenu(true)}
                 onPaneClick={setSelectedPane} selectedPane={selectedPane} />
+            )}
+
+            {dividerMenu && (
+              <div className="pane-menu-backdrop" onClick={() => setDividerMenu(false)} />
+            )}
+            {dividerMenu && (
+              <div className="pane-menu">
+                <div className="pane-menu-head">
+                  <span>Trennrahmen</span>
+                  <button className="pane-menu-close" onClick={() => setDividerMenu(false)}>✕</button>
+                </div>
+                <button className="pane-option" onClick={() => { updAktiv({ durchgehend: true }); setDividerMenu(false); }}>
+                  <span className="pane-option-label">Entfernen – durchgehendes Glas</span>
+                </button>
+              </div>
             )}
 
             {selectedPane != null && (

@@ -665,7 +665,39 @@ export function sonderformPfade(r, geo, frame) {
   return { outer, inner };
 }
 
-function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkasten, schwelle, oberlichtHoehe, glasFarbe = '#cfe3ef', onBreite, onHoehe, onOberlichtHoehe, onBottomHoehe, panes: panesProp, cols: colsProp, colWidths, rowHeights, onColWidth, onRowHeight, onPaneClick, selectedPane, teile, dir: teilDir }) {
+// Durchgehende Silhouette eines verbundenen Elements (Trennrahmen entfernt → ein Glas).
+// Behandelt vertikalen 2er-Stapel: Sonderform-Teil + Rechteck-Teil.
+export function durchgehendPfade(r0, teile, dir, frame) {
+  const { x, y, w, h } = r0;
+  const fw = Math.max(4, frame || 0);
+  if (dir !== 'v' || !Array.isArray(teile) || teile.length !== 2) return null;
+  const formIdx = geometrieByCode(teile[0].code)?.form ? 0 : (geometrieByCode(teile[1].code)?.form ? 1 : -1);
+  if (formIdx < 0) return null;
+  const g = geometrieByCode(teile[formIdx].code);
+  const formOnTop = formIdx === 0;
+  const total = (Number(teile[0].hoehe) || 0) + (Number(teile[1].hoehe) || 0) || 1;
+  const splitY = y + (Number(teile[0].hoehe) / total) * h;
+  // Bogen + Rechteck = einfach ein Bogenfenster über die volle Höhe.
+  if (g.form === 'rundbogen' || g.form === 'segmentbogen') {
+    return sonderformPfade(r0, g, fw);
+  }
+  // Dreieck oben/unten + Rechteck = Fünfeck (Giebel-/Hausform).
+  let pts;
+  if (formOnTop) {
+    const apex = g.variante === 'links' ? [x, y] : g.variante === 'rechts' ? [x + w, y] : [x + w / 2, y];
+    pts = [[x, y + h], [x, splitY], apex, [x + w, splitY], [x + w, y + h]];
+  } else {
+    const apex = g.variante === 'links' ? [x, y + h] : g.variante === 'rechts' ? [x + w, y + h] : [x + w / 2, y + h];
+    pts = [[x, y], [x + w, y], [x + w, splitY], apex, [x, splitY]];
+  }
+  const path = ps => 'M ' + ps.map(p => `${p[0]},${p[1]}`).join(' L ') + ' Z';
+  const cx = pts.reduce((a, p) => a + p[0], 0) / pts.length, cy = pts.reduce((a, p) => a + p[1], 0) / pts.length;
+  const s = Math.max(0.3, 1 - (2.6 * fw) / Math.min(w, h));
+  const ip = pts.map(([px, py]) => [cx + (px - cx) * s, cy + (py - cy) * s]);
+  return { outer: path(pts), inner: path(ip) };
+}
+
+function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkasten, schwelle, oberlichtHoehe, glasFarbe = '#cfe3ef', onBreite, onHoehe, onOberlichtHoehe, onBottomHoehe, panes: panesProp, cols: colsProp, colWidths, rowHeights, onColWidth, onRowHeight, onPaneClick, selectedPane, teile, dir: teilDir, durchgehend, onDivider }) {
   const b = Math.max(200, Number(breite) || 1000);
   const hh = Math.max(200, Number(hoehe) || 1200);
 
@@ -710,6 +742,17 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
       });
       return <UnitBody key={'t' + ti} c={tc} glasFarbe={tGlas} keyPrefix={'ft' + ti + '-'} />;
     });
+  }
+  // Trennrahmen entfernt → durchgehende Form (ein Glas).
+  const durchPf = (formTeile && durchgehend) ? durchgehendPfade(r0, formTeile, teilDir || 'h', Math.max(6, 60 * scale)) : null;
+  // Klickbarer Trennrahmen-Streifen zwischen den beiden Teilen (nur Editor, solange nicht durchgehend).
+  let dividerStrip = null;
+  if (formTeile && formTeile.length === 2 && onDivider && !durchgehend) {
+    const tdir = teilDir || 'h';
+    const total = formTeile.reduce((a, t) => a + ((tdir === 'h' ? Number(t.breite) : Number(t.hoehe)) || 0), 0) || 1;
+    const first = (tdir === 'h' ? Number(formTeile[0].breite) : Number(formTeile[0].hoehe)) || 0;
+    const sp = tdir === 'h' ? x + (first / total) * rw : y + (first / total) * rh;
+    dividerStrip = tdir === 'h' ? { x: sp - 9, y, w: 18, h: rh } : { x, y: sp - 9, w: rw, h: 18 };
   }
   const c = computeUnit(r0, scale, { geometrie, breite, hoehe, panes: panesProp, cols: colsProp, colWidths, rowHeights, verbreiterung, aufsatzkasten, schwelle, oberlichtHoehe });
   const hatSubB = c.subCols.length > 0;
@@ -891,8 +934,13 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
         });
       })()}
 
-      {/* Fensterkörper: verbundene Teile (jedes mit eigener Form) / Sonderform / normaler Rahmen */}
-      {teilBodies ? (
+      {/* Fensterkörper: durchgehende Form (Trennrahmen entfernt) / verbundene Teile / Sonderform / normaler Rahmen */}
+      {durchPf ? (
+        <g>
+          <path d={durchPf.outer} fill="#fff" stroke="#0f1f3d" strokeWidth="2.5" strokeLinejoin="round" />
+          <path d={durchPf.inner} fill={glasFarbe} stroke="#0f1f3d" strokeWidth="1.6" strokeLinejoin="round" opacity="0.95" />
+        </g>
+      ) : teilBodies ? (
         <g>{teilBodies}</g>
       ) : istSonderform ? (
         <g>
@@ -901,6 +949,12 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
         </g>
       ) : (
         <UnitBody c={c} glasFarbe={glasFarbe} onPaneClick={onPaneClick} selectedPane={selectedPane} />
+      )}
+
+      {/* Klickbarer Trennrahmen zwischen den Teilen → „Entfernen" macht durchgehendes Glas */}
+      {dividerStrip && (
+        <rect x={dividerStrip.x} y={dividerStrip.y} width={dividerStrip.w} height={dividerStrip.h}
+              fill="transparent" style={{ cursor: 'pointer' }} onClick={onDivider} />
       )}
     </svg>
   );
