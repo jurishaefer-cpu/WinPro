@@ -640,7 +640,8 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
   const hoeheGes = istKombi ? kombi.h : Number(aktiv.hoehe);
   const flaeche = (breiteGes * hoeheGes) / 1_000_000; // m²
   const summeNetto = elemente.reduce((a, e) => a + (Number(e.nettoJeStueck) || 0), 0);
-  const zuschlag = ohneMontage ? 0 : Number(montage) + Number(ausbau) + Number(entsorgung);
+  // Rollladen/Vorbau Rollladen: nur Montage, kein Ausbau/Entsorgung.
+  const zuschlag = ohneMontage ? 0 : Number(montage) + (istRollo ? 0 : Number(ausbau) + Number(entsorgung));
   const proStueck = summeNetto + zuschlag;
   const systemLabel = profil ? `${profil.hersteller} ${profil.system}`.trim() : '—';
 
@@ -710,7 +711,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
       profilId,
       // Positions-Ebene
       stueckzahl: Number(stueckzahl), standort,
-      montage: Number(montage), ausbau: Number(ausbau), entsorgung: Number(entsorgung), ohneMontage,
+      montage: Number(montage), ausbau: istRollo ? 0 : Number(ausbau), entsorgung: istRollo ? 0 : Number(entsorgung), ohneMontage,
       // Abwärtskompatibel: Flachfelder = Hauptelement
       kategorie: main.kategorie, code: main.code, panes: main.panes, cols: main.cols,
       colWidths: main.colWidths, rowHeights: main.rowHeights,
@@ -1235,20 +1236,24 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
             <label>MONTAGE</label>
             <div className="np-euro-input"><span>€</span><input type="number" value={montage} disabled={ohneMontage} onChange={e => setMontage(e.target.value)} /></div>
           </div>
-          <div className="np-kosten-feld">
-            <label>AUSBAU</label>
-            <div className="np-euro-input"><span>€</span><input type="number" value={ausbau} disabled={ohneMontage} onChange={e => setAusbau(e.target.value)} /></div>
-          </div>
-          <div className="np-kosten-feld">
-            <label>ENTSORGUNG</label>
-            <div className="np-euro-input"><span>€</span><input type="number" value={entsorgung} disabled={ohneMontage} onChange={e => setEntsorgung(e.target.value)} /></div>
-          </div>
+          {!istRollo && (
+            <>
+              <div className="np-kosten-feld">
+                <label>AUSBAU</label>
+                <div className="np-euro-input"><span>€</span><input type="number" value={ausbau} disabled={ohneMontage} onChange={e => setAusbau(e.target.value)} /></div>
+              </div>
+              <div className="np-kosten-feld">
+                <label>ENTSORGUNG</label>
+                <div className="np-euro-input"><span>€</span><input type="number" value={entsorgung} disabled={ohneMontage} onChange={e => setEntsorgung(e.target.value)} /></div>
+              </div>
+            </>
+          )}
           <label className="np-check np-check--inline"><input type="checkbox" checked={ohneMontage} onChange={e => setOhneMontage(e.target.checked)} /> Ohne Montage</label>
         </div>
 
         <div className="np-footer-preis">
           <div className="np-netto">
-            <label>{istKombi ? `NETTO ${istMain ? 'HAUPTELEMENT' : 'ELEMENT ' + (elemente.findIndex(e => e.id === activeId) + 1)}` : 'GESAMT JE STÜCK INKL. MONTAGE, AUSBAU & ENTSORGUNG'}</label>
+            <label>{istKombi ? `NETTO ${istMain ? 'HAUPTELEMENT' : 'ELEMENT ' + (elemente.findIndex(e => e.id === activeId) + 1)}` : (istRollo ? 'GESAMT JE STÜCK INKL. MONTAGE' : 'GESAMT JE STÜCK INKL. MONTAGE, AUSBAU & ENTSORGUNG')}</label>
             <div className="np-euro-input np-euro-input--lg"><span>€</span>
               {istKombi ? (
                 <input type="number" value={aktiv.nettoJeStueck} onChange={e => updAktiv({ nettoJeStueck: e.target.value })} />
