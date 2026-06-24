@@ -599,7 +599,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
       if (!panzerOnly) teile.push(`Kastenhöhe: ${Math.round(Number(el.kastenhoeheRollo) || 0)} mm`);
       teile.push(`Rollopanzer: ${el.behang}`);
       if (!panzerOnly) teile.push(`Bedienung: ${el.bedienung} (${el.bedienungsseiteRollo})`);
-      teile.push(`Kasten ${farbe(el.kastenfarbe)} / Lamellen ${farbe(el.behangfarbe)}`);
+      teile.push(panzerOnly ? `Lamellen ${farbe(el.behangfarbe)}` : `Kasten ${farbe(el.kastenfarbe)} / Lamellen ${farbe(el.behangfarbe)}`);
       const komText = (el.kommentar || '').replace(/<[^>]*>/g, '').trim();
       if (komText) teile.push(`Kommentar: ${el.kommentar}`);
       if (standort) teile.push(`Standort: ${standort}`);
@@ -1029,12 +1029,16 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
           <div className="np-group-label">FARBEN</div>
           {istRollo ? (
             <>
-              <label className="np-field-label">Kastenfarbe</label>
-              <select className="np-select np-select--block np-select--tall" value={aktiv.kastenfarbe} onChange={e => waehleFarbe('kastenfarbe', e.target.value)}>
-                {aktiv.kastenfarbe && !farbOptionen.some(o => o.value === aktiv.kastenfarbe) && <option value={aktiv.kastenfarbe}>{aktiv.kastenfarbe}</option>}
-                {farbOptionen.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                <option value="__manuell__">✏️ Manuell eingeben…</option>
-              </select>
+              {!geometrie?.panzerOnly && (
+                <>
+                  <label className="np-field-label">Kastenfarbe</label>
+                  <select className="np-select np-select--block np-select--tall" value={aktiv.kastenfarbe} onChange={e => waehleFarbe('kastenfarbe', e.target.value)}>
+                    {aktiv.kastenfarbe && !farbOptionen.some(o => o.value === aktiv.kastenfarbe) && <option value={aktiv.kastenfarbe}>{aktiv.kastenfarbe}</option>}
+                    {farbOptionen.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                    <option value="__manuell__">✏️ Manuell eingeben…</option>
+                  </select>
+                </>
+              )}
               <label className="np-field-label">Farbe Lamellen/Behang</label>
               <select className="np-select np-select--block np-select--tall" value={aktiv.behangfarbe} onChange={e => waehleFarbe('behangfarbe', e.target.value)}>
                 {aktiv.behangfarbe && !farbOptionen.some(o => o.value === aktiv.behangfarbe) && <option value={aktiv.behangfarbe}>{aktiv.behangfarbe}</option>}

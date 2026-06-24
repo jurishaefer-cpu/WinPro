@@ -84,7 +84,9 @@ function rolloZeilen(config, profil, mitMontage = true) {
   if (!panzerOnly && config.kastenhoeheRollo) z.push(`Kastenhöhe: ${Math.round(config.kastenhoeheRollo)} mm`);
   if (config.behang) z.push(`Rollopanzer: ${esc(config.behang)}`);
   if (!panzerOnly && config.bedienung) z.push(`Bedienung: ${esc(config.bedienung)}${config.bedienungsseiteRollo ? ` (${esc(config.bedienungsseiteRollo)})` : ''}`);
-  if (config.kastenfarbe || config.behangfarbe) {
+  if (panzerOnly) {
+    if (config.behangfarbe) z.push(`Farbe: Lamellen ${esc(config.behangfarbe)}`);
+  } else if (config.kastenfarbe || config.behangfarbe) {
     z.push(`Farbe: Kasten ${esc(config.kastenfarbe ?? '')} / Lamellen ${esc(config.behangfarbe ?? '')}`);
   }
   if (mitMontage) { const mz = montageZeile(config); if (mz) z.push(mz); }
