@@ -1048,6 +1048,17 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
                 <span className="pane-option-thumb"><GeometrieThumb geometrie={geometrieByCode('T01')} /></span>
                 <span className="pane-option-label">Tür hinzufügen</span>
               </button>
+              <div className="pane-menu-sub">Sonderformen</div>
+              {['S01', 'S02', 'S03', 'S04', 'S05'].map(code => {
+                const g = geometrieByCode(code);
+                return (
+                  <button key={code} className="pane-option"
+                          onClick={() => { waehleGeometrie(code); setAddMenu(false); }}>
+                    <span className="pane-option-thumb"><GeometrieThumb geometrie={g} /></span>
+                    <span className="pane-option-label">{g.label}</span>
+                  </button>
+                );
+              })}
             </div>
           )}
         </section>

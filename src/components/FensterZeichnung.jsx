@@ -37,6 +37,12 @@ export const GEOMETRIEN = [
     panes: [{ open: 'kipp' }, { open: 'drehkipp', din: 'links' }] },
   { code: 'F21', kategorie: 'fenster', gruppe: 'Übereinander', label: 'Oberlicht Fest, unten Drehkipp', cols: 1,
     panes: [{ fest: true }, { open: 'drehkipp', din: 'links' }] },
+  // Sonderformen (feststehende Sonderform-Verglasungen): Bögen & Dreiecke. Eigene Zeichen-Routine.
+  { code: 'S01', kategorie: 'fenster', gruppe: 'Sonderformen', label: 'Rundbogenfenster', form: 'rundbogen', open: 'fest', defBreite: 1000, defHoehe: 1200 },
+  { code: 'S02', kategorie: 'fenster', gruppe: 'Sonderformen', label: 'Segmentbogenfenster', form: 'segmentbogen', open: 'fest', defBreite: 1200, defHoehe: 1000 },
+  { code: 'S03', kategorie: 'fenster', gruppe: 'Sonderformen', label: 'Dreieckfenster gleichschenklig', form: 'dreieck', variante: 'gleich', open: 'fest', defBreite: 1200, defHoehe: 800 },
+  { code: 'S04', kategorie: 'fenster', gruppe: 'Sonderformen', label: 'Dreieckfenster rechtwinklig (Spitze links)', form: 'dreieck', variante: 'links', open: 'fest', defBreite: 1200, defHoehe: 800 },
+  { code: 'S05', kategorie: 'fenster', gruppe: 'Sonderformen', label: 'Dreieckfenster rechtwinklig (Spitze rechts)', form: 'dreieck', variante: 'rechts', open: 'fest', defBreite: 1200, defHoehe: 800 },
   { code: 'T01', kategorie: 'tuer', gruppe: 'Türen', label: 'Haustür DIN Links', open: 'tuer', din: 'links' },
   { code: 'T02', kategorie: 'tuer', gruppe: 'Türen', label: 'Haustür DIN Rechts', open: 'tuer', din: 'rechts' },
   { code: 'T03', kategorie: 'tuer', gruppe: 'Türen', label: 'Balkontür Dreh-Kipp DIN Links', open: 'drehkipp', din: 'links', tuer: true },
@@ -309,6 +315,17 @@ export function GeometrieThumb({ geometrie, glasFarbe = '#cfe3ef' }) {
           return <line key={i} x1={m + 6} y1={y} x2={W - m - 6} y2={y} stroke="#0f1f3d" strokeWidth="0.7" opacity="0.55" />;
         })}
         {!g?.panzerOnly && <rect x={m} y={m} width={W - 2 * m} height={kh} fill="#fff" stroke="#0f1f3d" strokeWidth="1.6" />}
+      </svg>
+    );
+  }
+  // Sonderformen (Bögen/Dreiecke): Mini-Kontur + Glas.
+  if (g?.form) {
+    const W = 120, H = 92, m = 9;
+    const { outer, inner } = sonderformPfade({ x: m, y: m, w: W - 2 * m, h: H - 2 * m }, g, 6);
+    return (
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="100%">
+        <path d={outer} fill="#fff" stroke="#0f1f3d" strokeWidth="1.6" strokeLinejoin="round" />
+        <path d={inner} fill="#f4f6f8" stroke="#0f1f3d" strokeWidth="1" strokeLinejoin="round" />
       </svg>
     );
   }
@@ -619,6 +636,35 @@ export function UnitBody({ c, glasFarbe = '#cfe3ef', onPaneClick, selectedPane, 
   );
 }
 
+// --- Sonderformen (Bögen & Dreiecke) ---
+// Liefert SVG-Pfade für Außenkontur und (eingerückte) Glasfläche innerhalb des Rechtecks r.
+export function sonderformPfade(r, geo, frame) {
+  const { x, y, w, h } = r;
+  const fw = Math.max(4, frame || 0);
+  if (geo.form === 'dreieck') {
+    let pts;
+    if (geo.variante === 'links') pts = [[x, y], [x, y + h], [x + w, y + h]];            // Spitze oben links
+    else if (geo.variante === 'rechts') pts = [[x + w, y], [x, y + h], [x + w, y + h]];  // Spitze oben rechts
+    else pts = [[x + w / 2, y], [x, y + h], [x + w, y + h]];                             // gleichschenklig
+    const outer = `M ${pts[0][0]},${pts[0][1]} L ${pts[1][0]},${pts[1][1]} L ${pts[2][0]},${pts[2][1]} Z`;
+    // Glasfläche: Ecken näherungsweise konstant Richtung Schwerpunkt einrücken.
+    const cx = (pts[0][0] + pts[1][0] + pts[2][0]) / 3, cy = (pts[0][1] + pts[1][1] + pts[2][1]) / 3;
+    const s = Math.max(0.3, 1 - (2.8 * fw) / Math.min(w, h));
+    const ip = pts.map(([px, py]) => [cx + (px - cx) * s, cy + (py - cy) * s]);
+    const inner = `M ${ip[0][0]},${ip[0][1]} L ${ip[1][0]},${ip[1][1]} L ${ip[2][0]},${ip[2][1]} Z`;
+    return { outer, inner };
+  }
+  // Bögen: Rundbogen (Halbkreis, rise = w/2) bzw. Segmentbogen (flacher Kreissegment-Bogen).
+  const rise = geo.form === 'rundbogen' ? Math.min(w / 2, h * 0.92) : Math.min(w * 0.22, h * 0.6);
+  const R = (w * w / 4 + rise * rise) / (2 * rise);
+  const outer = `M ${x},${y + h} L ${x},${y + rise} A ${R},${R} 0 0 1 ${x + w},${y + rise} L ${x + w},${y + h} Z`;
+  const ix = x + fw, iw = w - 2 * fw, iyTop = y + fw, iBot = y + h - fw;
+  const irise = Math.max(2, rise - fw);
+  const iR = (iw * iw / 4 + irise * irise) / (2 * irise);
+  const inner = `M ${ix},${iBot} L ${ix},${iyTop + irise} A ${iR},${iR} 0 0 1 ${ix + iw},${iyTop + irise} L ${ix + iw},${iBot} Z`;
+  return { outer, inner };
+}
+
 function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkasten, schwelle, oberlichtHoehe, glasFarbe = '#cfe3ef', onBreite, onHoehe, onOberlichtHoehe, onBottomHoehe, panes: panesProp, cols: colsProp, colWidths, rowHeights, onColWidth, onRowHeight, onPaneClick, selectedPane }) {
   const b = Math.max(200, Number(breite) || 1000);
   const hh = Math.max(200, Number(hoehe) || 1200);
@@ -632,6 +678,8 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
   const x = cx - rw / 2, y = cy - rh / 2;
 
   const r0 = { x, y, w: rw, h: rh };                            // Gesamtmaß (mit Verbreiterung/Kasten)
+  const istSonderform = !!geometrie?.form;
+  const sonder = istSonderform ? sonderformPfade(r0, geometrie, Math.max(6, 60 * scale)) : null;
   const c = computeUnit(r0, scale, { geometrie, breite, hoehe, panes: panesProp, cols: colsProp, colWidths, rowHeights, verbreiterung, aufsatzkasten, schwelle, oberlichtHoehe });
   const hatSubB = c.subCols.length > 0;
   const hatSubH = c.subRows.length > 0 || c.hatOberlicht;
@@ -812,8 +860,15 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
         });
       })()}
 
-      {/* Fensterkörper (Rahmen, Flügel, Glas, Pfosten, Lamellen, Griffe, Klickflächen) */}
-      <UnitBody c={c} glasFarbe={glasFarbe} onPaneClick={onPaneClick} selectedPane={selectedPane} />
+      {/* Fensterkörper: Sonderform (Bogen/Dreieck) oder normaler Rahmenkörper */}
+      {istSonderform ? (
+        <g>
+          <path d={sonder.outer} fill="#fff" stroke="#0f1f3d" strokeWidth="2.5" strokeLinejoin="round" />
+          <path d={sonder.inner} fill={glasFarbe} stroke="#0f1f3d" strokeWidth="1.6" strokeLinejoin="round" opacity="0.95" />
+        </g>
+      ) : (
+        <UnitBody c={c} glasFarbe={glasFarbe} onPaneClick={onPaneClick} selectedPane={selectedPane} />
+      )}
     </svg>
   );
 }
