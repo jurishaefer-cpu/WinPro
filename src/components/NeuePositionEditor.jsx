@@ -565,19 +565,35 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
   // Element an eine Seite des Hauptfensters andocken (Drag im Canvas)
   function dockElement(id, side, targetId) {
     setElemente(prev => {
-      // An die freie Kante des Ziel-Elements docken (Fallback: Hauptelement).
       const target = (targetId != null && prev.find(e => e.id === targetId)) || prev[0];
-      let row = target.row ?? 0, col = target.col ?? 0;
-      if (side === 'rechts') col = (target.col ?? 0) + 1;
-      else if (side === 'links') col = (target.col ?? 0) - 1;
-      else if (side === 'unten') row = (target.row ?? 0) + 1;
-      else if (side === 'oben') row = (target.row ?? 0) - 1;
-      let next = prev.map(e => (e.id === id ? { ...e, row, col, offset: undefined } : e));
+      if (!target || target.id === id) return prev;
+      const tr = target.row ?? 0, tc = target.col ?? 0;
+      let others = prev.filter(e => e.id !== id);
+      const belegt = (r, c) => others.some(e => (e.row ?? 0) === r && (e.col ?? 0) === c);
+      let row = tr, col = tc;
+      // An die gewählte Kante setzen. Ist die Zielzelle belegt, eine ganze Spalte/Zeile einfügen
+      // (alle dahinterliegenden Elemente verschieben) – so kann man an JEDE Kante andocken.
+      if (side === 'rechts') {
+        col = tc + 1;
+        if (belegt(tr, col)) others = others.map(e => ((e.col ?? 0) >= col ? { ...e, col: (e.col ?? 0) + 1 } : e));
+      } else if (side === 'links') {
+        col = tc;
+        if (belegt(tr, col)) others = others.map(e => ((e.col ?? 0) >= col ? { ...e, col: (e.col ?? 0) + 1 } : e));
+      } else if (side === 'unten') {
+        row = tr + 1;
+        if (belegt(row, tc)) others = others.map(e => ((e.row ?? 0) >= row ? { ...e, row: (e.row ?? 0) + 1 } : e));
+      } else if (side === 'oben') {
+        row = tr;
+        if (belegt(row, tc)) others = others.map(e => ((e.row ?? 0) >= row ? { ...e, row: (e.row ?? 0) + 1 } : e));
+      }
+      const moved = { ...prev.find(e => e.id === id), row, col, offset: undefined };
+      let next = [...others, moved];
       const minR = Math.min(...next.map(e => e.row ?? 0));
       const minC = Math.min(...next.map(e => e.col ?? 0));
       next = next.map(e => ({ ...e, row: (e.row ?? 0) - minR, col: (e.col ?? 0) - minC }));
-      // Elemente behalten ihre eigene Größe; sie passen sich NICHT ans Gesamtmaß an, dürfen aber
-      // auch nicht darüber hinausragen – das Gesamtmaß ergibt sich als umschließende Hülle.
+      // Reihenfolge stabil halten: Hauptelement zuerst.
+      next.sort((a, b) => (a.id === prev[0].id ? -1 : b.id === prev[0].id ? 1 : 0));
+      // Größen bleiben erhalten (keine Anpassung ans Gesamtmaß); Rahmen = umschließende Hülle.
       return next;
     });
   }
