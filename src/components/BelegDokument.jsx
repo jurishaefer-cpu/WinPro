@@ -160,7 +160,8 @@ function BelegDokument({ art, angebot, kunde, positionen, profileMap, einstellun
       <div className="beleg-fuss">
         <div>
           <strong>{firma.firmenname}</strong>
-          <div>{[firma.strasse, [firma.plz, firma.ort].filter(Boolean).join(' ')].filter(Boolean).join(' , ')}</div>
+          <div>{firma.strasse}</div>
+          <div>{[firma.plz, firma.ort].filter(Boolean).join(' ')}</div>
           <div>{[firma.telefon && `Tel. ${firma.telefon}`, firma.email].filter(Boolean).join(' · ')}</div>
         </div>
         <div>
