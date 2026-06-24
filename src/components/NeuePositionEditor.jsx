@@ -848,7 +848,12 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
         {/* Mitte: Zeichnung */}
         <section className="np-col np-col--center">
           <div className="np-chips">
-            <span className="np-chip"><span className="np-dot" /> {systemLabel}</span>
+            <label className="np-chip np-chip--select" title="System wechseln">
+              <span className="np-dot" />
+              <select className="np-chip-select" value={profilId ?? ''} onChange={e => setProfilId(Number(e.target.value))}>
+                {profile.map(p => <option key={p.id} value={p.id}>{`${p.hersteller} ${p.system}`.trim()}</option>)}
+              </select>
+            </label>
             <span className="np-chip">Maß <b>{Math.round(breiteGes).toLocaleString('de-DE')} × {Math.round(hoeheGes).toLocaleString('de-DE')} mm</b></span>
             <span className="np-chip">Fläche <b>{flaeche.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} m²</b></span>
             {aktiv.verbunden ? (
