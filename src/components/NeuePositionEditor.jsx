@@ -344,6 +344,15 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
       updAktiv({ [feld]: val });
     }
   }
+  // Lamellengröße: Listenwert übernehmen oder bei „Manuell eingeben…" zur Texteingabe wechseln
+  function waehleLamelle(val) {
+    if (val === '__manuell__') {
+      const eingabe = window.prompt('Lamellengröße manuell eingeben:', aktiv?.lamelle ?? '');
+      if (eingabe != null && eingabe.trim() !== '') updAktiv({ lamelle: eingabe.trim() });
+    } else {
+      updAktiv({ lamelle: val });
+    }
+  }
   function switchActive(id) {
     setActiveId(id);
     setSelectedPane(null);
@@ -874,17 +883,25 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
               <label className="np-field-label">Rollopanzer</label>
               <select className="np-select np-select--block" value={aktiv.behang} onChange={e => {
                 const b = e.target.value;
-                const idx = Math.max(0, lamellenOptionen(aktiv.behang).indexOf(aktiv.lamelle));
-                const neu = lamellenOptionen(b);
+                // Manuell eingegebene Lamellengröße beim Materialwechsel behalten, sonst Standard-Pendant ziehen.
+                const istManuell = !lamellenOptionen(aktiv.behang).includes(aktiv.lamelle);
+                let lamelle = aktiv.lamelle;
+                if (!istManuell) {
+                  const idx = Math.max(0, lamellenOptionen(aktiv.behang).indexOf(aktiv.lamelle));
+                  const neu = lamellenOptionen(b);
+                  lamelle = neu[idx] ?? neu[0];
+                }
                 // Lamellenfarbe-Standard (Samtgrau/Hellgrau) beim Materialwechsel mitziehen (außer manuell gewählt).
                 const farbe = aktiv.behangfarbe === rolloFarbe(aktiv.behang) ? rolloFarbe(b) : aktiv.behangfarbe;
-                updAktiv({ behang: b, lamelle: neu[idx] ?? neu[0], behangfarbe: farbe });
+                updAktiv({ behang: b, lamelle, behangfarbe: farbe });
               }}>
                 {BEHANG.map(x => <option key={x} value={x}>{x}</option>)}
               </select>
               <label className="np-field-label">Lamellengröße</label>
-              <select className="np-select np-select--block" value={aktiv.lamelle} onChange={e => updAktiv({ lamelle: e.target.value })}>
+              <select className="np-select np-select--block" value={aktiv.lamelle} onChange={e => waehleLamelle(e.target.value)}>
                 {lamellenOptionen(aktiv.behang).map(x => <option key={x} value={x}>{x}</option>)}
+                {aktiv.lamelle && !lamellenOptionen(aktiv.behang).includes(aktiv.lamelle) && <option value={aktiv.lamelle}>{aktiv.lamelle}</option>}
+                <option value="__manuell__">✏️ Manuell eingeben…</option>
               </select>
               {!geometrie?.panzerOnly && (
                 <>
