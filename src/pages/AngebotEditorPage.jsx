@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../auth/AuthContext';
 import ManuellePositionModal from '../components/ManuellePositionModal';
 import NeuePositionEditor from '../components/NeuePositionEditor';
-import FensterZeichnung, { geometrieByCode, KombinationsZeichnung } from '../components/FensterZeichnung';
+import FensterZeichnung, { geometrieByCode, KombinationsZeichnung, RolloZeichnung } from '../components/FensterZeichnung';
 import BelegModal from '../components/BelegModal';
 import { ladeEinstellungen } from '../lib/einstellungen';
 
@@ -302,11 +302,15 @@ function AngebotEditorPage() {
                 <div key={p.id} className="pos-card">
                   <div className="pos-card-head">
                     <span className="pos-card-num">{i + 1}</span>
-                    <span className="pos-card-titel">{c.standort?.trim() || '—'}</span>
+                    <span className="pos-card-titel">{c.standort?.trim() || (c.kategorie === 'rollo' ? (geometrieByCode(c.code)?.label || 'Rollladen') : '—')}</span>
                     <span className="pos-card-menge">{menge}×</span>
                   </div>
                   <div className="pos-card-canvas" onClick={oeffne} title="Zum Bearbeiten klicken">
-                    {c.elemente?.length > 1 ? (
+                    {c.kategorie === 'rollo' ? (
+                      <RolloZeichnung breite={c.breite} hoehe={c.hoehe} kastenhoehe={c.kastenhoeheRollo}
+                        bedienung={c.bedienung} bedienungsseite={c.bedienungsseiteRollo}
+                        panzerOnly={!!geometrieByCode(c.code)?.panzerOnly} />
+                    ) : c.elemente?.length > 1 ? (
                       <KombinationsZeichnung elemente={c.elemente} />
                     ) : (
                       <FensterZeichnung
