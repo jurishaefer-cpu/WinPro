@@ -19,6 +19,9 @@ const LAMELLEN = {
   'Kunststoff (PVC)': ['Mini 37mm', 'Maxi 52mm'],
 };
 const lamellenOptionen = (behang) => LAMELLEN[behang] || LAMELLEN['Aluminium'];
+// Behang-/Lamellenfarbe je nach Material (Standardfarbe; zusätzlich immer manuelle Eingabe möglich)
+const ROLLO_FARBE = { 'Aluminium': 'Samtgrau', 'Kunststoff (PVC)': 'Hellgrau' };
+const rolloFarbe = (behang) => ROLLO_FARBE[behang] || ROLLO_FARBE['Aluminium'];
 
 // Öffnungsarten je Flügel – Bausteine
 const OPT = {
@@ -136,9 +139,9 @@ function makeElement(src, id) {
     bedienungsseiteRollo: src?.bedienungsseiteRollo ?? 'rechts',
     behang: src?.behang ?? 'Aluminium',
     lamelle: src?.lamelle ?? 'Mini 37mm',
+    behangfarbe: src?.behangfarbe ?? 'Samtgrau',
     kastenhoeheRollo: src?.kastenhoeheRollo ?? 165,
     kastenfarbe: src?.kastenfarbe ?? 'WEISS',
-    behangfarbe: src?.behangfarbe ?? 'WEISS',
     kommentar: src?.kommentar ?? '',
     nettoJeStueck: src?.nettoJeStueck ?? 0,
     // Verbinden/Trennen: aus zwei benachbarten Teilen zusammengeführtes Element
@@ -862,7 +865,9 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
                 const b = e.target.value;
                 const idx = Math.max(0, lamellenOptionen(aktiv.behang).indexOf(aktiv.lamelle));
                 const neu = lamellenOptionen(b);
-                updAktiv({ behang: b, lamelle: neu[idx] ?? neu[0] });
+                // Behangfarbe: Standard mitziehen (außer der Nutzer hat manuell etwas Eigenes gewählt)
+                const farbe = aktiv.behangfarbe === rolloFarbe(aktiv.behang) ? rolloFarbe(b) : aktiv.behangfarbe;
+                updAktiv({ behang: b, lamelle: neu[idx] ?? neu[0], behangfarbe: farbe });
               }}>
                 {BEHANG.map(x => <option key={x} value={x}>{x}</option>)}
               </select>
@@ -1125,8 +1130,8 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
               )}
               <label className="np-field-label">Farbe Lamellen/Behang</label>
               <select className="np-select np-select--block np-select--tall" value={aktiv.behangfarbe} onChange={e => waehleFarbe('behangfarbe', e.target.value)}>
-                {aktiv.behangfarbe && !farbOptionen.some(o => o.value === aktiv.behangfarbe) && <option value={aktiv.behangfarbe}>{aktiv.behangfarbe}</option>}
-                {farbOptionen.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                <option value={rolloFarbe(aktiv.behang)}>{rolloFarbe(aktiv.behang)}</option>
+                {aktiv.behangfarbe && aktiv.behangfarbe !== rolloFarbe(aktiv.behang) && <option value={aktiv.behangfarbe}>{aktiv.behangfarbe}</option>}
                 <option value="__manuell__">✏️ Manuell eingeben…</option>
               </select>
             </>
