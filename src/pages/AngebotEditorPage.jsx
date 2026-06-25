@@ -177,9 +177,9 @@ function AngebotEditorPage() {
     setZeigeBeleg(art);
   }
 
-  // Angebot: Anzahlungssatz bestätigen (Standard 40 %, editierbar) – gilt für alle Belege.
+  // Angebot: Anzahlungssatz bestätigen – Voreinstellung immer 40 % (editierbar) – gilt für alle Belege.
   function starteAngebot() {
-    setAnzahlungProzent(String(angebot.anzahlung_prozent ?? 40).replace('.', ','));
+    setAnzahlungProzent('40');
     setAngebotPrompt(true);
   }
 
