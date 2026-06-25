@@ -567,6 +567,26 @@ body {
   margin: 0;
 }
 
+/* Bestellung: Kategorie-Auswahl */
+.bestell-optionen {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.bestell-option {
+  width: 100%;
+  justify-content: center;
+  text-align: center;
+}
+.bestell-option:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.bestell-option-zahl {
+  color: #888;
+  font-weight: 400;
+}
+
 /* ── Empty state ── */
 .empty-state {
   text-align: center;

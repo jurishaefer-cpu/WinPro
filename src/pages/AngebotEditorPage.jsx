@@ -30,6 +30,12 @@ function parseEuro(s) {
   return Number.isFinite(n) ? n : 0;
 }
 
+// Kategorie einer Position für die Bestellung: 'rollo' | 'fenster' | 'manuell'.
+function positionKategorie(p) {
+  if (p?.typ === 'fenster') return p.config?.kategorie === 'rollo' ? 'rollo' : 'fenster';
+  return 'manuell';
+}
+
 function getInitials(k) {
   if (!k) return '?';
   if (k.firma) {
@@ -54,6 +60,8 @@ function AngebotEditorPage() {
   const [einstellungen, setEinstellungen] = useState({});
   const [profileMap, setProfileMap] = useState({});
   const [zeigeBeleg, setZeigeBeleg] = useState(null); // Belegart oder null
+  const [bestellPrompt, setBestellPrompt] = useState(false); // Auswahl-Dialog vor der Bestellung
+  const [bestellFilter, setBestellFilter] = useState(null);  // 'fenster' | 'rollo' | 'manuell'
   const [rechnungPrompt, setRechnungPrompt] = useState(false);
   const [ausfDatum, setAusfDatum] = useState('');
   const [rechnungNr, setRechnungNr] = useState('');      // manuell eingegebene Rechnungs-Nummer (Sequenz)
@@ -155,8 +163,20 @@ function AngebotEditorPage() {
       await starteRechnung();
       return;
     }
+    if (art === 'Bestellung') {
+      setBestellPrompt(true);
+      return;
+    }
     await sichereBelegnummer(art);
     setZeigeBeleg(art);
+  }
+
+  // Bestellung nur mit Positionen der gewählten Kategorie erzeugen.
+  async function waehleBestellung(filter) {
+    setBestellFilter(filter);
+    setBestellPrompt(false);
+    await sichereBelegnummer('Bestellung');
+    setZeigeBeleg('Bestellung');
   }
 
   async function bestaetigeRechnung() {
@@ -183,6 +203,10 @@ function AngebotEditorPage() {
     }
     if (art === 'Rechnung') {
       await starteRechnung();
+      return;
+    }
+    if (art === 'Bestellung') {
+      setBestellPrompt(true);
       return;
     }
     await sichereBelegnummer(art);
@@ -544,12 +568,48 @@ function AngebotEditorPage() {
         );
       })()}
 
+      {bestellPrompt && (() => {
+        const optionen = [
+          { key: 'fenster', label: 'Bestellung Fenster' },
+          { key: 'rollo', label: 'Bestellung Rollos' },
+          { key: 'manuell', label: 'Bestellung manuelle Position' },
+        ];
+        return (
+          <div className="modal-overlay" onClick={() => setBestellPrompt(false)}>
+            <div className="modal-box" onClick={e => e.stopPropagation()}>
+              <h2 className="modal-title">Bestellung erstellen</h2>
+              <p className="modal-text" style={{ marginBottom: 16 }}>Wofür soll die Bestellung erstellt werden?</p>
+              <div className="bestell-optionen">
+                {optionen.map(({ key, label }) => {
+                  const anzahl = positionen.filter(p => positionKategorie(p) === key).length;
+                  return (
+                    <button
+                      key={key}
+                      className="btn btn-outline bestell-option"
+                      disabled={anzahl === 0}
+                      onClick={() => waehleBestellung(key)}
+                    >
+                      {label} <span className="bestell-option-zahl">({anzahl})</span>
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="modal-actions" style={{ marginTop: 20 }}>
+                <button className="btn btn-secondary" onClick={() => setBestellPrompt(false)}>Abbrechen</button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       {zeigeBeleg && (
         <BelegModal
           art={zeigeBeleg}
           angebot={angebot}
           kunde={kunde}
-          positionen={positionen}
+          positionen={zeigeBeleg === 'Bestellung' && bestellFilter
+            ? positionen.filter(p => positionKategorie(p) === bestellFilter)
+            : positionen}
           profileMap={profileMap}
           einstellungen={einstellungen}
           onClose={() => setZeigeBeleg(null)}
