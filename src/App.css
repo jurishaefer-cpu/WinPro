@@ -2150,6 +2150,13 @@ body {
 
 /* Mitte */
 .np-chips { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; align-self: stretch; width: 100%; align-items: center; }
+/* Kurze rote Meldung oben mittig (z. B. „zu groß") */
+.np-warnung {
+  position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 60;
+  background: #c0152e; color: #fff; font-size: 13px; font-weight: 700;
+  padding: 6px 14px; border-radius: 999px; box-shadow: 0 6px 18px rgba(192, 21, 46, 0.3);
+  pointer-events: none;
+}
 .np-chip {
   background: #fff; border: 1px solid #e5e7eb; border-radius: 20px;
   padding: 7px 14px; font-size: 13px; color: #4a4f57;

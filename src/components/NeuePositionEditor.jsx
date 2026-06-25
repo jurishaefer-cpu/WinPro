@@ -252,6 +252,15 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
   // verändert sie aber NICHT. Null = Wand folgt der Fenster-Hülle.
   const [rahmenB, setRahmenB] = useState(() => (Number(initial?.rahmenB) > 0 ? Number(initial.rahmenB) : null));
   const [rahmenH, setRahmenH] = useState(() => (Number(initial?.rahmenH) > 0 ? Number(initial.rahmenH) : null));
+  const [warnung, setWarnung] = useState('');               // kurze rote Meldung oben (z. B. „zu groß")
+  const [massNonce, setMassNonce] = useState(0);            // erzwingt Reset der Maß-Felder nach einem Clamp
+  const warnTimer = useRef(null);
+  function zeigeWarnung(msg) {
+    setWarnung(msg);
+    setMassNonce(n => n + 1);
+    if (warnTimer.current) clearTimeout(warnTimer.current);
+    warnTimer.current = setTimeout(() => setWarnung(''), 1600);
+  }
   const [addMenu, setAddMenu] = useState(false);
   const nextId = useRef(1000);
 
@@ -615,34 +624,29 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
   function slideElement(id, offsetMm) {
     setElemente(prev => prev.map(e => (e.id === id ? { ...e, offset: offsetMm } : e)));
   }
-  // Einzelmaß in der Kombi-Zeichnung ändern: Rahmen bleibt fest, der Nachbar passt sich an.
+  // Einzelmaß ändern: NUR dieses Fenster (Nachbarn bleiben unverändert). Geht es über die Wand
+  // hinaus, wird auf das Maximum begrenzt und kurz „zu groß" angezeigt.
   function setElementBreite(id, val) {
-    setElemente(prev => {
-      const el = prev.find(e => e.id === id);
-      if (!el) return prev;
-      const c = el.col ?? 0, r = el.row ?? 0;
-      const nb = prev.find(e => (e.row ?? 0) === r && (e.col ?? 0) === c + 1)
-              || prev.find(e => (e.row ?? 0) === r && (e.col ?? 0) === c - 1);
-      let w = Math.max(200, Math.round(Number(val) || 0));
-      if (!nb) return prev.map(e => e.id === id ? scaleBreite(e, w) : e);   // kein Nachbar → Rahmen folgt
-      const paar = (Number(el.breite) || 0) + (Number(nb.breite) || 0);     // Spaltenpaar-Summe bleibt
-      w = Math.min(paar - 200, w);
-      return prev.map(e => e.id === id ? scaleBreite(e, w) : e.id === nb.id ? scaleBreite(e, paar - w) : e);
-    });
+    const el = elemente.find(e => e.id === id);
+    if (!el) return;
+    let w = Math.max(200, Math.round(Number(val) || 0));
+    const c = el.col ?? 0;
+    const cols = [...new Set(elemente.map(e => e.col ?? 0))];
+    const colMax = (cc, ww) => Math.max(0, ...elemente.filter(e => (e.col ?? 0) === cc && e.id !== id).map(e => Number(e.breite) || 0), cc === c ? ww : 0);
+    const totalFor = ww => cols.reduce((a, cc) => a + colMax(cc, ww), 0);
+    if (rahmenB && totalFor(w) > rahmenB) { w = Math.max(200, w - (totalFor(w) - rahmenB)); zeigeWarnung('zu groß'); }
+    setElemente(prev => prev.map(e => (e.id === id ? scaleBreite(e, w) : e)));
   }
   function setElementHoehe(id, val) {
-    setElemente(prev => {
-      const el = prev.find(e => e.id === id);
-      if (!el) return prev;
-      const c = el.col ?? 0, r = el.row ?? 0;
-      const nb = prev.find(e => (e.col ?? 0) === c && (e.row ?? 0) === r + 1)
-              || prev.find(e => (e.col ?? 0) === c && (e.row ?? 0) === r - 1);
-      let h = Math.max(200, Math.round(Number(val) || 0));
-      if (!nb) return prev.map(e => e.id === id ? scaleHoehe(e, h) : e);
-      const paar = (Number(el.hoehe) || 0) + (Number(nb.hoehe) || 0);
-      h = Math.min(paar - 200, h);
-      return prev.map(e => e.id === id ? scaleHoehe(e, h) : e.id === nb.id ? scaleHoehe(e, paar - h) : e);
-    });
+    const el = elemente.find(e => e.id === id);
+    if (!el) return;
+    let h = Math.max(200, Math.round(Number(val) || 0));
+    const r = el.row ?? 0;
+    const rows = [...new Set(elemente.map(e => e.row ?? 0))];
+    const rowMax = (rr, hh) => Math.max(0, ...elemente.filter(e => (e.row ?? 0) === rr && e.id !== id).map(e => Number(e.hoehe) || 0), rr === r ? hh : 0);
+    const totalFor = hh => rows.reduce((a, rr) => a + rowMax(rr, hh), 0);
+    if (rahmenH && totalFor(h) > rahmenH) { h = Math.max(200, h - (totalFor(h) - rahmenH)); zeigeWarnung('zu groß'); }
+    setElemente(prev => prev.map(e => (e.id === id ? scaleHoehe(e, h) : e)));
   }
   // Gesamtmaß = Wand/Maueröffnung setzen. Verändert die Fenster NICHT; sie dürfen nur nicht darüber
   // hinausragen → die Wand ist mindestens so groß wie die Fenster-Hülle.
@@ -849,7 +853,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
             <div>
               <label className="np-field-label">Breite (mm)</label>
               {istKombi ? (
-                <input className="np-input" type="number" key={'eb' + activeId + '_' + Math.round(aktiv.breite)}
+                <input className="np-input" type="number" key={'eb' + activeId + '_' + Math.round(aktiv.breite) + '_' + massNonce}
                        defaultValue={Math.round(aktiv.breite)}
                        onBlur={e => setElementBreite(activeId, e.target.value)}
                        onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); }} />
@@ -860,7 +864,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
             <div>
               <label className="np-field-label">Höhe (mm)</label>
               {istKombi ? (
-                <input className="np-input" type="number" key={'eh' + activeId + '_' + Math.round(aktiv.hoehe)}
+                <input className="np-input" type="number" key={'eh' + activeId + '_' + Math.round(aktiv.hoehe) + '_' + massNonce}
                        defaultValue={Math.round(aktiv.hoehe)}
                        onBlur={e => setElementHoehe(activeId, e.target.value)}
                        onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); }} />
@@ -1032,6 +1036,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
 
         {/* Mitte: Zeichnung */}
         <section className="np-col np-col--center">
+          {warnung && <div className="np-warnung">{warnung}</div>}
           <div className="np-chips">
             {istRollo ? (
               <span className="np-chip"><span className="np-dot" /> Rollladen</span>
