@@ -2006,6 +2006,14 @@ body {
   font-size: 16px; line-height: 1; color: #fff;
 }
 .np-close:hover { background: #a01f1f; border-color: #a01f1f; }
+.np-undo {
+  height: 44px; padding: 0 14px; flex-shrink: 0;
+  display: inline-flex; align-items: center; gap: 6px;
+  border: 1px solid #d8dce1; background: #fff; color: #1a1a1a;
+  border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600;
+}
+.np-undo:hover:not(:disabled) { background: #f1f4f8; border-color: #c3c9d2; }
+.np-undo:disabled { opacity: 0.4; cursor: default; }
 
 .np-body {
   flex: 1;

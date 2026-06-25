@@ -264,6 +264,32 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
   const [addMenu, setAddMenu] = useState(false);
   const nextId = useRef(1000);
 
+  // --- Rückgängig (eine Änderung zurück) ---
+  const histRef = useRef(null);
+  if (histRef.current === null) histRef.current = { stack: [], prev: undefined };
+  const skipHist = useRef(false);
+  const [histLen, setHistLen] = useState(0);
+  useEffect(() => {
+    const h = histRef.current;
+    if (h.prev === undefined) { h.prev = elemente; return; }
+    if (h.prev === elemente) return;
+    if (skipHist.current) { skipHist.current = false; h.prev = elemente; return; }
+    h.stack.push(h.prev);
+    if (h.stack.length > 60) h.stack.shift();
+    h.prev = elemente;
+    setHistLen(h.stack.length);
+  }, [elemente]);
+  function undo() {
+    const h = histRef.current;
+    if (!h.stack.length) return;
+    const prev = h.stack.pop();
+    skipHist.current = true;   // dieses Zurücksetzen NICHT als neue Änderung aufzeichnen (h.prev setzt der Effekt)
+    setElemente(prev);
+    setActiveId(a => (prev.some(e => e.id === a) ? a : prev[0].id));
+    setSelectedPane(null);
+    setHistLen(h.stack.length);
+  }
+
   // Positions-Ebene (für alle Elemente gemeinsam)
   const [stueckzahl, setStueckzahl] = useState(initial?.stueckzahl ?? 1);
   const [standort, setStandort] = useState(initial?.standort ?? '');
@@ -620,8 +646,9 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
       return next;
     });
   }
-  // Element entlang seiner Andock-Kante verschieben (Versatz in mm)
+  // Element entlang seiner Andock-Kante verschieben (Versatz in mm) – nicht einzeln in die History
   function slideElement(id, offsetMm) {
+    skipHist.current = true;
     setElemente(prev => prev.map(e => (e.id === id ? { ...e, offset: offsetMm } : e)));
   }
   // Einzelmaß ändern: NUR dieses Fenster (Nachbarn bleiben unverändert). Geht es über die Wand
@@ -792,6 +819,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
           <span className="np-subtitle">Position für {kundeName}</span>
         </div>
         <div className="np-header-right">
+          <button className="np-undo" onClick={undo} disabled={histLen === 0} title="Letzte Änderung rückgängig">↩ Zurück</button>
           <span className="np-system-label">System</span>
           {istRollo ? (
             <span className="np-select np-system-fest">Rollladen</span>
