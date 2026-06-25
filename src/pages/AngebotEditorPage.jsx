@@ -86,7 +86,11 @@ function AngebotEditorPage() {
       if (cfg.jahr && m[1] && Number(m[1]) !== jahr) return;
       max = Math.max(max, Number(m[2]));
     });
-    const nummer = formatBelegnummer(cfg, max + 1, jahr);
+    // Nächste Nummer: automatisch hochgezählt, aber mindestens die in den Einstellungen
+    // vorgegebene Startnummer (so wirkt eine manuelle Änderung, ohne bestehende Nummern zu doppeln).
+    const start = Math.max(1, Number(cfg.start) || 1);
+    const naechste = Math.max(max + 1, start);
+    const nummer = formatBelegnummer(cfg, naechste, jahr);
     const neu = { ...(angebot.belegnummern ?? {}), [art]: nummer };
     await supabase.from('angebote').update({ belegnummern: neu }).eq('id', angebotId);
     setAngebot(a => ({ ...a, belegnummern: neu }));

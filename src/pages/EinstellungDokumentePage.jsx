@@ -71,15 +71,15 @@ function EinstellungDokumentePage() {
               <div key={key} className="dok-nummer">
                 <div className="dok-nummer-kopf">
                   <span className="dok-nummer-titel">{label}</span>
-                  <span className="dok-nummer-vorschau">{formatBelegnummer({ ...cfg, stellen: cfg.stellen }, 1, jahr)}</span>
+                  <span className="dok-nummer-vorschau">{formatBelegnummer(cfg, cfg.start ?? 1, jahr)}</span>
                 </div>
                 <div className="dok-nummer-felder">
                   <div className="form-field form-field--narrow">
-                    <label>Präfix</label>
+                    <label>Nächste Nummer</label>
                     <input
-                      value={cfg.praefix}
-                      onChange={e => setNummer(key, 'praefix', e.target.value)}
-                      placeholder="z. B. AN-"
+                      type="number" min="1"
+                      value={cfg.start ?? 1}
+                      onChange={e => setNummer(key, 'start', Math.max(1, Number(e.target.value) || 1))}
                     />
                   </div>
                   <div className="form-field form-field--narrow">
