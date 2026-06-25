@@ -1005,7 +1005,7 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
 }
 
 // Kombination mehrerer gekoppelter Einheiten (eigener Rahmen je Element), im Raster (row/col).
-export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weissesGlas = false, onUnitClick, activeId, onPaneClick, selectedPane, onDock, onSlide, onTotalBreite, onTotalHoehe, onElementBreite, onElementHoehe, onBackgroundClick }) {
+export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weissesGlas = false, onUnitClick, activeId, onPaneClick, selectedPane, onDock, onSlide, onTotalBreite, onTotalHoehe, onElementBreite, onElementHoehe, onBackgroundClick, rahmen }) {
   const svgRef = useRef(null);
   const [drag, setDrag] = useState(null); // { id, side, targetId }
   function svgPoint(clientX, clientY) {
@@ -1059,6 +1059,12 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
   const rowTopMm = {}; { let y = 0; rowsSet.forEach(rr => { rowTopMm[rr] = y; y += rowHmm[rr]; }); }
   let totalHmm = rowsSet.reduce((a, rr) => a + rowHmm[rr], 0);
   els.forEach(e => { const b = rowTopMm[e.row ?? 0] + hMm(e); if (b > totalHmm) totalHmm = b; });
+
+  // „Wand"/Maueröffnung: begrenzt die Fenster. Ist sie größer als die Fenster-Hülle, bleibt rechts/unten
+  // Luft (die Wand), die Fenster bleiben oben-links. Die Fenster ragen nie über die Wand hinaus.
+  const inhaltWmm = totalWmm, inhaltHmm = totalHmm;
+  if (rahmen) { totalWmm = Math.max(totalWmm, Number(rahmen.w) || 0); totalHmm = Math.max(totalHmm, Number(rahmen.h) || 0); }
+  const hatWand = rahmen && (totalWmm > inhaltWmm + 0.5 || totalHmm > inhaltHmm + 0.5);
 
   const maxW = 600, maxH = 440;
   const scale = Math.min(maxW / Math.max(200, totalWmm), maxH / Math.max(200, totalHmm));
@@ -1188,6 +1194,11 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
       {/* Klick neben die Fenster (leerer Hintergrund) hebt die Auswahl auf */}
       {onBackgroundClick && (
         <rect x={-100000} y={-100000} width={200000} height={200000} fill="transparent" onClick={onBackgroundClick} />
+      )}
+      {/* Wand/Maueröffnung: Begrenzung, über die die Fenster nicht hinausragen */}
+      {hatWand && (
+        <rect x={ox} y={oy} width={totalWpx} height={totalHpx} fill="none"
+              stroke="#9aa3b2" strokeWidth="1.6" strokeDasharray="7 5" pointerEvents="none" />
       )}
       {/* Gesamtmaß Breite (oben) */}
       <line x1={ox} y1={topY} x2={ox + totalWpx} y2={topY} stroke="#0f1f3d" strokeWidth="1.2" />

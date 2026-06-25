@@ -92,7 +92,8 @@ function BelegDokument({ art, angebot, kunde, positionen, profileMap, einstellun
                       {c.kategorie === 'rollo' ? (
                         <RolloZeichnung breite={c.breite} hoehe={c.hoehe} kastenhoehe={c.kastenhoeheRollo} bedienung={c.bedienung} bedienungsseite={c.bedienungsseiteRollo} panzerOnly={!!geometrieByCode(c.code)?.panzerOnly} beleg />
                       ) : c.elemente?.length > 1 ? (
-                        <KombinationsZeichnung elemente={c.elemente} weissesGlas />
+                        <KombinationsZeichnung elemente={c.elemente} weissesGlas
+                          rahmen={(Number(c.rahmenB) > 0 || Number(c.rahmenH) > 0) ? { w: Number(c.rahmenB) || 0, h: Number(c.rahmenH) || 0 } : undefined} />
                       ) : (
                         <FensterZeichnung
                           geometrie={geometrieByCode(c.code)} breite={c.breite} hoehe={c.hoehe}

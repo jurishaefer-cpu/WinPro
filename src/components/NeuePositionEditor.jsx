@@ -248,6 +248,10 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
   const [activeId, setActiveId] = useState(() => buildInitElemente(initial)[0].id);
   const [selectedPane, setSelectedPane] = useState(null);
   const [auswahlAktiv, setAuswahlAktiv] = useState(true);   // false = Klick neben die Fenster hat die Auswahl aufgehoben
+  // Gesamtmaß = „Wand"/Maueröffnung: begrenzt die Fenster (sie dürfen nicht darüber hinaus),
+  // verändert sie aber NICHT. Null = Wand folgt der Fenster-Hülle.
+  const [rahmenB, setRahmenB] = useState(() => (Number(initial?.rahmenB) > 0 ? Number(initial.rahmenB) : null));
+  const [rahmenH, setRahmenH] = useState(() => (Number(initial?.rahmenH) > 0 ? Number(initial.rahmenH) : null));
   const [addMenu, setAddMenu] = useState(false);
   const nextId = useRef(1000);
 
@@ -640,35 +644,26 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
       return prev.map(e => e.id === id ? scaleHoehe(e, h) : e.id === nb.id ? scaleHoehe(e, paar - h) : e);
     });
   }
-  // Gesamtmaß (Rahmen) ändern: die Fenster füllen ihre Spalte/Zeile und skalieren proportional auf
-  // das neue Maß – so verändern sich beim Ändern des Gesamtmaßes die FENSTER (nicht nur eine leere Box).
+  // Gesamtmaß = Wand/Maueröffnung setzen. Verändert die Fenster NICHT; sie dürfen nur nicht darüber
+  // hinausragen → die Wand ist mindestens so groß wie die Fenster-Hülle.
   function setTotalBreite(val) {
-    const v = Number(val);
-    setElemente(prev => {
-      const cur = kombiMass(prev).w;
-      if (!Number.isFinite(v) || v <= 0 || cur <= 0) return prev;
-      const f = v / cur;
-      const cols = [...new Set(prev.map(e => e.col ?? 0))];
-      const colW = {}; cols.forEach(c => { colW[c] = Math.max(0, ...prev.filter(e => (e.col ?? 0) === c).map(e => Number(e.breite) || 0)); });
-      return prev.map(e => scaleBreite(e, Math.round((colW[e.col ?? 0] || (Number(e.breite) || 1000)) * f)));
-    });
+    const v = Math.round(Number(val) || 0);
+    if (!Number.isFinite(v) || v <= 0) return;
+    setRahmenB(Math.max(v, Math.round(kombiMass(elemente).w)));
   }
   function setTotalHoehe(val) {
-    const v = Number(val);
-    setElemente(prev => {
-      const cur = kombiMass(prev).h;
-      if (!Number.isFinite(v) || v <= 0 || cur <= 0) return prev;
-      const f = v / cur;
-      const rows = [...new Set(prev.map(e => e.row ?? 0))];
-      const rowH = {}; rows.forEach(r => { rowH[r] = Math.max(0, ...prev.filter(e => (e.row ?? 0) === r).map(e => Number(e.hoehe) || 0)); });
-      return prev.map(e => scaleHoehe(e, Math.round((rowH[e.row ?? 0] || (Number(e.hoehe) || 1200)) * f)));
-    });
+    const v = Math.round(Number(val) || 0);
+    if (!Number.isFinite(v) || v <= 0) return;
+    setRahmenH(Math.max(v, Math.round(kombiMass(elemente).h)));
   }
 
   // --- Maße / Preis ---
   const kombi = kombiMass(elemente);
-  const breiteGes = istKombi ? kombi.w : Number(aktiv.breite);
-  const hoeheGes = istKombi ? kombi.h : Number(aktiv.hoehe);
+  // Wand-Maß = max(eingestellte Wand, Fenster-Hülle). Die Fenster ragen nie darüber hinaus.
+  const wandB = Math.max(Number(rahmenB) || 0, kombi.w);
+  const wandH = Math.max(Number(rahmenH) || 0, kombi.h);
+  const breiteGes = istKombi ? wandB : Number(aktiv.breite);
+  const hoeheGes = istKombi ? wandH : Number(aktiv.hoehe);
   const flaeche = (breiteGes * hoeheGes) / 1_000_000; // m²
   const summeNetto = elemente.reduce((a, e) => a + (Number(e.nettoJeStueck) || 0), 0);
   // Rollladen/Vorbau Rollladen: nur Montage, kein Ausbau/Entsorgung.
@@ -756,6 +751,8 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
       bedienung: main.bedienung, bedienungsseiteRollo: main.bedienungsseiteRollo, behang: main.behang, lamelle: main.lamelle, kastenhoeheRollo: Number(main.kastenhoeheRollo) || 0,
       kastenfarbe: main.kastenfarbe, behangfarbe: main.behangfarbe,
       kommentar: main.kommentar, nettoJeStueck: Number(main.nettoJeStueck),
+      // Wand/Maueröffnung (begrenzt die Fenster, verändert sie nicht)
+      rahmenB, rahmenH,
       // Mehrteilig (immer mitgespeichert)
       elemente: elementeClean,
     };
@@ -1070,6 +1067,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
                 bedienung={aktiv.bedienung} bedienungsseite={aktiv.bedienungsseiteRollo} panzerOnly={!!geometrie?.panzerOnly} />
             ) : istKombi ? (
               <KombinationsZeichnung elemente={elemente} activeId={auswahlAktiv ? activeId : null}
+                rahmen={{ w: wandB, h: wandH }}
                 onUnitClick={switchActive} onPaneClick={waehlePane} selectedPane={selectedPane}
                 onBackgroundClick={deselectAlles}
                 onDock={dockElement} onSlide={slideElement}
