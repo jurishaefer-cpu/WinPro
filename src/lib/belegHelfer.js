@@ -206,12 +206,12 @@ export function zahlungText(einstellungen, art, prozent = 40) {
   const eigen = einstellungen?.dokumente?.zahlung?.[art];
   let text = (eigen != null && String(eigen).trim() !== '') ? eigen : (BELEG_ART[art]?.zahlung ?? null);
   if (text == null) return null;
-  // Auftragsbestätigung: den Anzahlungs-Prozentsatz im Text auf den am Angebot gewählten Wert setzen.
-  if (art === 'Auftragsbestätigung') {
+  // Angebot & Auftragsbestätigung: den Anzahlungs-Prozentsatz im Text auf den am Angebot gewählten Wert setzen.
+  if (art === 'Angebot' || art === 'Auftragsbestätigung') {
     const prozTxt = String(prozent).replace('.', ',');
     if (/\d+(?:[.,]\d+)?\s*%/.test(text)) {
       text = text.replace(/\d+(?:[.,]\d+)?\s*%/, `${prozTxt} %`);   // ersten Prozentwert ersetzen
-    } else if (!(eigen != null && String(eigen).trim() !== '')) {
+    } else if (art === 'Auftragsbestätigung' && !(eigen != null && String(eigen).trim() !== '')) {
       text = `Bei Erteilung des Auftrags werden ${prozTxt} % des Auftragswertes als Anzahlung fällig.`;
     }
   }

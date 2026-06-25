@@ -106,7 +106,10 @@ function EinstellungDokumentePage() {
 
         <section className="einst-section">
           <h2 className="section-label">ZAHLUNGSBEDINGUNGEN</h2>
-          <p className="einst-hinweis">Dieser Text erscheint auf dem jeweiligen Beleg.</p>
+          <p className="einst-hinweis">
+            Dieser Text erscheint auf dem jeweiligen Beleg. Bei Angebot und Auftragsbestätigung
+            wird der Prozentwert automatisch durch den beim Erstellen gewählten Anzahlungssatz ersetzt.
+          </p>
           {ARTEN.map(({ key, label }) => (
             <div key={key} className="form-field">
               <label>{label}</label>
