@@ -45,8 +45,10 @@ function AngebotEditorPage() {
   const [einstellungen, setEinstellungen] = useState({});
   const [profileMap, setProfileMap] = useState({});
   const [zeigeBeleg, setZeigeBeleg] = useState(null); // Belegart oder null
-  const [datumPrompt, setDatumPrompt] = useState(false);
+  const [rechnungPrompt, setRechnungPrompt] = useState(false);
   const [ausfDatum, setAusfDatum] = useState('');
+  const [rechnungNr, setRechnungNr] = useState('');      // manuell eingegebene Rechnungs-Nummer (Sequenz)
+  const [rechnungBelegt, setRechnungBelegt] = useState(new Set()); // bereits vergebene Rechnungs-Nummern (Jahr)
 
   useEffect(() => {
     async function laden() {
@@ -71,25 +73,30 @@ function AngebotEditorPage() {
     laden();
   }, [angebotId, kundeId, navigate, user?.id]);
 
-  // Belegnummer je Belegart einmalig vergeben (Nummernkreis aus den Einstellungen)
-  async function sichereBelegnummer(art) {
+  // Belegnummer je Belegart einmalig vergeben (Nummernkreis aus den Einstellungen).
+  // seqOverride = manuell gewählte laufende Nummer (z. B. bei Rechnungen); sonst automatisch hochgezählt.
+  async function sichereBelegnummer(art, seqOverride = null) {
     if (angebot.belegnummern?.[art]) return angebot.belegnummern[art];
     const cfg = nummernConfig(einstellungen, art);
     const jahr = new Date().getFullYear();
-    const { data: alle } = await supabase.from('angebote').select('belegnummern');
-    let max = 0;
-    (alle ?? []).forEach(r => {
-      const wert = r.belegnummern?.[art];
-      if (!wert) return;
-      const p = parseBelegnummer(wert);
-      if (!p) return;
-      if (cfg.jahr && p.jahr != null && p.jahr !== jahr) return;
-      max = Math.max(max, p.seq);
-    });
-    // Nächste Nummer: automatisch hochgezählt, aber mindestens die in den Einstellungen
-    // vorgegebene Startnummer (so wirkt eine manuelle Änderung, ohne bestehende Nummern zu doppeln).
-    const start = Math.max(1, Number(cfg.start) || 1);
-    const naechste = Math.max(max + 1, start);
+    let naechste;
+    if (seqOverride != null) {
+      naechste = Math.max(1, Number(seqOverride) || 1);
+    } else {
+      const { data: alle } = await supabase.from('angebote').select('belegnummern');
+      let max = 0;
+      (alle ?? []).forEach(r => {
+        const wert = r.belegnummern?.[art];
+        if (!wert) return;
+        const p = parseBelegnummer(wert);
+        if (!p) return;
+        if (cfg.jahr && p.jahr != null && p.jahr !== jahr) return;
+        max = Math.max(max, p.seq);
+      });
+      // Automatisch hochgezählt, aber mindestens die in den Einstellungen vorgegebene Startnummer.
+      const start = Math.max(1, Number(cfg.start) || 1);
+      naechste = Math.max(max + 1, start);
+    }
     const nummer = formatBelegnummer(cfg, naechste, jahr);
     const neu = { ...(angebot.belegnummern ?? {}), [art]: nummer };
     await supabase.from('angebote').update({ belegnummern: neu }).eq('id', angebotId);
@@ -97,21 +104,51 @@ function AngebotEditorPage() {
     return nummer;
   }
 
+  // Rechnung: Dialog zum manuellen Eingeben der Rechnungsnummer (+ Ausführungsdatum) öffnen.
+  // Bereits vergebene Nummer (dieses Jahr) wird vorgeschlagen/gewarnt; eine schon zugewiesene
+  // Rechnungsnummer wird nie neu vergeben → direkt anzeigen.
+  async function starteRechnung() {
+    if (angebot.belegnummern?.Rechnung) {
+      setZeigeBeleg('Rechnung');
+      return;
+    }
+    const cfg = nummernConfig(einstellungen, 'Rechnung');
+    const jahr = new Date().getFullYear();
+    const { data: alle } = await supabase.from('angebote').select('belegnummern');
+    const belegt = new Set();
+    let max = 0;
+    (alle ?? []).forEach(r => {
+      const p = parseBelegnummer(r.belegnummern?.Rechnung);
+      if (!p) return;
+      if (cfg.jahr && p.jahr != null && p.jahr !== jahr) return;
+      belegt.add(p.seq);
+      max = Math.max(max, p.seq);
+    });
+    const start = Math.max(1, Number(cfg.start) || 1);
+    setRechnungBelegt(belegt);
+    setRechnungNr(String(Math.max(max + 1, start)));
+    setAusfDatum(angebot.ausfuehrungsdatum ?? '');
+    setRechnungPrompt(true);
+  }
+
   async function oeffneBeleg(art) {
-    if (art === 'Rechnung' && !angebot.ausfuehrungsdatum) {
-      setDatumPrompt(true);
+    if (art === 'Rechnung') {
+      await starteRechnung();
       return;
     }
     await sichereBelegnummer(art);
     setZeigeBeleg(art);
   }
 
-  async function bestaetigeDatum() {
-    if (!ausfDatum) return;
-    await supabase.from('angebote').update({ ausfuehrungsdatum: ausfDatum }).eq('id', angebotId);
-    setAngebot(a => ({ ...a, ausfuehrungsdatum: ausfDatum }));
-    setDatumPrompt(false);
-    await sichereBelegnummer('Rechnung');
+  async function bestaetigeRechnung() {
+    const seq = parseInt(String(rechnungNr).replace(/\D/g, ''), 10);
+    if (!ausfDatum || !Number.isFinite(seq) || seq < 1) return;
+    if (ausfDatum !== angebot.ausfuehrungsdatum) {
+      await supabase.from('angebote').update({ ausfuehrungsdatum: ausfDatum }).eq('id', angebotId);
+      setAngebot(a => ({ ...a, ausfuehrungsdatum: ausfDatum }));
+    }
+    await sichereBelegnummer('Rechnung', seq);
+    setRechnungPrompt(false);
     setZeigeBeleg('Rechnung');
   }
 
@@ -122,8 +159,8 @@ function AngebotEditorPage() {
       await supabase.from('angebote').update({ status: art }).eq('id', angebotId);
       setAngebot(a => ({ ...a, status: art }));
     }
-    if (art === 'Rechnung' && !angebot.ausfuehrungsdatum) {
-      setDatumPrompt(true);
+    if (art === 'Rechnung') {
+      await starteRechnung();
       return;
     }
     await sichereBelegnummer(art);
@@ -415,23 +452,48 @@ function AngebotEditorPage() {
         </div>
       )}
 
-      {/* Ausführungsdatum vor der Rechnung */}
-      {datumPrompt && (
-        <div className="modal-overlay" onClick={() => setDatumPrompt(false)}>
-          <div className="modal-box" onClick={e => e.stopPropagation()}>
-            <h2 className="modal-title">Ausführungsdatum erforderlich</h2>
-            <p className="modal-text">Bitte trage das Ausführungsdatum ein, bevor du die Rechnung erstellst.</p>
-            <div className="form-field" style={{ marginBottom: 8 }}>
-              <label>Ausführungsdatum</label>
-              <input type="date" value={ausfDatum || ''} onChange={e => setAusfDatum(e.target.value)} />
-            </div>
-            <div className="modal-actions" style={{ marginTop: 20 }}>
-              <button className="btn btn-secondary" onClick={() => setDatumPrompt(false)}>Abbrechen</button>
-              <button className="btn btn-primary btn-red" onClick={bestaetigeDatum} disabled={!ausfDatum}>Übernehmen &amp; Rechnung</button>
+      {/* Rechnung: Ausführungsdatum + manuelle Rechnungsnummer */}
+      {rechnungPrompt && (() => {
+        const cfg = nummernConfig(einstellungen, 'Rechnung');
+        const jahrSuffix = cfg.jahr ? `-${String(new Date().getFullYear()).slice(-2)}` : '';
+        const seq = parseInt(String(rechnungNr).replace(/\D/g, ''), 10);
+        const seqOk = Number.isFinite(seq) && seq >= 1;
+        const dup = seqOk && rechnungBelegt.has(seq);
+        return (
+          <div className="modal-overlay" onClick={() => setRechnungPrompt(false)}>
+            <div className="modal-box" onClick={e => e.stopPropagation()}>
+              <h2 className="modal-title">Rechnung erstellen</h2>
+              <div className="form-field" style={{ marginBottom: 12 }}>
+                <label>Ausführungsdatum</label>
+                <input type="date" value={ausfDatum || ''} onChange={e => setAusfDatum(e.target.value)} />
+              </div>
+              <div className="form-field" style={{ marginBottom: 4 }}>
+                <label>Rechnungsnummer</label>
+                <div className="rechnung-nr-eingabe">
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={rechnungNr}
+                    onChange={e => setRechnungNr(e.target.value.replace(/\D/g, ''))}
+                    placeholder="z. B. 42"
+                    autoFocus
+                  />
+                  {jahrSuffix && <span className="rechnung-nr-suffix">{jahrSuffix}</span>}
+                </div>
+              </div>
+              {dup
+                ? <p className="rechnung-nr-warnung">Diese Rechnungsnummer ist dieses Jahr bereits vergeben.</p>
+                : <p className="modal-text" style={{ marginTop: 4 }}>Das Jahr ({jahrSuffix.replace('-', '')}) wird automatisch angehängt.</p>}
+              <div className="modal-actions" style={{ marginTop: 20 }}>
+                <button className="btn btn-secondary" onClick={() => setRechnungPrompt(false)}>Abbrechen</button>
+                <button className="btn btn-primary btn-red" onClick={bestaetigeRechnung} disabled={!ausfDatum || !seqOk}>
+                  Rechnung erstellen
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {zeigeBeleg && (
         <BelegModal

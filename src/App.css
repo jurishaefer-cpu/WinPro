@@ -523,6 +523,34 @@ body {
   justify-content: flex-end;
 }
 
+/* Rechnungsnummer-Eingabe mit fest angehängtem Jahr-Suffix */
+.rechnung-nr-eingabe {
+  display: flex;
+  align-items: stretch;
+}
+.rechnung-nr-eingabe input {
+  flex: 1;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.rechnung-nr-suffix {
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  font-weight: 600;
+  color: #555;
+  background: #f1f1f1;
+  border: 1px solid #ccc;
+  border-left: none;
+  border-top-right-radius: 8px;
+  border-bottom-right-radius: 8px;
+}
+.rechnung-nr-warnung {
+  font-size: 14px;
+  color: #8b1a1a;
+  margin-top: 6px;
+}
+
 /* ── Empty state ── */
 .empty-state {
   text-align: center;
