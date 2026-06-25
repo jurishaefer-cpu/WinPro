@@ -16,7 +16,11 @@ function BelegDokument({ art, angebot, kunde, positionen, profileMap, einstellun
   const netto = positionen.reduce((s, p) => s + Number(p.nettopreis || 0) * Number(p.menge || 1), 0);
   const mwst = netto * MWST;
   const brutto = netto + mwst;
-  const anzahlung = brutto * ANZAHLUNG;
+  // Schlussrechnung: standardmäßig 40 % Anzahlung; wurde sie nicht korrekt bezahlt,
+  // wird der tatsächlich erhaltene Betrag abgezogen (in der Rechnung erfasst).
+  const stdAnzahlung = brutto * ANZAHLUNG;
+  const eigeneAnzahlung = angebot?.anzahlung_ok === false;
+  const anzahlung = eigeneAnzahlung ? Number(angebot?.anzahlung_betrag || 0) : stdAnzahlung;
 
   const empfName = kunde?.firma || `${kunde?.vorname ?? ''} ${kunde?.nachname ?? ''}`.trim();
   const empfAP = kunde?.firma ? `${kunde?.vorname ?? ''} ${kunde?.nachname ?? ''}`.trim() : '';
@@ -141,7 +145,7 @@ function BelegDokument({ art, angebot, kunde, positionen, profileMap, einstellun
           <div className="beleg-summen-zeile beleg-summen-zeile--gesamt"><span>Gesamtbetrag brutto</span><span>{euro(brutto)}</span></div>
           {meta.schluss && (
             <>
-              <div className="beleg-summen-zeile"><span>abzüglich Anzahlung (40 %)</span><span>−{euro(anzahlung)}</span></div>
+              <div className="beleg-summen-zeile"><span>{eigeneAnzahlung ? 'abzüglich erhaltene Anzahlung' : 'abzüglich Anzahlung (40 %)'}</span><span>−{euro(anzahlung)}</span></div>
               <div className="beleg-summen-zeile beleg-summen-zeile--gesamt"><span>Rechnungsbetrag</span><span>{euro(brutto - anzahlung)}</span></div>
             </>
           )}

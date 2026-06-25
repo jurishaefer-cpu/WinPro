@@ -21,6 +21,15 @@ function euro(n) {
   return Number(n || 0).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
 }
 
+const MWST_SATZ = 0.19;
+const ANZAHLUNG_SATZ = 0.40;
+
+// Euro-Eingabe (deutsches Format „1.500,50") in Zahl umwandeln.
+function parseEuro(s) {
+  const n = parseFloat(String(s ?? '').replace(/\./g, '').replace(',', '.'));
+  return Number.isFinite(n) ? n : 0;
+}
+
 function getInitials(k) {
   if (!k) return '?';
   if (k.firma) {
@@ -49,6 +58,8 @@ function AngebotEditorPage() {
   const [ausfDatum, setAusfDatum] = useState('');
   const [rechnungNr, setRechnungNr] = useState('');      // manuell eingegebene Rechnungs-Nummer (Sequenz)
   const [rechnungBelegt, setRechnungBelegt] = useState(new Set()); // bereits vergebene Rechnungs-Nummern (Jahr)
+  const [anzahlungOk, setAnzahlungOk] = useState(true);  // Anzahlung korrekt bezahlt?
+  const [anzahlungBetrag, setAnzahlungBetrag] = useState(''); // tatsächlich erhaltene Anzahlung (wenn nicht korrekt)
 
   useEffect(() => {
     async function laden() {
@@ -127,6 +138,15 @@ function AngebotEditorPage() {
     setRechnungBelegt(belegt);
     setRechnungNr(String(eigen ? eigen.seq : Math.max(max + 1, start)));
     setAusfDatum(angebot.ausfuehrungsdatum ?? '');
+    // Anzahlung: Standard „korrekt bezahlt"; Feld mit der erwarteten 40 %-Anzahlung vorbelegen.
+    const netto = positionen.reduce((s, p) => s + Number(p.nettopreis || 0) * Number(p.menge || 1), 0);
+    const stdAnz = netto * (1 + MWST_SATZ) * ANZAHLUNG_SATZ;
+    setAnzahlungOk(angebot.anzahlung_ok !== false);
+    setAnzahlungBetrag(
+      angebot.anzahlung_betrag != null
+        ? String(angebot.anzahlung_betrag).replace('.', ',')
+        : stdAnz.toFixed(2).replace('.', ',')
+    );
     setRechnungPrompt(true);
   }
 
@@ -142,10 +162,13 @@ function AngebotEditorPage() {
   async function bestaetigeRechnung() {
     const seq = parseInt(String(rechnungNr).replace(/\D/g, ''), 10);
     if (!ausfDatum || !Number.isFinite(seq) || seq < 1) return;
-    if (ausfDatum !== angebot.ausfuehrungsdatum) {
-      await supabase.from('angebote').update({ ausfuehrungsdatum: ausfDatum }).eq('id', angebotId);
-      setAngebot(a => ({ ...a, ausfuehrungsdatum: ausfDatum }));
-    }
+    const updates = {
+      anzahlung_ok: anzahlungOk,
+      anzahlung_betrag: anzahlungOk ? null : parseEuro(anzahlungBetrag),
+    };
+    if (ausfDatum !== angebot.ausfuehrungsdatum) updates.ausfuehrungsdatum = ausfDatum;
+    await supabase.from('angebote').update(updates).eq('id', angebotId);
+    setAngebot(a => ({ ...a, ...updates }));
     await sichereBelegnummer('Rechnung', seq);
     setRechnungPrompt(false);
     setZeigeBeleg('Rechnung');
@@ -458,6 +481,10 @@ function AngebotEditorPage() {
         const seq = parseInt(String(rechnungNr).replace(/\D/g, ''), 10);
         const seqOk = Number.isFinite(seq) && seq >= 1;
         const dup = seqOk && rechnungBelegt.has(seq);
+        const netto = positionen.reduce((s, p) => s + Number(p.nettopreis || 0) * Number(p.menge || 1), 0);
+        const brutto = netto * (1 + MWST_SATZ);
+        const anzWert = anzahlungOk ? brutto * ANZAHLUNG_SATZ : parseEuro(anzahlungBetrag);
+        const restbetrag = brutto - anzWert;
         return (
           <div className="modal-overlay" onClick={() => setRechnungPrompt(false)}>
             <div className="modal-box" onClick={e => e.stopPropagation()}>
@@ -482,7 +509,30 @@ function AngebotEditorPage() {
               </div>
               {dup
                 ? <p className="rechnung-nr-warnung">Diese Rechnungsnummer ist dieses Jahr bereits vergeben.</p>
-                : <p className="modal-text" style={{ marginTop: 4 }}>Das Jahr ({jahrSuffix.replace('-', '')}) wird automatisch angehängt.</p>}
+                : <p className="modal-text" style={{ marginTop: 4, marginBottom: 0 }}>Das Jahr ({jahrSuffix.replace('-', '')}) wird automatisch angehängt.</p>}
+
+              <div className="form-field" style={{ marginTop: 16, marginBottom: 4 }}>
+                <label>Anzahlung korrekt bezahlt?</label>
+                <div className="anzahlung-toggle">
+                  <label><input type="radio" name="anzahlung-ok" checked={anzahlungOk} onChange={() => setAnzahlungOk(true)} /> Ja</label>
+                  <label><input type="radio" name="anzahlung-ok" checked={!anzahlungOk} onChange={() => setAnzahlungOk(false)} /> Nein</label>
+                </div>
+              </div>
+              {!anzahlungOk && (
+                <div className="form-field" style={{ marginBottom: 4 }}>
+                  <label>Tatsächlich erhaltene Anzahlung (€)</label>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={anzahlungBetrag}
+                    onChange={e => setAnzahlungBetrag(e.target.value)}
+                    placeholder="z. B. 0,00"
+                  />
+                  <p className="modal-text" style={{ marginTop: 6, marginBottom: 0 }}>
+                    Neuer Rechnungsbetrag: <strong>{euro(restbetrag)}</strong>
+                  </p>
+                </div>
+              )}
               <div className="modal-actions" style={{ marginTop: 20 }}>
                 <button className="btn btn-secondary" onClick={() => setRechnungPrompt(false)}>Abbrechen</button>
                 <button className="btn btn-primary btn-red" onClick={bestaetigeRechnung} disabled={!ausfDatum || !seqOk}>

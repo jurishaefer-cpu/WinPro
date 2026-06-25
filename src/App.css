@@ -550,6 +550,22 @@ body {
   color: #8b1a1a;
   margin-top: 6px;
 }
+.anzahlung-toggle {
+  display: flex;
+  gap: 24px;
+  padding-top: 4px;
+}
+.anzahlung-toggle label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+  cursor: pointer;
+}
+.anzahlung-toggle input {
+  width: auto;
+  margin: 0;
+}
 
 /* ── Empty state ── */
 .empty-state {
