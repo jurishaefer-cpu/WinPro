@@ -247,6 +247,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
   const [elemente, setElemente] = useState(() => buildInitElemente(initial));
   const [activeId, setActiveId] = useState(() => buildInitElemente(initial)[0].id);
   const [selectedPane, setSelectedPane] = useState(null);
+  const [auswahlAktiv, setAuswahlAktiv] = useState(true);   // false = Klick neben die Fenster hat die Auswahl aufgehoben
   const [addMenu, setAddMenu] = useState(false);
   const nextId = useRef(1000);
 
@@ -356,7 +357,11 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
   function switchActive(id) {
     setActiveId(id);
     setSelectedPane(null);
+    setAuswahlAktiv(true);
   }
+  function waehlePane(i) { setSelectedPane(i); setAuswahlAktiv(true); }
+  // Klick neben die Fenster (leerer Canvas-Hintergrund) → Auswahl/Markierung aufheben.
+  function deselectAlles() { setSelectedPane(null); setAuswahlAktiv(false); }
 
   function waehleGeometrie(neuCode) {
     const geo = geometrieByCode(neuCode);
@@ -1056,8 +1061,9 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
               <RolloZeichnung breite={aktiv.breite} hoehe={aktiv.hoehe} kastenhoehe={aktiv.kastenhoeheRollo}
                 bedienung={aktiv.bedienung} bedienungsseite={aktiv.bedienungsseiteRollo} panzerOnly={!!geometrie?.panzerOnly} />
             ) : istKombi ? (
-              <KombinationsZeichnung elemente={elemente} activeId={activeId}
-                onUnitClick={switchActive} onPaneClick={setSelectedPane} selectedPane={selectedPane}
+              <KombinationsZeichnung elemente={elemente} activeId={auswahlAktiv ? activeId : null}
+                onUnitClick={switchActive} onPaneClick={waehlePane} selectedPane={selectedPane}
+                onBackgroundClick={deselectAlles}
                 onDock={dockElement} onSlide={slideElement}
                 onTotalBreite={setTotalBreite} onTotalHoehe={setTotalHoehe}
                 onElementBreite={setElementBreite} onElementHoehe={setElementHoehe} />
@@ -1075,7 +1081,8 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
                 onColWidth={setColWidth} onRowHeight={setRowHeight}
                 teile={aktiv.verbunden ? aktiv._teile : null} dir={aktiv._dir}
                 durchgehend={aktiv.durchgehend} onDivider={() => setDividerMenu(true)}
-                onPaneClick={setSelectedPane} selectedPane={selectedPane} />
+                onPaneClick={waehlePane} selectedPane={auswahlAktiv ? selectedPane : null}
+                onBackgroundClick={deselectAlles} />
             )}
 
             {dividerMenu && (

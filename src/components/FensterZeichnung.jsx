@@ -737,7 +737,7 @@ export function durchgehendPfade(r0, teile, dir, frame) {
   return { outer: path(pts), inner: path(ip) };
 }
 
-function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkasten, schwelle, oberlichtHoehe, glasFarbe = '#cfe3ef', onBreite, onHoehe, onOberlichtHoehe, onBottomHoehe, panes: panesProp, cols: colsProp, colWidths, rowHeights, onColWidth, onRowHeight, onPaneClick, selectedPane, teile, dir: teilDir, durchgehend, onDivider }) {
+function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkasten, schwelle, oberlichtHoehe, glasFarbe = '#cfe3ef', onBreite, onHoehe, onOberlichtHoehe, onBottomHoehe, panes: panesProp, cols: colsProp, colWidths, rowHeights, onColWidth, onRowHeight, onPaneClick, selectedPane, teile, dir: teilDir, durchgehend, onDivider, onBackgroundClick }) {
   const b = Math.max(200, Number(breite) || 1000);
   const hh = Math.max(200, Number(hoehe) || 1200);
 
@@ -843,6 +843,10 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
 
   return (
     <svg viewBox={viewBox} preserveAspectRatio="xMidYMid meet" className="fz-svg">
+      {/* Klick neben die Fenster (leerer Hintergrund) hebt die Auswahl auf */}
+      {onBackgroundClick && (
+        <rect x={-100000} y={-100000} width={200000} height={200000} fill="transparent" onClick={onBackgroundClick} />
+      )}
       {/* Hauptmaß Breite (oben) */}
       <line x1={x} y1={mainTopY} x2={x + rw} y2={mainTopY} stroke="#0f1f3d" strokeWidth="1.2" />
       <line x1={x} y1={mainTopY - 6} x2={x} y2={mainTopY + 6} stroke="#0f1f3d" strokeWidth="1.2" />
@@ -1001,7 +1005,7 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
 }
 
 // Kombination mehrerer gekoppelter Einheiten (eigener Rahmen je Element), im Raster (row/col).
-export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weissesGlas = false, onUnitClick, activeId, onPaneClick, selectedPane, onDock, onSlide, onTotalBreite, onTotalHoehe, onElementBreite, onElementHoehe }) {
+export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weissesGlas = false, onUnitClick, activeId, onPaneClick, selectedPane, onDock, onSlide, onTotalBreite, onTotalHoehe, onElementBreite, onElementHoehe, onBackgroundClick }) {
   const svgRef = useRef(null);
   const [drag, setDrag] = useState(null); // { id, side, targetId }
   function svgPoint(clientX, clientY) {
@@ -1181,6 +1185,10 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
 
   return (
     <svg ref={svgRef} viewBox={`0 0 ${VB_W} ${VB_H}`} preserveAspectRatio="xMidYMid meet" className="fz-svg">
+      {/* Klick neben die Fenster (leerer Hintergrund) hebt die Auswahl auf */}
+      {onBackgroundClick && (
+        <rect x={-100000} y={-100000} width={200000} height={200000} fill="transparent" onClick={onBackgroundClick} />
+      )}
       {/* Gesamtmaß Breite (oben) */}
       <line x1={ox} y1={topY} x2={ox + totalWpx} y2={topY} stroke="#0f1f3d" strokeWidth="1.2" />
       <line x1={ox} y1={topY - 6} x2={ox} y2={topY + 6} stroke="#0f1f3d" strokeWidth="1.2" />
