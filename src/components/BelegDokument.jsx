@@ -2,7 +2,6 @@ import FensterZeichnung, { geometrieByCode, KombinationsZeichnung, RolloZeichnun
 import { euro, datumDE, positionZeilen, montageZeile, BELEG_ART, zahlungText } from '../lib/belegHelfer';
 
 const MWST = 0.19;
-const ANZAHLUNG = 0.40;
 
 function BelegDokument({ art, angebot, kunde, positionen, profileMap, einstellungen }) {
   const meta = BELEG_ART[art] ?? BELEG_ART.Angebot;
@@ -12,13 +11,16 @@ function BelegDokument({ art, angebot, kunde, positionen, profileMap, einstellun
   const akzent = eb.akzentfarbe || '#c0152e';
 
   const nummer = angebot?.belegnummern?.[art] || angebot?.belegnummer || '—';
-  const zahlung = zahlungText(einstellungen, art);
+  const zahlung = zahlungText(einstellungen, art, Number(angebot?.anzahlung_prozent ?? 40));
   const netto = positionen.reduce((s, p) => s + Number(p.nettopreis || 0) * Number(p.menge || 1), 0);
   const mwst = netto * MWST;
   const brutto = netto + mwst;
-  // Schlussrechnung: standardmäßig 40 % Anzahlung; wurde sie nicht korrekt bezahlt,
+  // Anzahlungssatz wird am Angebot festgelegt (Standard 40 %) und gilt für alle Belege.
+  const anzProzent = Number(angebot?.anzahlung_prozent ?? 40);
+  const anzProzentTxt = String(anzProzent).replace('.', ',');
+  // Schlussrechnung: standardmäßig dieser Satz; wurde die Anzahlung nicht korrekt bezahlt,
   // wird der tatsächlich erhaltene Betrag abgezogen (in der Rechnung erfasst).
-  const stdAnzahlung = brutto * ANZAHLUNG;
+  const stdAnzahlung = brutto * anzProzent / 100;
   const eigeneAnzahlung = angebot?.anzahlung_ok === false;
   const anzahlung = eigeneAnzahlung ? Number(angebot?.anzahlung_betrag || 0) : stdAnzahlung;
 
@@ -145,7 +147,7 @@ function BelegDokument({ art, angebot, kunde, positionen, profileMap, einstellun
           <div className="beleg-summen-zeile beleg-summen-zeile--gesamt"><span>Gesamtbetrag brutto</span><span>{euro(brutto)}</span></div>
           {meta.schluss && anzahlung > 0 && (
             <>
-              <div className="beleg-summen-zeile"><span>{eigeneAnzahlung ? 'abzüglich erhaltene Anzahlung' : 'abzüglich Anzahlung (40 %)'}</span><span>−{euro(anzahlung)}</span></div>
+              <div className="beleg-summen-zeile"><span>{eigeneAnzahlung ? 'abzüglich erhaltene Anzahlung' : `abzüglich Anzahlung (${anzProzentTxt} %)`}</span><span>−{euro(anzahlung)}</span></div>
               <div className="beleg-summen-zeile beleg-summen-zeile--gesamt beleg-summen-zeile--rechnung"><span>Rechnungsbetrag</span><span>{euro(brutto - anzahlung)}</span></div>
             </>
           )}
@@ -157,7 +159,7 @@ function BelegDokument({ art, angebot, kunde, positionen, profileMap, einstellun
         <div className="beleg-zahlung">
           <strong>Zahlungsbedingungen</strong>
           <p>{zahlung}</p>
-          {meta.anzahlung && <p>Anzahlung (40 %): <strong>{euro(stdAnzahlung)}</strong></p>}
+          {meta.anzahlung && <p>Anzahlung ({anzProzentTxt} %): <strong>{euro(stdAnzahlung)}</strong></p>}
         </div>
       )}
 

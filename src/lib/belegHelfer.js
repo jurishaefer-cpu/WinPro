@@ -202,8 +202,12 @@ export function parseBelegnummer(wert) {
 }
 
 // Zahlungstext einer Belegart: eigener Text aus den Einstellungen, sonst Standard.
-export function zahlungText(einstellungen, art) {
+export function zahlungText(einstellungen, art, prozent = 40) {
   const eigen = einstellungen?.dokumente?.zahlung?.[art];
   if (eigen != null && String(eigen).trim() !== '') return eigen;
+  // Standardtext der Auftragsbestätigung mit dem Anzahlungssatz des Angebots aufbauen.
+  if (art === 'Auftragsbestätigung') {
+    return `Bei Erteilung des Auftrags werden ${String(prozent).replace('.', ',')} % des Auftragswertes als Anzahlung fällig.`;
+  }
   return BELEG_ART[art]?.zahlung ?? null;
 }

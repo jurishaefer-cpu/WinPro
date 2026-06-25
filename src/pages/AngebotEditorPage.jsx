@@ -22,7 +22,6 @@ function euro(n) {
 }
 
 const MWST_SATZ = 0.19;
-const ANZAHLUNG_SATZ = 0.40;
 
 // Euro-Eingabe (deutsches Format „1.500,50") in Zahl umwandeln.
 function parseEuro(s) {
@@ -62,6 +61,8 @@ function AngebotEditorPage() {
   const [zeigeBeleg, setZeigeBeleg] = useState(null); // Belegart oder null
   const [bestellPrompt, setBestellPrompt] = useState(false); // Auswahl-Dialog vor der Bestellung
   const [bestellFilter, setBestellFilter] = useState([]);    // gewählte Kategorien: ('fenster'|'rollo'|'manuell')[]
+  const [angebotPrompt, setAngebotPrompt] = useState(false); // Anzahlungssatz-Abfrage vor dem Angebot
+  const [anzahlungProzent, setAnzahlungProzent] = useState('40'); // Anzahlungssatz in %
   const [rechnungPrompt, setRechnungPrompt] = useState(false);
   const [ausfDatum, setAusfDatum] = useState('');
   const [rechnungNr, setRechnungNr] = useState('');      // manuell eingegebene Rechnungs-Nummer (Sequenz)
@@ -146,9 +147,10 @@ function AngebotEditorPage() {
     setRechnungBelegt(belegt);
     setRechnungNr(String(eigen ? eigen.seq : Math.max(max + 1, start)));
     setAusfDatum(angebot.ausfuehrungsdatum ?? '');
-    // Anzahlung: Standard „korrekt bezahlt"; Feld mit der erwarteten 40 %-Anzahlung vorbelegen.
+    // Anzahlung: Standard „korrekt bezahlt"; Feld mit der erwarteten Anzahlung (Satz des Angebots) vorbelegen.
     const netto = positionen.reduce((s, p) => s + Number(p.nettopreis || 0) * Number(p.menge || 1), 0);
-    const stdAnz = netto * (1 + MWST_SATZ) * ANZAHLUNG_SATZ;
+    const anzSatz = (Number(angebot.anzahlung_prozent ?? 40)) / 100;
+    const stdAnz = netto * (1 + MWST_SATZ) * anzSatz;
     setAnzahlungOk(angebot.anzahlung_ok !== false);
     setAnzahlungBetrag(
       angebot.anzahlung_betrag != null
@@ -159,6 +161,10 @@ function AngebotEditorPage() {
   }
 
   async function oeffneBeleg(art) {
+    if (art === 'Angebot') {
+      starteAngebot();
+      return;
+    }
     if (art === 'Rechnung') {
       await starteRechnung();
       return;
@@ -169,6 +175,22 @@ function AngebotEditorPage() {
     }
     await sichereBelegnummer(art);
     setZeigeBeleg(art);
+  }
+
+  // Angebot: Anzahlungssatz bestätigen (Standard 40 %, editierbar) – gilt für alle Belege.
+  function starteAngebot() {
+    setAnzahlungProzent(String(angebot.anzahlung_prozent ?? 40).replace('.', ','));
+    setAngebotPrompt(true);
+  }
+
+  async function bestaetigeAngebot() {
+    const proz = parseEuro(anzahlungProzent);
+    const wert = proz > 0 && proz <= 100 ? proz : 40;
+    await supabase.from('angebote').update({ anzahlung_prozent: wert }).eq('id', angebotId);
+    setAngebot(a => ({ ...a, anzahlung_prozent: wert }));
+    setAngebotPrompt(false);
+    await sichereBelegnummer('Angebot');
+    setZeigeBeleg('Angebot');
   }
 
   // Bestellung: Auswahl-Dialog öffnen, standardmäßig alle vorhandenen Kategorien vorausgewählt.
@@ -211,6 +233,10 @@ function AngebotEditorPage() {
     if (art !== angebot.status) {
       await supabase.from('angebote').update({ status: art }).eq('id', angebotId);
       setAngebot(a => ({ ...a, status: art }));
+    }
+    if (art === 'Angebot') {
+      starteAngebot();
+      return;
     }
     if (art === 'Rechnung') {
       await starteRechnung();
@@ -518,7 +544,7 @@ function AngebotEditorPage() {
         const dup = seqOk && rechnungBelegt.has(seq);
         const netto = positionen.reduce((s, p) => s + Number(p.nettopreis || 0) * Number(p.menge || 1), 0);
         const brutto = netto * (1 + MWST_SATZ);
-        const anzWert = anzahlungOk ? brutto * ANZAHLUNG_SATZ : parseEuro(anzahlungBetrag);
+        const anzWert = anzahlungOk ? brutto * (Number(angebot.anzahlung_prozent ?? 40) / 100) : parseEuro(anzahlungBetrag);
         const restbetrag = brutto - anzWert;
         return (
           <div className="modal-overlay" onClick={() => setRechnungPrompt(false)}>
@@ -573,6 +599,42 @@ function AngebotEditorPage() {
                 <button className="btn btn-primary btn-red" onClick={bestaetigeRechnung} disabled={!ausfDatum || !seqOk}>
                   {angebot.belegnummern?.Rechnung ? 'Rechnung aktualisieren' : 'Rechnung erstellen'}
                 </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {angebotPrompt && (() => {
+        const proz = parseEuro(anzahlungProzent);
+        const ok = proz > 0 && proz <= 100;
+        const netto = positionen.reduce((s, p) => s + Number(p.nettopreis || 0) * Number(p.menge || 1), 0);
+        const anzBetrag = netto * (1 + MWST_SATZ) * (ok ? proz : 40) / 100;
+        return (
+          <div className="modal-overlay" onClick={() => setAngebotPrompt(false)}>
+            <div className="modal-box" onClick={e => e.stopPropagation()}>
+              <h2 className="modal-title">Angebot erstellen</h2>
+              <p className="modal-text" style={{ marginBottom: 16 }}>Anzahlung bestätigen. Der Satz gilt für alle Belege (Angebot, Auftragsbestätigung, Rechnung).</p>
+              <div className="form-field" style={{ marginBottom: 4 }}>
+                <label>Anzahlung (%)</label>
+                <div className="rechnung-nr-eingabe">
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={anzahlungProzent}
+                    onChange={e => setAnzahlungProzent(e.target.value)}
+                    placeholder="z. B. 40"
+                    autoFocus
+                  />
+                  <span className="rechnung-nr-suffix">%</span>
+                </div>
+              </div>
+              <p className="modal-text" style={{ marginTop: 6, marginBottom: 0 }}>
+                Anzahlungsbetrag: <strong>{euro(anzBetrag)}</strong>
+              </p>
+              <div className="modal-actions" style={{ marginTop: 20 }}>
+                <button className="btn btn-secondary" onClick={() => setAngebotPrompt(false)}>Abbrechen</button>
+                <button className="btn btn-primary btn-red" onClick={bestaetigeAngebot} disabled={!ok}>Angebot erstellen</button>
               </div>
             </div>
           </div>
