@@ -1333,6 +1333,7 @@ body {
 .beleg-meta { text-align: left; line-height: 1.55; align-self: flex-end; }
 
 .beleg-titel { font-size: 17px; font-weight: 700; margin: 0 0 14px; }
+.beleg-ausfuehrungsdatum { margin: -10px 0 14px; color: #555; }
 .beleg-anrede { margin: 0 0 10px; }
 .beleg-intro { margin: 0 0 18px; }
 .beleg-bauvorhaben { margin: 0 0 14px; font-size: 14px; font-weight: 700; color: #1a1a1a; }

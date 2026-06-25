@@ -53,14 +53,14 @@ function BelegDokument({ art, angebot, kunde, positionen, profileMap, einstellun
         </div>
         <div className="beleg-meta">
           <div>{firma.ort ? `${firma.ort} , ` : ''}{datumDE(new Date())}</div>
-          {meta.schluss && angebot?.ausfuehrungsdatum && (
-            <div>Ausführungsdatum: {datumDE(angebot.ausfuehrungsdatum)}</div>
-          )}
         </div>
       </div>
 
       {/* Titel + Anrede */}
       <h2 className="beleg-titel">{meta.titel} {nummer}</h2>
+      {meta.schluss && angebot?.ausfuehrungsdatum && (
+        <p className="beleg-ausfuehrungsdatum">Ausführungsdatum: {datumDE(angebot.ausfuehrungsdatum)}</p>
+      )}
       <p className="beleg-anrede">Sehr geehrte Damen und Herren,</p>
       <p className="beleg-intro">{meta.intro}</p>
 
