@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
-import WinProLogo from '../components/WinProLogo';
 
 function LoginPage() {
   const [email, setEmail] = useState('');
@@ -12,9 +11,6 @@ function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setError('');
-    // Logo-Animation (Fenster auf + Schrift hinein) abspielen, dann anmelden.
-    // Erst danach wird die Session gesetzt, sodass der AuthProvider nicht vorzeitig weiterleitet.
-    await new Promise(r => setTimeout(r, 1400));
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       setError('Anmeldung fehlgeschlagen. Bitte E-Mail und Passwort prüfen.');
@@ -38,7 +34,7 @@ function LoginPage() {
         {fenster.map((f, i) => <span key={i} className="login-window" style={f} />)}
       </div>
       <div className="login-card">
-        <WinProLogo active={loading} />
+        <img src="/logo-hero.png" alt="WinPro – Smart Calkulation Software" className="login-logo" />
         <h1 className="login-title">Anmelden</h1>
         <p className="login-subtitle">Bitte melde dich mit deinem Konto an.</p>
 
