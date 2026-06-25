@@ -210,6 +210,41 @@ body {
   margin: 4px auto 20px;
   border-radius: 16px;
 }
+
+/* Animiertes Vektor-Logo */
+.wp-logo {
+  width: 340px;
+  max-width: 92%;
+  margin: 4px auto 20px;
+}
+.wp-logo svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 16px;
+}
+.wp-sash {
+  transform-box: fill-box;
+  transition: transform 0.6s cubic-bezier(0.6, 0, 0.3, 1);
+}
+.wp-sash--l { transform-origin: left center; }
+.wp-sash--r { transform-origin: right center; }
+.wp-text {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 0.9s cubic-bezier(0.5, 0, 0.2, 1) 0.35s,
+              opacity 0.5s ease 0.85s;
+}
+.wp-sub { transition: opacity 0.4s ease; }
+
+.wp-logo--anmelden .wp-sash--l { transform: scaleX(0.06); }
+.wp-logo--anmelden .wp-sash--r { transform: scaleX(0.06); }
+.wp-logo--anmelden .wp-text { transform: translate(289px, 0) scale(0.12); opacity: 0; }
+.wp-logo--anmelden .wp-sub { opacity: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .wp-sash, .wp-text, .wp-sub { transition: none; }
+}
 .login-title {
   font-size: 26px;
   font-weight: 700;
