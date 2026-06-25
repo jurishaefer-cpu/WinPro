@@ -146,7 +146,7 @@ function BelegDokument({ art, angebot, kunde, positionen, profileMap, einstellun
           {meta.schluss && anzahlung > 0 && (
             <>
               <div className="beleg-summen-zeile"><span>{eigeneAnzahlung ? 'abzüglich erhaltene Anzahlung' : 'abzüglich Anzahlung (40 %)'}</span><span>−{euro(anzahlung)}</span></div>
-              <div className="beleg-summen-zeile beleg-summen-zeile--gesamt"><span>Rechnungsbetrag</span><span>{euro(brutto - anzahlung)}</span></div>
+              <div className="beleg-summen-zeile beleg-summen-zeile--gesamt beleg-summen-zeile--rechnung"><span>Rechnungsbetrag</span><span>{euro(brutto - anzahlung)}</span></div>
             </>
           )}
         </div>
