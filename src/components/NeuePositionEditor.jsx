@@ -640,14 +640,17 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
       return prev.map(e => e.id === id ? scaleHoehe(e, h) : e.id === nb.id ? scaleHoehe(e, paar - h) : e);
     });
   }
-  // Gesamtmaß (Rahmen) ändern: alle Spalten/Zeilen proportional mitskalieren.
+  // Gesamtmaß (Rahmen) ändern: die Fenster füllen ihre Spalte/Zeile und skalieren proportional auf
+  // das neue Maß – so verändern sich beim Ändern des Gesamtmaßes die FENSTER (nicht nur eine leere Box).
   function setTotalBreite(val) {
     const v = Number(val);
     setElemente(prev => {
       const cur = kombiMass(prev).w;
       if (!Number.isFinite(v) || v <= 0 || cur <= 0) return prev;
       const f = v / cur;
-      return prev.map(e => scaleBreite(e, (Number(e.breite) || 1000) * f));
+      const cols = [...new Set(prev.map(e => e.col ?? 0))];
+      const colW = {}; cols.forEach(c => { colW[c] = Math.max(0, ...prev.filter(e => (e.col ?? 0) === c).map(e => Number(e.breite) || 0)); });
+      return prev.map(e => scaleBreite(e, Math.round((colW[e.col ?? 0] || (Number(e.breite) || 1000)) * f)));
     });
   }
   function setTotalHoehe(val) {
@@ -656,7 +659,9 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
       const cur = kombiMass(prev).h;
       if (!Number.isFinite(v) || v <= 0 || cur <= 0) return prev;
       const f = v / cur;
-      return prev.map(e => scaleHoehe(e, (Number(e.hoehe) || 1200) * f));
+      const rows = [...new Set(prev.map(e => e.row ?? 0))];
+      const rowH = {}; rows.forEach(r => { rowH[r] = Math.max(0, ...prev.filter(e => (e.row ?? 0) === r).map(e => Number(e.hoehe) || 0)); });
+      return prev.map(e => scaleHoehe(e, Math.round((rowH[e.row ?? 0] || (Number(e.hoehe) || 1200)) * f)));
     });
   }
 
