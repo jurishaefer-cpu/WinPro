@@ -61,7 +61,7 @@ function AngebotEditorPage() {
   const [profileMap, setProfileMap] = useState({});
   const [zeigeBeleg, setZeigeBeleg] = useState(null); // Belegart oder null
   const [bestellPrompt, setBestellPrompt] = useState(false); // Auswahl-Dialog vor der Bestellung
-  const [bestellFilter, setBestellFilter] = useState(null);  // 'fenster' | 'rollo' | 'manuell'
+  const [bestellFilter, setBestellFilter] = useState([]);    // gewählte Kategorien: ('fenster'|'rollo'|'manuell')[]
   const [rechnungPrompt, setRechnungPrompt] = useState(false);
   const [ausfDatum, setAusfDatum] = useState('');
   const [rechnungNr, setRechnungNr] = useState('');      // manuell eingegebene Rechnungs-Nummer (Sequenz)
@@ -164,16 +164,27 @@ function AngebotEditorPage() {
       return;
     }
     if (art === 'Bestellung') {
-      setBestellPrompt(true);
+      starteBestellung();
       return;
     }
     await sichereBelegnummer(art);
     setZeigeBeleg(art);
   }
 
-  // Bestellung nur mit Positionen der gewählten Kategorie erzeugen.
-  async function waehleBestellung(filter) {
-    setBestellFilter(filter);
+  // Bestellung: Auswahl-Dialog öffnen, standardmäßig alle vorhandenen Kategorien vorausgewählt.
+  function starteBestellung() {
+    const verfuegbar = ['fenster', 'rollo', 'manuell'].filter(k => positionen.some(p => positionKategorie(p) === k));
+    setBestellFilter(verfuegbar);
+    setBestellPrompt(true);
+  }
+
+  function toggleBestell(key) {
+    setBestellFilter(f => (f.includes(key) ? f.filter(k => k !== key) : [...f, key]));
+  }
+
+  // Bestellung mit den Positionen der ausgewählten Kategorien erzeugen.
+  async function bestaetigeBestellung() {
+    if (!bestellFilter.length) return;
     setBestellPrompt(false);
     await sichereBelegnummer('Bestellung');
     setZeigeBeleg('Bestellung');
@@ -206,7 +217,7 @@ function AngebotEditorPage() {
       return;
     }
     if (art === 'Bestellung') {
-      setBestellPrompt(true);
+      starteBestellung();
       return;
     }
     await sichereBelegnummer(art);
@@ -570,32 +581,36 @@ function AngebotEditorPage() {
 
       {bestellPrompt && (() => {
         const optionen = [
-          { key: 'fenster', label: 'Bestellung Fenster' },
-          { key: 'rollo', label: 'Bestellung Rollos' },
-          { key: 'manuell', label: 'Bestellung manuelle Position' },
+          { key: 'fenster', label: 'Fenster' },
+          { key: 'rollo', label: 'Rollos' },
+          { key: 'manuell', label: 'Manuelle Positionen' },
         ];
         return (
           <div className="modal-overlay" onClick={() => setBestellPrompt(false)}>
             <div className="modal-box" onClick={e => e.stopPropagation()}>
               <h2 className="modal-title">Bestellung erstellen</h2>
-              <p className="modal-text" style={{ marginBottom: 16 }}>Wofür soll die Bestellung erstellt werden?</p>
+              <p className="modal-text" style={{ marginBottom: 16 }}>Welche Positionen sollen auf die Bestellung? (Mehrfachauswahl möglich)</p>
               <div className="bestell-optionen">
                 {optionen.map(({ key, label }) => {
                   const anzahl = positionen.filter(p => positionKategorie(p) === key).length;
                   return (
-                    <button
-                      key={key}
-                      className="btn btn-outline bestell-option"
-                      disabled={anzahl === 0}
-                      onClick={() => waehleBestellung(key)}
-                    >
-                      {label} <span className="bestell-option-zahl">({anzahl})</span>
-                    </button>
+                    <label key={key} className={'bestell-option' + (anzahl === 0 ? ' bestell-option--leer' : '')}>
+                      <input
+                        type="checkbox"
+                        checked={bestellFilter.includes(key)}
+                        disabled={anzahl === 0}
+                        onChange={() => toggleBestell(key)}
+                      />
+                      <span>{label} <span className="bestell-option-zahl">({anzahl})</span></span>
+                    </label>
                   );
                 })}
               </div>
               <div className="modal-actions" style={{ marginTop: 20 }}>
                 <button className="btn btn-secondary" onClick={() => setBestellPrompt(false)}>Abbrechen</button>
+                <button className="btn btn-primary btn-red" onClick={bestaetigeBestellung} disabled={!bestellFilter.length}>
+                  Bestellung erstellen
+                </button>
               </div>
             </div>
           </div>
@@ -607,8 +622,8 @@ function AngebotEditorPage() {
           art={zeigeBeleg}
           angebot={angebot}
           kunde={kunde}
-          positionen={zeigeBeleg === 'Bestellung' && bestellFilter
-            ? positionen.filter(p => positionKategorie(p) === bestellFilter)
+          positionen={zeigeBeleg === 'Bestellung' && bestellFilter.length
+            ? positionen.filter(p => bestellFilter.includes(positionKategorie(p)))
             : positionen}
           profileMap={profileMap}
           einstellungen={einstellungen}

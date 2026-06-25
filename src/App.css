@@ -567,18 +567,27 @@ body {
   margin: 0;
 }
 
-/* Bestellung: Kategorie-Auswahl */
+/* Bestellung: Kategorie-Auswahl (Mehrfachauswahl) */
 .bestell-optionen {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 4px;
 }
 .bestell-option {
-  width: 100%;
-  justify-content: center;
-  text-align: center;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 15px;
+  cursor: pointer;
 }
-.bestell-option:disabled {
+.bestell-option input {
+  width: auto;
+  margin: 0;
+}
+.bestell-option--leer {
   opacity: 0.45;
   cursor: not-allowed;
 }
