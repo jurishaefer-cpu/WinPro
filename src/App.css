@@ -234,29 +234,30 @@ body {
   /* nur der Fenster-Bereich (oben rechts) */
   clip-path: polygon(65% 0, 100% 0, 100% 54%, 65% 54%);
   transform-origin: 80% 27%;
-  animation: llWindow 2.4s ease both;
 }
 .ll-text {
   /* alles außer dem Fenster-Bereich */
   clip-path: polygon(0 0, 65% 0, 65% 54%, 100% 54%, 100% 100%, 0 100%);
   transform-origin: 80% 27%;
-  animation: llText 2.4s cubic-bezier(0.45, 0, 0.2, 1) both;
+  /* Startzustand: Schrift steckt unsichtbar im Fenster, bis die Animation startet */
+  transform: scale(0.16);
+  opacity: 0;
 }
+/* Animation startet erst, wenn das Bild geladen ist (.is-play) */
+.is-play .ll-window { animation: llWindow 3s ease both; }
+.is-play .ll-text { animation: llText 3s cubic-bezier(0.45, 0, 0.2, 1) both; }
+
 @keyframes llWindow {
-  0%, 26%   { transform: scaleX(1); }
-  40%       { transform: scaleX(1.07); }   /* Fenster öffnet */
-  64%       { transform: scaleX(1.05); }
-  82%, 100% { transform: scaleX(1); }      /* Fenster schließt */
+  0%, 24%   { transform: scaleX(1); }
+  42%       { transform: scaleX(1.12); }   /* Fenster öffnet */
+  66%       { transform: scaleX(1.08); }
+  84%, 100% { transform: scaleX(1); }      /* Fenster schließt */
 }
 @keyframes llText {
-  0%, 28% { transform: scale(0.16); opacity: 0; }  /* steckt im Fenster */
-  40%     { opacity: 1; }
-  70%     { transform: scale(1); opacity: 1; }      /* an seinem Platz */
+  0%, 26% { transform: scale(0.16); opacity: 0; }  /* steckt im Fenster */
+  38%     { opacity: 1; }
+  72%     { transform: scale(1); opacity: 1; }      /* an seinem Platz */
   100%    { transform: scale(1); opacity: 1; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .ll-window, .ll-text { animation: none; }
-  .ll-text { transform: none; opacity: 1; }
 }
 .login-title {
   font-size: 26px;

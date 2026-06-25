@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 
 function LoginPage() {
@@ -6,6 +6,13 @@ function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [logoReady, setLogoReady] = useState(false); // Intro-Animation erst nach dem Bild-Laden starten
+  const logoImgRef = useRef(null);
+
+  // Falls das Bild aus dem Cache kommt, feuert onLoad evtl. nicht – dann hier prüfen.
+  useEffect(() => {
+    if (logoImgRef.current?.complete) setLogoReady(true);
+  }, []);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -34,8 +41,8 @@ function LoginPage() {
         {fenster.map((f, i) => <span key={i} className="login-window" style={f} />)}
       </div>
       <div className="login-card">
-        <div className="login-logo-anim" role="img" aria-label="WinPro – Smart Calkulation Software">
-          <img src="/logo-hero.png" alt="" className="ll-window" aria-hidden="true" />
+        <div className={'login-logo-anim' + (logoReady ? ' is-play' : '')} role="img" aria-label="WinPro – Smart Calkulation Software">
+          <img ref={logoImgRef} src="/logo-hero.png" alt="" className="ll-window" aria-hidden="true" onLoad={() => setLogoReady(true)} />
           <img src="/logo-hero.png" alt="" className="ll-text" aria-hidden="true" />
         </div>
         <h1 className="login-title">Anmelden</h1>
