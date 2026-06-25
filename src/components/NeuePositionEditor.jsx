@@ -648,26 +648,40 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
     if (rahmenH && totalFor(h) > rahmenH) { h = Math.max(200, h - (totalFor(h) - rahmenH)); zeigeWarnung('zu groß'); }
     setElemente(prev => prev.map(e => (e.id === id ? scaleHoehe(e, h) : e)));
   }
-  // Gesamtmaß = Wand/Maueröffnung setzen. Verändert die Fenster NICHT; sie dürfen nur nicht darüber
-  // hinausragen → die Wand ist mindestens so groß wie die Fenster-Hülle.
+  // Gesamtmaß ändern: die Fenster füllen das neue Maß (Spalten/Zeilen skalieren proportional).
+  // Kein leerer Rahmen – die Fenster nehmen das ganze Gesamtmaß ein.
   function setTotalBreite(val) {
     const v = Math.round(Number(val) || 0);
     if (!Number.isFinite(v) || v <= 0) return;
-    setRahmenB(Math.max(v, Math.round(kombiMass(elemente).w)));
+    setRahmenB(null);
+    setElemente(prev => {
+      const cur = kombiMass(prev).w;
+      if (cur <= 0) return prev;
+      const f = v / cur;
+      const cols = [...new Set(prev.map(e => e.col ?? 0))];
+      const colW = {}; cols.forEach(c => { colW[c] = Math.max(0, ...prev.filter(e => (e.col ?? 0) === c).map(e => Number(e.breite) || 0)); });
+      return prev.map(e => scaleBreite(e, Math.round((colW[e.col ?? 0] || (Number(e.breite) || 1000)) * f)));
+    });
   }
   function setTotalHoehe(val) {
     const v = Math.round(Number(val) || 0);
     if (!Number.isFinite(v) || v <= 0) return;
-    setRahmenH(Math.max(v, Math.round(kombiMass(elemente).h)));
+    setRahmenH(null);
+    setElemente(prev => {
+      const cur = kombiMass(prev).h;
+      if (cur <= 0) return prev;
+      const f = v / cur;
+      const rows = [...new Set(prev.map(e => e.row ?? 0))];
+      const rowH = {}; rows.forEach(r => { rowH[r] = Math.max(0, ...prev.filter(e => (e.row ?? 0) === r).map(e => Number(e.hoehe) || 0)); });
+      return prev.map(e => scaleHoehe(e, Math.round((rowH[e.row ?? 0] || (Number(e.hoehe) || 1200)) * f)));
+    });
   }
 
   // --- Maße / Preis ---
   const kombi = kombiMass(elemente);
-  // Wand-Maß = max(eingestellte Wand, Fenster-Hülle). Die Fenster ragen nie darüber hinaus.
-  const wandB = Math.max(Number(rahmenB) || 0, kombi.w);
-  const wandH = Math.max(Number(rahmenH) || 0, kombi.h);
-  const breiteGes = istKombi ? wandB : Number(aktiv.breite);
-  const hoeheGes = istKombi ? wandH : Number(aktiv.hoehe);
+  // Gesamtmaß = Fenster-Hülle (die Fenster füllen das Gesamtmaß; kein separater Rahmen).
+  const breiteGes = istKombi ? kombi.w : Number(aktiv.breite);
+  const hoeheGes = istKombi ? kombi.h : Number(aktiv.hoehe);
   const flaeche = (breiteGes * hoeheGes) / 1_000_000; // m²
   const summeNetto = elemente.reduce((a, e) => a + (Number(e.nettoJeStueck) || 0), 0);
   // Rollladen/Vorbau Rollladen: nur Montage, kein Ausbau/Entsorgung.
@@ -1072,7 +1086,6 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
                 bedienung={aktiv.bedienung} bedienungsseite={aktiv.bedienungsseiteRollo} panzerOnly={!!geometrie?.panzerOnly} />
             ) : istKombi ? (
               <KombinationsZeichnung elemente={elemente} activeId={auswahlAktiv ? activeId : null}
-                rahmen={{ w: wandB, h: wandH }}
                 onUnitClick={switchActive} onPaneClick={waehlePane} selectedPane={selectedPane}
                 onBackgroundClick={deselectAlles}
                 onDock={dockElement} onSlide={slideElement}
