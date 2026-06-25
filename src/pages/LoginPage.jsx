@@ -34,7 +34,10 @@ function LoginPage() {
         {fenster.map((f, i) => <span key={i} className="login-window" style={f} />)}
       </div>
       <div className="login-card">
-        <img src="/logo-hero.png" alt="WinPro – Smart Calkulation Software" className="login-logo" />
+        <div className="login-logo-anim" role="img" aria-label="WinPro – Smart Calkulation Software">
+          <img src="/logo-hero.png" alt="" className="ll-window" aria-hidden="true" />
+          <img src="/logo-hero.png" alt="" className="ll-text" aria-hidden="true" />
+        </div>
         <h1 className="login-title">Anmelden</h1>
         <p className="login-subtitle">Bitte melde dich mit deinem Konto an.</p>
 
