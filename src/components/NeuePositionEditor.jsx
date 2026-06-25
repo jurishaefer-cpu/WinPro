@@ -448,14 +448,19 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
     setAddMenu(false);
   }
   function removeElement(id) {
-    if (id === elemente[0].id) return;                  // Hauptelement bleibt
+    if (elemente.length <= 1) return;                   // mind. ein Element muss bleiben
+    const rest0 = elemente.filter(e => e.id !== id);
     setElemente(prev => {
-      const { w: Tw, h: Th } = kombiMass(prev);         // Rahmen bleibt fest
       const rest = prev.filter(e => e.id !== id);
       if (!rest.length) return prev;
-      return verteileHoehe(verteileBreite(rest, Tw), Th); // verbleibende Elemente füllen den Rahmen
+      // Lücken der entfernten Spalte/Zeile schließen (Reihenfolge bleibt). Größen bleiben erhalten.
+      const cols = [...new Set(rest.map(e => e.col ?? 0))].sort((a, b) => a - b);
+      const rows = [...new Set(rest.map(e => e.row ?? 0))].sort((a, b) => a - b);
+      const colMap = {}; cols.forEach((c, i) => { colMap[c] = i; });
+      const rowMap = {}; rows.forEach((r, i) => { rowMap[r] = i; });
+      return rest.map(e => ({ ...e, col: colMap[e.col ?? 0], row: rowMap[e.row ?? 0] }));
     });
-    if (activeId === id) setActiveId(elemente[0].id);
+    if (activeId === id) setActiveId(rest0[0].id);       // entferntes aktiv? → erstes verbleibendes aktiv
     setSelectedPane(null);
   }
 
@@ -789,16 +794,14 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
                   <button key={el.id} type="button"
                           className={'np-elem-btn' + (el.id === activeId ? ' aktiv' : '')}
                           onClick={() => switchActive(el.id)}
-                          title={i === 0 ? 'Hauptelement bearbeiten' : `Element ${i + 1} bearbeiten`}>
-                    {i === 0 ? 'Haupt' : i + 1}
+                          title={`Element ${i + 1} bearbeiten`}>
+                    {i + 1}
                   </button>
                 ))}
               </div>
               <div className="np-aktiv-zeile">
-                <span>{istMain ? 'Hauptelement' : `Element ${aktivIndex + 1}`} wird bearbeitet</span>
-                {!istMain && (
-                  <button className="np-aktiv-remove" onClick={() => removeElement(activeId)} title="Dieses Element entfernen">Entfernen</button>
-                )}
+                <span>Element {aktivIndex + 1} wird bearbeitet</span>
+                <button className="np-aktiv-remove" onClick={() => removeElement(activeId)} title="Dieses Element entfernen">Entfernen</button>
               </div>
             </div>
           )}
