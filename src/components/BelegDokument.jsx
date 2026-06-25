@@ -157,7 +157,7 @@ function BelegDokument({ art, angebot, kunde, positionen, profileMap, einstellun
         <div className="beleg-zahlung">
           <strong>Zahlungsbedingungen</strong>
           <p>{zahlung}</p>
-          {meta.anzahlung && <p>Anzahlung (40 %): <strong>{euro(anzahlung)}</strong></p>}
+          {meta.anzahlung && <p>Anzahlung (40 %): <strong>{euro(stdAnzahlung)}</strong></p>}
         </div>
       )}
 
