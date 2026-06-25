@@ -65,7 +65,7 @@ function BelegModal({ onClose, ...docProps }) {
     try {
       const [{ jsPDF }, html2canvasMod] = await Promise.all([import('jspdf'), import('html2canvas')]);
       const html2canvas = html2canvasMod.default;
-      const scale = 4;                 // höhere Auflösung -> schärferer Ausdruck
+      const scale = 6;                 // höhere Auflösung -> schärferer Ausdruck (auch kleine Schrift)
       const pxProMm = A4_BREITE / 210;
       const opts = { scale, backgroundColor: '#ffffff', useCORS: true, windowWidth: A4_BREITE };
 
