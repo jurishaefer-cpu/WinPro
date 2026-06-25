@@ -168,7 +168,8 @@ function BelegModal({ onClose, ...docProps }) {
       seiten.forEach(([s, c], i) => {
         if (i > 0) pdf.addPage();
         zeichne(bodyCanvas, body, s, c, RAND_MM);
-        if (i === seiten.length - 1 && hatFuss) pdf.addImage(fussCanvas.toDataURL('image/jpeg', 0.96), 'JPEG', 0, fussYmm, 210, fussHmm);
+        // Fuß verlustfrei als PNG -> kleine Schrift bleibt im Druck gestochen scharf (JPEG würde die Kanten verwaschen)
+        if (i === seiten.length - 1 && hatFuss) pdf.addImage(fussCanvas.toDataURL('image/png'), 'PNG', 0, fussYmm, 210, fussHmm);
       });
 
       // Direkt drucken: PDF im Tab öffnen (kein Download nötig)
