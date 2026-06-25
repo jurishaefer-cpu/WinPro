@@ -179,11 +179,26 @@ export function nummernConfig(einstellungen, art) {
   return { ...basis, ...(gespeichert ?? {}) };
 }
 
-// Baut eine Belegnummer-Zeichenkette, z. B. 2026-0001 (ohne Jahr: 0001).
+// Baut eine Belegnummer-Zeichenkette: Nummer zuerst, dann 2-stelliges Jahr, z. B. 0001-26
+// (ohne Jahr: 0001).
 export function formatBelegnummer(cfg, n, jahr = new Date().getFullYear()) {
   const seq = String(n).padStart(Math.max(1, Number(cfg.stellen) || 1), '0');
-  const mitte = cfg.jahr ? `${jahr}-` : '';
-  return `${mitte}${seq}`;
+  if (!cfg.jahr) return seq;
+  const jj = String(jahr).slice(-2);
+  return `${seq}-${jj}`;
+}
+
+// Zerlegt eine gespeicherte Belegnummer in { seq, jahr }. Erkennt das aktuelle Format
+// „0001-26" (Nummer-JJ) ebenso wie Altformate „2026-0001" / „AN-2026-0001" (JJJJ-Nummer).
+export function parseBelegnummer(wert) {
+  const s = String(wert ?? '').trim();
+  let m = /(\d+)-(\d{2})\s*$/.exec(s);          // neu: Nummer-JJ
+  if (m) return { seq: Number(m[1]), jahr: 2000 + Number(m[2]) };
+  m = /(\d{4})-(\d+)\s*$/.exec(s);              // alt: JJJJ-Nummer
+  if (m) return { seq: Number(m[2]), jahr: Number(m[1]) };
+  m = /(\d+)\s*$/.exec(s);                       // nur Nummer
+  if (m) return { seq: Number(m[1]), jahr: null };
+  return null;
 }
 
 // Zahlungstext einer Belegart: eigener Text aus den Einstellungen, sonst Standard.

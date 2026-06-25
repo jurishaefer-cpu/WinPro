@@ -7,7 +7,7 @@ import NeuePositionEditor from '../components/NeuePositionEditor';
 import FensterZeichnung, { geometrieByCode, KombinationsZeichnung, RolloZeichnung } from '../components/FensterZeichnung';
 import BelegModal from '../components/BelegModal';
 import { ladeEinstellungen } from '../lib/einstellungen';
-import { nummernConfig, formatBelegnummer } from '../lib/belegHelfer';
+import { nummernConfig, formatBelegnummer, parseBelegnummer } from '../lib/belegHelfer';
 
 const STUFEN = ['Angebot', 'Auftragsbestätigung', 'Bestellung', 'Rechnung'];
 const SUBTITLE = {
@@ -81,10 +81,10 @@ function AngebotEditorPage() {
     (alle ?? []).forEach(r => {
       const wert = r.belegnummern?.[art];
       if (!wert) return;
-      const m = /(?:(\d{4})-)?(\d+)\s*$/.exec(wert);
-      if (!m) return;
-      if (cfg.jahr && m[1] && Number(m[1]) !== jahr) return;
-      max = Math.max(max, Number(m[2]));
+      const p = parseBelegnummer(wert);
+      if (!p) return;
+      if (cfg.jahr && p.jahr != null && p.jahr !== jahr) return;
+      max = Math.max(max, p.seq);
     });
     // Nächste Nummer: automatisch hochgezählt, aber mindestens die in den Einstellungen
     // vorgegebene Startnummer (so wirkt eine manuelle Änderung, ohne bestehende Nummern zu doppeln).
