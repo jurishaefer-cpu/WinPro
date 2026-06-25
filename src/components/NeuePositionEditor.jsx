@@ -1056,7 +1056,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
           {!istAluSystem && !istRollo && (
             <button className="np-add-inline" onClick={() => setAddMenu(v => !v)}>+ Element hinzufügen</button>
           )}
-          <div className="np-canvas">
+          <div className="np-canvas" onClick={e => { if (e.target === e.currentTarget) deselectAlles(); }}>
             {istRollo ? (
               <RolloZeichnung breite={aktiv.breite} hoehe={aktiv.hoehe} kastenhoehe={aktiv.kastenhoeheRollo}
                 bedienung={aktiv.bedienung} bedienungsseite={aktiv.bedienungsseiteRollo} panzerOnly={!!geometrie?.panzerOnly} />
