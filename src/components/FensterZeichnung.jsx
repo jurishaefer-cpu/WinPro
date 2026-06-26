@@ -1212,7 +1212,8 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
   }
 
   return (
-    <svg ref={svgRef} viewBox={`0 0 ${VB_W} ${VB_H}`} preserveAspectRatio="xMidYMid meet" className="fz-svg">
+    <svg ref={svgRef} viewBox={`0 0 ${VB_W} ${VB_H}`} preserveAspectRatio="xMidYMid meet" className="fz-svg"
+         style={onUnitClick ? { overflow: 'visible' } : undefined}>
       {/* Klick neben die Fenster (leerer Hintergrund) hebt die Auswahl auf */}
       {onBackgroundClick && (
         <rect x={-100000} y={-100000} width={200000} height={200000} fill="transparent" onClick={onBackgroundClick} />
@@ -1336,15 +1337,16 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
           });
         }
         const ziehbar = interaktiv && !istMainUnit;
-        // Beim Ziehen folgt das Element ausgegraut dem Finger → man sieht, wohin es andockt.
-        // Die Position wird so begrenzt, dass das Element IMMER vollständig sichtbar bleibt.
+        // Beim Ziehen folgt das Element ausgegraut frei dem Finger. Das Zentrum bleibt im
+        // Zeichenbereich; das Element ragt (per overflow:visible) in die Ränder → frei beweglich
+        // UND immer sichtbar (kein Abschneiden, nicht off-screen).
         const wirdGezogen = drag && drag.id === u.e._key && drag.px != null;
         let gx = 0, gy = 0;
         if (wirdGezogen) {
-          gx = drag.px - (u.r0.x + u.r0.w / 2);
-          gy = drag.py - (u.r0.y + u.r0.h / 2);
-          gx = Math.max(-u.r0.x, Math.min(VB_W - u.r0.x - u.r0.w, gx));
-          gy = Math.max(-u.r0.y, Math.min(VB_H - u.r0.y - u.r0.h, gy));
+          const cx = Math.max(0, Math.min(VB_W, drag.px));
+          const cy = Math.max(0, Math.min(VB_H, drag.py));
+          gx = cx - (u.r0.x + u.r0.w / 2);
+          gy = cy - (u.r0.y + u.r0.h / 2);
         }
         return (
           <g key={'u' + u.e._key}
