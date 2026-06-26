@@ -1101,8 +1101,10 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
                 <button className="np-merge-btn" onClick={trenne}>Trennen</button>
               </div>
             ) : mergePartner ? (
-              <button className="np-merge-btn np-merge-btn--connect" onClick={verbinde}
-                      title="Dieses und das benachbarte Element zu EINEM Rahmen verbinden">Verbinden ✓ Ja</button>
+              <div className="np-merge" title="Dieses und das benachbarte Element zu EINEM Rahmen verbinden">
+                <span className="np-merge-label">Verbinden</span>
+                <button className="np-merge-btn" onClick={verbinde}>Ja</button>
+              </div>
             ) : null}
           </div>
           {/* Mobiler In-Fluss-Knopf oben (Desktop nutzt den runden FAB in der Zeichnung) */}

@@ -2277,11 +2277,8 @@ a.detail-contact-link:hover span { text-decoration: underline; }
   border: none; background: #8b1a1a; color: #fff; font-weight: 700;
   border-radius: 7px; padding: 6px 18px; font-size: 13px; cursor: pointer;
 }
-.np-merge-btn:hover { background: #731515; }
-/* Verbinden-Knopf: solide rot wie alle anderen Knöpfe, größer, mit „✓ Ja". */
-.np-merge-btn--connect {
-  margin-left: auto; font-size: 15px; padding: 10px 24px; border-radius: 9px;
-}
+/* Beim Hovern leicht heller (statt dunkler). */
+.np-merge-btn:hover { background: #a83838; }
 .fz-svg { display: block; }
 /* Editierbare Maßfelder direkt in der Zeichnung */
 .fz-massinput {
