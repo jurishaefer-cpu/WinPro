@@ -692,7 +692,9 @@ export function sonderformPfade(r, geo, frame) {
     const s = Math.max(0.3, 1 - (2.8 * fw) / Math.min(w, h));
     const ip = pts.map(([px, py]) => [cx + (px - cx) * s, cy + (py - cy) * s]);
     const inner = `M ${ip[0][0]},${ip[0][1]} L ${ip[1][0]},${ip[1][1]} L ${ip[2][0]},${ip[2][1]} Z`;
-    return { outer, inner };
+    // Gehrung: 45°-Eckverbindung Außen- zu Innenecke an JEDER Ecke – wie beim Fensterrahmen.
+    const miter = pts.map((p, i) => [p, ip[i]]);
+    return { outer, inner, miter };
   }
   // Bögen: nur der Bogen selbst – flacher Boden (da, wo der Bogen anfängt) + Rundung oben,
   // KEIN Fenster mit geraden Seiten darunter.
@@ -704,7 +706,9 @@ export function sonderformPfade(r, geo, frame) {
     // damit der Scheitel nicht zusammenfällt (sonst Rahmenbreite oben = 0 → Rahmen „spitz").
     const irx = Math.max(2, rx - fw), iry = Math.max(2, ry - 2 * fw);
     const inner = `M ${x + fw},${y + h - fw} A ${irx},${iry} 0 0 1 ${x + w - fw},${y + h - fw} Z`;
-    return { outer, inner };
+    // Gehrung an den beiden unteren Ecken (45°), wie beim Fensterrahmen.
+    const miter = [[[x, y + h], [x + fw, y + h - fw]], [[x + w, y + h], [x + w - fw, y + h - fw]]];
+    return { outer, inner, miter };
   }
   // Segmentbogen: flacher Kreissegment-Bogen (Sehne = Breite, Stich = Höhe).
   const rise = Math.max(2, h);
@@ -718,7 +722,9 @@ export function sonderformPfade(r, geo, frame) {
   const ybi = y + h - fw;
   const dx = Math.sqrt(Math.max(1, iR * iR - (yc - ybi) * (yc - ybi)));
   const inner = `M ${cx - dx},${ybi} A ${iR},${iR} 0 0 1 ${cx + dx},${ybi} Z`;
-  return { outer, inner };
+  // Gehrung an den beiden unteren Ecken, wie beim Fensterrahmen.
+  const miter = [[[x, y + h], [cx - dx, ybi]], [[x + w, y + h], [cx + dx, ybi]]];
+  return { outer, inner, miter };
 }
 
 // Durchgehende Silhouette eines verbundenen Elements (Trennrahmen entfernt → ein Glas).
@@ -796,6 +802,7 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
           <g key={'t' + ti}>
             <path d={sp.outer} fill="#fff" stroke="#0f1f3d" strokeWidth="2.5" strokeLinejoin="round" />
             <path d={sp.inner} fill={tGlas} stroke="#0f1f3d" strokeWidth="1.6" strokeLinejoin="round" opacity="0.95" />
+            {(sp.miter || []).map((l, mi) => <line key={'tm' + ti + '-' + mi} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="1.4" />)}
           </g>
         );
       }
@@ -1013,6 +1020,7 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
         <g>
           <path d={sonder.outer} fill="#fff" stroke="#0f1f3d" strokeWidth="2.5" strokeLinejoin="round" />
           <path d={sonder.inner} fill={glasFarbe} stroke="#0f1f3d" strokeWidth="1.6" strokeLinejoin="round" opacity="0.95" />
+          {(sonder.miter || []).map((l, mi) => <line key={'sm' + mi} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="1.4" />)}
         </g>
       ) : (
         <UnitBody c={c} glasFarbe={glasFarbe} onPaneClick={onPaneClick} selectedPane={selectedPane} />
@@ -1333,6 +1341,7 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
                 <g key={'t' + ti}>
                   <path d={sp.outer} fill="#fff" stroke="#0f1f3d" strokeWidth="2.5" strokeLinejoin="round" />
                   <path d={sp.inner} fill={tGlas} stroke="#0f1f3d" strokeWidth="1.6" strokeLinejoin="round" opacity="0.95" />
+                  {(sp.miter || []).map((l, mi) => <line key={'tm' + ti + '-' + mi} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="1.4" />)}
                 </g>
               );
             }
@@ -1366,6 +1375,7 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
               <g>
                 <path d={uSonder.outer} fill="#fff" stroke="#0f1f3d" strokeWidth="2.5" strokeLinejoin="round" />
                 <path d={uSonder.inner} fill={uGlas} stroke="#0f1f3d" strokeWidth="1.6" strokeLinejoin="round" opacity="0.95" />
+                {(uSonder.miter || []).map((l, mi) => <line key={'um' + mi} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="1.4" />)}
               </g>
             ) : (
               <UnitBody c={u.c} glasFarbe={uGlas} keyPrefix={'u' + u.e._key + '-'}
