@@ -700,17 +700,24 @@ export function sonderformPfade(r, geo, frame) {
     // Rundbogen: Halbellipse (füllt die Box; an den unteren Ecken senkrecht → klassischer Rundbogen).
     const rx = w / 2, ry = h;
     const outer = `M ${x},${y + h} A ${rx},${ry} 0 0 1 ${x + w},${y + h} Z`;
-    const irx = Math.max(2, rx - fw), iry = Math.max(2, ry - fw);
+    // Gleichmäßiger Rahmen: innen seitlich UND am Scheitel um fw einrücken. iry um 2·fw kleiner,
+    // damit der Scheitel nicht zusammenfällt (sonst Rahmenbreite oben = 0 → Rahmen „spitz").
+    const irx = Math.max(2, rx - fw), iry = Math.max(2, ry - 2 * fw);
     const inner = `M ${x + fw},${y + h - fw} A ${irx},${iry} 0 0 1 ${x + w - fw},${y + h - fw} Z`;
     return { outer, inner };
   }
   // Segmentbogen: flacher Kreissegment-Bogen (Sehne = Breite, Stich = Höhe).
   const rise = Math.max(2, h);
+  const cx = x + w / 2;
   const R = (w * w / 4 + rise * rise) / (2 * rise);
+  const yc = (y + h) - rise + R;                       // Kreismittelpunkt (unter dem Scheitel)
   const outer = `M ${x},${y + h} A ${R},${R} 0 0 1 ${x + w},${y + h} Z`;
-  const iw = w - 2 * fw, irise = Math.max(2, rise - fw);
-  const iR = (iw * iw / 4 + irise * irise) / (2 * irise);
-  const inner = `M ${x + fw},${y + h - fw} A ${iR},${iR} 0 0 1 ${x + w - fw},${y + h - fw} Z`;
+  // Gleichmäßiger Rahmen: konzentrischer Innenbogen (Radius R−fw, gleicher Mittelpunkt) → überall
+  // exakt fw breit. Sehne fw nach innen; die Endpunkte des Innenbogens auf dieser Höhe berechnen.
+  const iR = Math.max(2, R - fw);
+  const ybi = y + h - fw;
+  const dx = Math.sqrt(Math.max(1, iR * iR - (yc - ybi) * (yc - ybi)));
+  const inner = `M ${cx - dx},${ybi} A ${iR},${iR} 0 0 1 ${cx + dx},${ybi} Z`;
   return { outer, inner };
 }
 
