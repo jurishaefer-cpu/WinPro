@@ -677,54 +677,72 @@ export function UnitBody({ c, glasFarbe = '#cfe3ef', onPaneClick, selectedPane, 
 }
 
 // --- Sonderformen (Bögen & Dreiecke) ---
-// Liefert SVG-Pfade für Außenkontur und (eingerückte) Glasfläche innerhalb des Rechtecks r.
+// Liefert SVG-Pfade für den Rahmen wie beim Fenster: äußerer Blendrahmen + innerer Flügelrahmen,
+// beide mit 45°-Gehrung an den Ecken, plus die Glasfläche. Vier konzentrische Konturen
+// (c0 Blendrahmen außen, c1 Blendrahmen innen, c2 Flügel außen, c3 Glas) – Gesamtrahmen = fw.
 export function sonderformPfade(r, geo, frame) {
   const { x, y, w, h } = r;
   const fw = Math.max(4, frame || 0);
+  const d1 = fw * 0.42;   // Blendrahmen innen
+  const d2 = fw * 0.60;   // Flügel außen (kleine Luft zum Blendrahmen)
+  const d3 = fw;          // Glas
+
+  // contour(d) → { path, corners } : Kontur um d nach innen versetzt + ihre geraden Ecken (für Gehrung).
+  let contour;
   if (geo.form === 'dreieck') {
     let pts;
     if (geo.variante === 'links') pts = [[x, y], [x, y + h], [x + w, y + h]];            // Spitze oben links
     else if (geo.variante === 'rechts') pts = [[x + w, y], [x, y + h], [x + w, y + h]];  // Spitze oben rechts
     else pts = [[x + w / 2, y], [x, y + h], [x + w, y + h]];                             // gleichschenklig
-    const outer = `M ${pts[0][0]},${pts[0][1]} L ${pts[1][0]},${pts[1][1]} L ${pts[2][0]},${pts[2][1]} Z`;
-    // Glasfläche: Ecken näherungsweise konstant Richtung Schwerpunkt einrücken.
     const cx = (pts[0][0] + pts[1][0] + pts[2][0]) / 3, cy = (pts[0][1] + pts[1][1] + pts[2][1]) / 3;
-    const s = Math.max(0.3, 1 - (2.8 * fw) / Math.min(w, h));
-    const ip = pts.map(([px, py]) => [cx + (px - cx) * s, cy + (py - cy) * s]);
-    const inner = `M ${ip[0][0]},${ip[0][1]} L ${ip[1][0]},${ip[1][1]} L ${ip[2][0]},${ip[2][1]} Z`;
-    // Gehrung: 45°-Eckverbindung Außen- zu Innenecke an JEDER Ecke – wie beim Fensterrahmen.
-    const miter = pts.map((p, i) => [p, ip[i]]);
-    return { outer, inner, miter };
-  }
-  // Bögen: nur der Bogen selbst – flacher Boden (da, wo der Bogen anfängt) + Rundung oben,
-  // KEIN Fenster mit geraden Seiten darunter.
-  if (geo.form === 'rundbogen') {
-    // Rundbogen: Halbellipse (füllt die Box; an den unteren Ecken senkrecht → klassischer Rundbogen).
+    contour = (d) => {
+      const s = Math.max(0.15, 1 - (2.8 * d) / Math.min(w, h));
+      const ip = pts.map(([px, py]) => [cx + (px - cx) * s, cy + (py - cy) * s]);
+      return { path: `M ${ip[0][0]},${ip[0][1]} L ${ip[1][0]},${ip[1][1]} L ${ip[2][0]},${ip[2][1]} Z`, corners: ip };
+    };
+  } else if (geo.form === 'rundbogen') {
+    // Rundbogen: Halbellipse; iry um 2·d eingerückt, damit die Rahmenbreite am Scheitel = d bleibt.
     const rx = w / 2, ry = h;
-    const outer = `M ${x},${y + h} A ${rx},${ry} 0 0 1 ${x + w},${y + h} Z`;
-    // Gleichmäßiger Rahmen: innen seitlich UND am Scheitel um fw einrücken. iry um 2·fw kleiner,
-    // damit der Scheitel nicht zusammenfällt (sonst Rahmenbreite oben = 0 → Rahmen „spitz").
-    const irx = Math.max(2, rx - fw), iry = Math.max(2, ry - 2 * fw);
-    const inner = `M ${x + fw},${y + h - fw} A ${irx},${iry} 0 0 1 ${x + w - fw},${y + h - fw} Z`;
-    // Gehrung an den beiden unteren Ecken (45°), wie beim Fensterrahmen.
-    const miter = [[[x, y + h], [x + fw, y + h - fw]], [[x + w, y + h], [x + w - fw, y + h - fw]]];
-    return { outer, inner, miter };
+    contour = (d) => {
+      const rxd = Math.max(2, rx - d), ryd = Math.max(2, ry - 2 * d);
+      const ax = x + d, ay = y + h - d, bx = x + w - d;
+      return { path: `M ${ax},${ay} A ${rxd},${ryd} 0 0 1 ${bx},${ay} Z`, corners: [[ax, ay], [bx, ay]] };
+    };
+  } else {
+    // Segmentbogen: konzentrische Kreisbögen (Radius R−d) → überall gleich breiter Rahmen.
+    const rise = Math.max(2, h);
+    const cx = x + w / 2;
+    const R = (w * w / 4 + rise * rise) / (2 * rise);
+    const yc = (y + h) - rise + R;                     // Kreismittelpunkt (unter dem Scheitel)
+    contour = (d) => {
+      const Rd = Math.max(2, R - d), yb = y + h - d;
+      const dx = Math.sqrt(Math.max(1, Rd * Rd - (yc - yb) * (yc - yb)));
+      return { path: `M ${cx - dx},${yb} A ${Rd},${Rd} 0 0 1 ${cx + dx},${yb} Z`, corners: [[cx - dx, yb], [cx + dx, yb]] };
+    };
   }
-  // Segmentbogen: flacher Kreissegment-Bogen (Sehne = Breite, Stich = Höhe).
-  const rise = Math.max(2, h);
-  const cx = x + w / 2;
-  const R = (w * w / 4 + rise * rise) / (2 * rise);
-  const yc = (y + h) - rise + R;                       // Kreismittelpunkt (unter dem Scheitel)
-  const outer = `M ${x},${y + h} A ${R},${R} 0 0 1 ${x + w},${y + h} Z`;
-  // Gleichmäßiger Rahmen: konzentrischer Innenbogen (Radius R−fw, gleicher Mittelpunkt) → überall
-  // exakt fw breit. Sehne fw nach innen; die Endpunkte des Innenbogens auf dieser Höhe berechnen.
-  const iR = Math.max(2, R - fw);
-  const ybi = y + h - fw;
-  const dx = Math.sqrt(Math.max(1, iR * iR - (yc - ybi) * (yc - ybi)));
-  const inner = `M ${cx - dx},${ybi} A ${iR},${iR} 0 0 1 ${cx + dx},${ybi} Z`;
-  // Gehrung an den beiden unteren Ecken, wie beim Fensterrahmen.
-  const miter = [[[x, y + h], [cx - dx, ybi]], [[x + w, y + h], [cx + dx, ybi]]];
-  return { outer, inner, miter };
+
+  const c0 = contour(0), c1 = contour(d1), c2 = contour(d2), c3 = contour(d3);
+  // Gehrung an jeder geraden Ecke: Außenrahmen (c0→c1) und Flügelrahmen (c2→c3).
+  const miter = [];
+  c0.corners.forEach((p, i) => miter.push([p, c1.corners[i]]));
+  c2.corners.forEach((p, i) => miter.push([p, c3.corners[i]]));
+  return { outer: c0.path, mid: c1.path, sash: c2.path, inner: c3.path, miter };
+}
+
+// Zeichnet den Sonderform-Rahmen (Bögen/Dreiecke) wie einen Fensterrahmen:
+// Blendrahmen (außen) + Flügelrahmen (innen), beide mit Gehrung, dann Glas.
+export function SonderBody({ sp, glas = '#cfe3ef', kp = '' }) {
+  return (
+    <g>
+      <path d={sp.outer} fill="#fff" stroke="#0f1f3d" strokeWidth="2.5" strokeLinejoin="round" />
+      {sp.mid && <path d={sp.mid} fill="#fff" stroke="#0f1f3d" strokeWidth="1.6" strokeLinejoin="round" />}
+      {sp.sash && <path d={sp.sash} fill="#fff" stroke="#0f1f3d" strokeWidth="2" strokeLinejoin="round" />}
+      <path d={sp.inner} fill={glas} stroke="#0f1f3d" strokeWidth="1.4" strokeLinejoin="round" opacity="0.95" />
+      {(sp.miter || []).map((l, i) => (
+        <line key={kp + 'm' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="1.4" />
+      ))}
+    </g>
+  );
 }
 
 // Durchgehende Silhouette eines verbundenen Elements (Trennrahmen entfernt → ein Glas).
@@ -798,13 +816,7 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
       const tGlas = t.ornament ? '#7fb0cc' : glasFarbe;
       if (tGeo?.form) {
         const sp = sonderformPfade(sub, tGeo, Math.max(6, 60 * scale));
-        return (
-          <g key={'t' + ti}>
-            <path d={sp.outer} fill="#fff" stroke="#0f1f3d" strokeWidth="2.5" strokeLinejoin="round" />
-            <path d={sp.inner} fill={tGlas} stroke="#0f1f3d" strokeWidth="1.6" strokeLinejoin="round" opacity="0.95" />
-            {(sp.miter || []).map((l, mi) => <line key={'tm' + ti + '-' + mi} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="1.4" />)}
-          </g>
-        );
+        return <SonderBody key={'t' + ti} sp={sp} glas={tGlas} kp={'t' + ti + '-'} />;
       }
       const tc = computeUnit(sub, scale, {
         geometrie: tGeo, breite: tdir === 'h' ? size : Number(t.breite), hoehe: tdir === 'h' ? Number(t.hoehe) : size,
@@ -1017,11 +1029,7 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
       ) : teilBodies ? (
         <g>{teilBodies}</g>
       ) : istSonderform ? (
-        <g>
-          <path d={sonder.outer} fill="#fff" stroke="#0f1f3d" strokeWidth="2.5" strokeLinejoin="round" />
-          <path d={sonder.inner} fill={glasFarbe} stroke="#0f1f3d" strokeWidth="1.6" strokeLinejoin="round" opacity="0.95" />
-          {(sonder.miter || []).map((l, mi) => <line key={'sm' + mi} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="1.4" />)}
-        </g>
+        <SonderBody sp={sonder} glas={glasFarbe} kp="s" />
       ) : (
         <UnitBody c={c} glasFarbe={glasFarbe} onPaneClick={onPaneClick} selectedPane={selectedPane} />
       )}
@@ -1337,13 +1345,7 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
             const tGlas = weissesGlas ? '#ffffff' : (t.ornament ? '#7fb0cc' : glasFarbe);
             if (tGeo?.form) {
               const sp = sonderformPfade(sub, tGeo, Math.max(5, 60 * scale));
-              return (
-                <g key={'t' + ti}>
-                  <path d={sp.outer} fill="#fff" stroke="#0f1f3d" strokeWidth="2.5" strokeLinejoin="round" />
-                  <path d={sp.inner} fill={tGlas} stroke="#0f1f3d" strokeWidth="1.6" strokeLinejoin="round" opacity="0.95" />
-                  {(sp.miter || []).map((l, mi) => <line key={'tm' + ti + '-' + mi} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="1.4" />)}
-                </g>
-              );
+              return <SonderBody key={'t' + ti} sp={sp} glas={tGlas} kp={'kt' + ti + '-'} />;
             }
             const tc = computeUnit(sub, scale, {
               geometrie: tGeo, breite: dir === 'h' ? size : Number(t.breite), hoehe: dir === 'h' ? Number(t.hoehe) : size,
@@ -1372,11 +1374,7 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
             {teilBodies ? (
               <g>{teilBodies}</g>
             ) : uSonder ? (
-              <g>
-                <path d={uSonder.outer} fill="#fff" stroke="#0f1f3d" strokeWidth="2.5" strokeLinejoin="round" />
-                <path d={uSonder.inner} fill={uGlas} stroke="#0f1f3d" strokeWidth="1.6" strokeLinejoin="round" opacity="0.95" />
-                {(uSonder.miter || []).map((l, mi) => <line key={'um' + mi} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="1.4" />)}
-              </g>
+              <SonderBody sp={uSonder} glas={uGlas} kp={'u' + u.e._key + '-'} />
             ) : (
               <UnitBody c={u.c} glasFarbe={uGlas} keyPrefix={'u' + u.e._key + '-'}
                 onPaneClick={interaktiv && aktiv ? (i => { if (!justDraggedRef.current) onPaneClick(i); }) : undefined} selectedPane={aktiv ? selectedPane : null} />
