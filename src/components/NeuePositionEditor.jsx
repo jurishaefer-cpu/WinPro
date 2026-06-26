@@ -373,8 +373,9 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
     if (prevAluSystem.current === null) { prevAluSystem.current = istAluSystem; return; }
     if (istAluSystem === prevAluSystem.current) return;
     prevAluSystem.current = istAluSystem;
-    if (istAluSystem && !istAluCode(aktiv.code)) waehleGeometrie('A01');
-    else if (!istAluSystem && istAluCode(aktiv.code)) waehleGeometrie('F01');
+    // Maß beim System-Wechsel beibehalten (keepMass) – passt sich erst an, wenn der Nutzer es selbst ändert.
+    if (istAluSystem && !istAluCode(aktiv.code)) waehleGeometrie('A01', true);
+    else if (!istAluSystem && istAluCode(aktiv.code)) waehleGeometrie('F01', true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [istAluSystem, profil]);
 
