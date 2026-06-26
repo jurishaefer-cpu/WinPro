@@ -778,6 +778,61 @@ export function SonderBody({ sp, glas = '#cfe3ef', kp = '', oeffnung, onPaneClic
   );
 }
 
+// Verbundenes „Bogen über Fenster" als EIN Bogenfenster: durchgehender Außenrahmen (Bogen oben +
+// gerade Seiten + Boden), Kämpfer (Querbalken) am Übergang, oben das feste Oberlicht-Glas, unten
+// der Fenster-Flügel mit Glas und Öffnungssymbol. Liefert null, wenn der Fall nicht passt
+// (dann zeichnet der Aufrufer die Teile wie bisher).
+export function VerbundBogenBody({ r0, teile, scale, glasFarbe = '#cfe3ef', kp = '' }) {
+  if (!Array.isArray(teile) || teile.length !== 2) return null;
+  const formIdx = geometrieByCode(teile[0]?.code)?.form ? 0 : (geometrieByCode(teile[1]?.code)?.form ? 1 : -1);
+  if (formIdx !== 0) return null;                                  // nur Bogen OBEN
+  const g = geometrieByCode(teile[0].code);
+  if (g.form !== 'rundbogen' && g.form !== 'segmentbogen') return null;
+  const { x, y, w, h } = r0;
+  const fw = Math.max(6, 60 * scale);
+  const winTeil = teile[1];
+  const total = (Number(teile[0].hoehe) || 0) + (Number(teile[1].hoehe) || 0) || 1;
+  const archH = (Number(teile[0].hoehe) || 0) / total * h;
+  const splitY = y + archH;
+  // Silhouette des Bogenfensters, um d nach innen versetzt.
+  const sil = (d) => {
+    const L = x + d, Rr = x + w - d, bot = y + h - d;
+    const rise = Math.max(2, archH - d);
+    if (g.form === 'rundbogen') {
+      return `M ${L},${bot} L ${L},${splitY} A ${Math.max(2, w / 2 - d)},${rise} 0 0 1 ${Rr},${splitY} L ${Rr},${bot} Z`;
+    }
+    const ww = w - 2 * d, R = (ww * ww / 4 + rise * rise) / (2 * rise);
+    return `M ${L},${bot} L ${L},${splitY} A ${R},${R} 0 0 1 ${Rr},${splitY} L ${Rr},${bot} Z`;
+  };
+  const clipId = 'vb-' + kp;
+  const kHalf = fw / 2;
+  // Fenster-Bereich (rechteckig) unter dem Kämpfer:
+  const winInner = { x: x + fw, y: splitY + kHalf, w: w - 2 * fw, h: (y + h - fw) - (splitY + kHalf) };
+  const sash = inset(winInner, Math.max(3, fw * 0.28));
+  const glasR = inset(sash, Math.max(3, fw * 0.5));
+  const pane = (winTeil.panes && winTeil.panes[0]) || { open: 'drehkipp', din: 'links' };
+  const oLines = pane.fest ? [] : oeffnungsLinien(pane, glasR);
+  return (
+    <g>
+      <clipPath id={clipId}><path d={sil(fw)} /></clipPath>
+      {/* Durchgehender Blendrahmen (außen + innen) */}
+      <path d={sil(0)} fill="#fff" stroke="#0f1f3d" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d={sil(fw)} fill="#fff" stroke="#0f1f3d" strokeWidth="1.6" strokeLinejoin="round" />
+      {/* Oberlicht-Glas (Bogen) – auf die Silhouette geclippt, endet über dem Kämpfer */}
+      <g clipPath={`url(#${clipId})`}>
+        <rect x={x} y={y + fw} width={w} height={Math.max(0, (splitY - kHalf) - (y + fw))} fill={glasFarbe} opacity="0.95" />
+      </g>
+      {/* Kämpfer (waagrechter Querbalken am Übergang) */}
+      <rect x={x + fw} y={splitY - kHalf} width={w - 2 * fw} height={fw} fill="#fff" stroke="#0f1f3d" strokeWidth="1.6" />
+      {/* Fenster-Flügel + Glas + Öffnungssymbol */}
+      <rect x={sash.x} y={sash.y} width={sash.w} height={sash.h} fill="#fff" stroke="#0f1f3d" strokeWidth="2" />
+      {gehrung(sash, glasR).map((l, i) => <line key={kp + 'sm' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="1.4" />)}
+      <rect x={glasR.x} y={glasR.y} width={glasR.w} height={glasR.h} fill={glasFarbe} stroke="#0f1f3d" strokeWidth="1.4" opacity="0.95" />
+      {oLines.map((l, i) => <line key={kp + 'ol' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="1.4" />)}
+    </g>
+  );
+}
+
 // Durchgehende Silhouette eines verbundenen Elements (Trennrahmen entfernt → ein Glas).
 // Behandelt vertikalen 2er-Stapel: Sonderform-Teil + Rechteck-Teil.
 export function durchgehendPfade(r0, teile, dir, frame) {
@@ -861,6 +916,9 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
   }
   // Trennrahmen entfernt → durchgehende Form (ein Glas).
   const durchPf = (formTeile && durchgehend) ? durchgehendPfade(r0, formTeile, teilDir || 'h', Math.max(6, 60 * scale)) : null;
+  // „Bogen über Fenster" verbunden → durchgehender Außenrahmen + Kämpfer (statt zwei Rahmen).
+  const bogenOben = !durchgehend && formTeile && formTeile.length === 2 && (teilDir || 'h') === 'v'
+    && ['rundbogen', 'segmentbogen'].includes(geometrieByCode(formTeile[0]?.code)?.form);
   // Klickbarer Trennrahmen-Streifen zwischen den beiden Teilen (nur Editor, solange nicht durchgehend).
   let dividerStrip = null;
   if (formTeile && formTeile.length === 2 && onDivider && !durchgehend) {
@@ -1062,6 +1120,8 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
           <path d={durchPf.outer} fill="#fff" stroke="#0f1f3d" strokeWidth="2.5" strokeLinejoin="round" />
           <path d={durchPf.inner} fill={glasFarbe} stroke="#0f1f3d" strokeWidth="1.6" strokeLinejoin="round" opacity="0.95" />
         </g>
+      ) : bogenOben ? (
+        <VerbundBogenBody r0={r0} teile={formTeile} scale={scale} glasFarbe={glasFarbe} kp="vb" />
       ) : teilBodies ? (
         <g>{teilBodies}</g>
       ) : istSonderform ? (
@@ -1370,8 +1430,11 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
         // behält im Inneren seine eigene Form (statt zu einem rechteckigen Mehrfeld zu werden).
         const teile = (u.e.verbunden && Array.isArray(u.e._teile) && u.e._teile.length > 1) ? u.e._teile : null;
         const teilForm = teile && teile.some(t => geometrieByCode(t.code)?.form);
+        // „Bogen über Fenster" verbunden → durchgehender Außenrahmen + Kämpfer.
+        const uBogenOben = teile && teile.length === 2 && (u.e._dir || 'h') === 'v'
+          && ['rundbogen', 'segmentbogen'].includes(geometrieByCode(teile[0]?.code)?.form);
         let teilBodies = null;
-        if (teilForm) {
+        if (teilForm && !uBogenOben) {
           const dir = u.e._dir || 'h';
           const total = teile.reduce((a, t) => a + ((dir === 'h' ? Number(t.breite) : Number(t.hoehe)) || 0), 0) || 1;
           let acc = 0;
@@ -1411,7 +1474,9 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
             <g opacity={wirdGezogen ? 0.4 : 1}
                transform={wirdGezogen ? `translate(${gx} ${gy})` : undefined}
                style={wirdGezogen ? { pointerEvents: 'none' } : undefined}>
-            {teilBodies ? (
+            {uBogenOben ? (
+              <VerbundBogenBody r0={u.r0} teile={teile} scale={scale} glasFarbe={uGlas} kp={'u' + u.e._key + '-vb'} />
+            ) : teilBodies ? (
               <g>{teilBodies}</g>
             ) : uSonder ? (
               <SonderBody sp={uSonder} glas={uGlas} kp={'u' + u.e._key + '-'} oeffnung={u.e.panes?.[0]}
