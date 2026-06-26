@@ -677,15 +677,14 @@ export function UnitBody({ c, glasFarbe = '#cfe3ef', onPaneClick, selectedPane, 
 }
 
 // --- Sonderformen (Bögen & Dreiecke) ---
-// Liefert SVG-Pfade für den Rahmen wie beim Fenster: äußerer Blendrahmen + innerer Flügelrahmen,
-// beide mit 45°-Gehrung an den Ecken, plus die Glasfläche. Vier konzentrische Konturen
-// (c0 Blendrahmen außen, c1 Blendrahmen innen, c2 Flügel außen, c3 Glas) – Gesamtrahmen = fw.
+// Festverglasung wie beim Fenster: NUR Blendrahmen (außen + innen, mit 45°-Gehrung) + Glas.
+// KEIN Flügel-/Zwischenrahmen (fest verglast hat keinen Flügel). Drei konzentrische Konturen:
+// c0 Blendrahmen außen, c1 Blendrahmen innen, c3 Glas – Gesamtrahmen = fw.
 export function sonderformPfade(r, geo, frame) {
   const { x, y, w, h } = r;
   const fw = Math.max(4, frame || 0);
-  const d1 = fw * 0.42;   // Blendrahmen innen
-  const d2 = fw * 0.60;   // Flügel außen (kleine Luft zum Blendrahmen)
-  const d3 = fw;          // Glas
+  const d1 = fw * 0.66;   // Blendrahmen innen
+  const d3 = fw;          // Glas (schmale Glasleiste innerhalb des Blendrahmens)
 
   // contour(d) → { path, corners } : Kontur um d nach innen versetzt + ihre geraden Ecken (für Gehrung).
   let contour;
@@ -721,12 +720,10 @@ export function sonderformPfade(r, geo, frame) {
     };
   }
 
-  const c0 = contour(0), c1 = contour(d1), c2 = contour(d2), c3 = contour(d3);
-  // Gehrung an jeder geraden Ecke: Außenrahmen (c0→c1) und Flügelrahmen (c2→c3).
-  const miter = [];
-  c0.corners.forEach((p, i) => miter.push([p, c1.corners[i]]));
-  c2.corners.forEach((p, i) => miter.push([p, c3.corners[i]]));
-  return { outer: c0.path, mid: c1.path, sash: c2.path, inner: c3.path, miter };
+  const c0 = contour(0), c1 = contour(d1), c3 = contour(d3);
+  // Gehrung nur am Blendrahmen (c0→c1) – fest verglast hat keinen Flügelrahmen.
+  const miter = c0.corners.map((p, i) => [p, c1.corners[i]]);
+  return { outer: c0.path, mid: c1.path, inner: c3.path, miter };
 }
 
 // Zeichnet den Sonderform-Rahmen (Bögen/Dreiecke) wie einen Fensterrahmen:
