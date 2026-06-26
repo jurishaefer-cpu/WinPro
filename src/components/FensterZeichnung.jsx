@@ -1349,11 +1349,7 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
           gy = cy - (u.r0.y + u.r0.h / 2);
         }
         return (
-          <g key={'u' + u.e._key}
-             style={ziehbar ? { cursor: 'move', touchAction: 'none' } : undefined}
-             onPointerDown={ziehbar ? e => pressDown(e, u.e._key) : undefined}
-             onPointerMove={ziehbar ? e => pressMove(e, u.e._key) : undefined}
-             onPointerUp={ziehbar ? e => pressUp(e, u.e._key) : undefined}>
+          <g key={'u' + u.e._key}>
             <g opacity={wirdGezogen ? 0.4 : 1}
                transform={wirdGezogen ? `translate(${gx} ${gy})` : undefined}
                style={wirdGezogen ? { pointerEvents: 'none' } : undefined}>
@@ -1375,9 +1371,23 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
             )}
             {interaktiv && !aktiv && (
               <rect x={u.r0.x} y={u.r0.y} width={u.r0.w} height={u.r0.h} fill="transparent"
-                    style={{ cursor: ziehbar ? 'move' : 'pointer' }}
+                    style={{ cursor: 'pointer' }}
                     onClick={() => { if (!justDraggedRef.current) onUnitClick(u.e._key); }} />
             )}
+            {/* Ziehfläche NUR auf dem Rahmen (Ring) – die Glas-/Feldmitte bleibt für die Öffnungsart klickbar */}
+            {ziehbar && (() => {
+              const { x, y, w, h } = u.r0;
+              const fw = Math.max(14, Math.min(w, h) * 0.16);
+              const ring = `M ${x},${y} H ${x + w} V ${y + h} H ${x} Z M ${x + fw},${y + fw} H ${x + w - fw} V ${y + h - fw} H ${x + fw} Z`;
+              return (
+                <path d={ring} fillRule="evenodd" fill="transparent"
+                      style={{ cursor: 'move', touchAction: 'none' }}
+                      onPointerDown={e => pressDown(e, u.e._key)}
+                      onPointerMove={e => pressMove(e, u.e._key)}
+                      onPointerUp={e => pressUp(e, u.e._key)}
+                      onClick={() => { if (!justDraggedRef.current) onUnitClick(u.e._key); }} />
+              );
+            })()}
           </g>
         );
       })}
