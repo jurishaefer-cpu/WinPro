@@ -245,7 +245,7 @@ export function RolloZeichnung({ breite = 1000, hoehe = 1400, kastenhoehe = 165,
   // den Fensterkarten. Editor- (PAD 46) und Beleg-Darstellung (PAD 12) bleiben unverändert.
   const rightMargin = (f) => (panzerOnly ? 14 : 16 + f * 0.8);
   let fMain, ox, oy, VB_W, VB_H;
-  if (kompakt) {
+  if (kompakt || beleg) {
     const BOX_W = 185, BOX_H = 150, ZIEL_FONT = 13;
     let f = 30, rand;
     for (let i = 0; i < 4; i++) {
@@ -260,7 +260,7 @@ export function RolloZeichnung({ breite = 1000, hoehe = 1400, kastenhoehe = 165,
     VB_W = ox + rw + Math.round(rightMargin(fMain));
     VB_H = oy + rh + 14;
   } else {
-    const PAD = beleg ? 12 : 46;
+    const PAD = 46;
     fMain = 13; ox = PAD; oy = PAD;
     VB_W = rw + PAD * 2; VB_H = rh + PAD * 2;
   }
@@ -320,8 +320,8 @@ export function RolloZeichnung({ breite = 1000, hoehe = 1400, kastenhoehe = 165,
           )}
         </>
       )}
-      {/* Maße – skalierte Variante (Übersicht, identisch zu FensterZeichnung) */}
-      {!beleg && kompakt && (
+      {/* Maße – skalierte Variante (Übersicht + Beleg, identisch zu FensterZeichnung) */}
+      {(kompakt || beleg) && (
         <>
           {/* Breite oben */}
           <line x1={ox} y1={oy - 34} x2={ox + rw} y2={oy - 34} stroke="#0f1f3d" strokeWidth="1.2" />
