@@ -2472,6 +2472,17 @@ a.detail-contact-link:hover span { text-decoration: underline; }
     padding: 20px 16px;
   }
 
+  /* iOS zoomt beim Fokussieren in Felder mit Schrift < 16px hinein (störender
+     Sprung). Auf Mobil alle betroffenen Eingaben auf mind. 16px anheben. */
+  .form-field input,
+  .form-field textarea,
+  .search-box input,
+  .filter-select,
+  .rte-area,
+  .np-euro-input input {
+    font-size: 16px;
+  }
+
   /* Belege: Toolbar kompakt, Dokument wird per JS auf Breite skaliert */
   .beleg-toolbar { padding: 10px 12px; gap: 10px; }
   .beleg-toolbar-titel { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -2560,9 +2571,19 @@ a.detail-contact-link:hover span { text-decoration: underline; }
   .detail-contact { gap: 8px 20px; }
   .detail-contact-item { font-size: 14px; }
 
-  /* Angebots-Karte: Betrag/Pfeil bleiben, Löschen-Button schmaler */
+  /* Angebots-Karte: gestapelt statt gequetscht – Titel+Status oben (umbruchfähig),
+     Betrag in eigener Zeile rechts, Pfeil weg (ganze Karte ist tippbar). */
+  .angebot-card { flex-wrap: wrap; gap: 6px 12px; padding: 14px 16px; }
+  .angebot-main { flex: 1 1 100%; }
+  .angebot-titelzeile { flex-wrap: wrap; gap: 6px 10px; }
+  .angebot-betrag { margin-left: auto; font-size: 17px; }
+  .angebot-chevron { display: none; }
   .angebot-delete { width: 44px; }
   .angebot-bez { font-size: 16px; }
+
+  /* Listen-Karten (Kunden & Profile): langer Name + Badge dürfen umbrechen,
+     statt den Namen in eine schmale Spalte zu quetschen. */
+  .kunde-name { flex-wrap: wrap; }
 
   /* ── Angebots-Editor mobil ── */
   .angebot-editor { padding-bottom: 150px; }
