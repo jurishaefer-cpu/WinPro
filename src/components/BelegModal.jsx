@@ -70,9 +70,7 @@ function BelegModal({ onClose, ...docProps }) {
     try {
       const [{ jsPDF }, html2canvasMod] = await Promise.all([import('jspdf'), import('html2canvas')]);
       const html2canvas = html2canvasMod.default;
-      const scale = 6;                 // höhere Auflösung -> schärferer Ausdruck (auch kleine Schrift)
       const pxProMm = A4_BREITE / 210;
-      const opts = { scale, backgroundColor: '#ffffff', useCORS: true, windowWidth: A4_BREITE };
 
       holder = document.createElement('div');
       holder.style.cssText = `position:fixed; left:-10000px; top:0; width:${A4_BREITE}px; background:#fff;`;
@@ -100,6 +98,20 @@ function BelegModal({ onClose, ...docProps }) {
 
       holder.appendChild(clone);
       if (hatFuss) holder.appendChild(fussWrap);
+
+      // Render-Maßstab dynamisch begrenzen: iOS-Safari erlaubt nur ~16,7 Mio px²
+      // pro Canvas (und begrenzte Kantenlänge). Bei festem scale 6 lief die Body-
+      // Canvas darüber und kam LEER zurück (nur die kleine Fuß-Canvas passte) →
+      // PDF zeigte nur die Fußzeile. Hier so hoch wie möglich, aber unter dem Limit.
+      const MAX_AREA = 16_000_000;     // Sicherheitsabstand zum iOS-Limit (16.777.216)
+      const MAX_KANTE = 8192;          // konservative max. Canvas-Kantenlänge
+      const bodyH = Math.max(clone.offsetHeight, 1);
+      const scale = Math.max(1, Math.min(
+        6,
+        Math.sqrt(MAX_AREA / (A4_BREITE * bodyH)),
+        MAX_KANTE / Math.max(A4_BREITE, bodyH),
+      ));
+      const opts = { scale, backgroundColor: '#ffffff', useCORS: true, windowWidth: A4_BREITE };
 
       // Logo/Bilder fertig laden lassen
       await Promise.all(Array.from(holder.querySelectorAll('img')).map(img =>
