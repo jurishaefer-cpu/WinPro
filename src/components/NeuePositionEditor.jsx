@@ -12,7 +12,7 @@ const VERGLASUNGEN = [
 const DICHTUNGEN = ['Grau', 'Schwarz'];
 const ROLLLADEN = ['42x42mm'];
 // Kastenform (nur Vorbau Rollladen); zusätzlich „Manuell" für freie Eingabe.
-const KASTENFORMEN = ['45° abgeschrägt', 'unter Putzkasten', 'abgerundet'];
+const KASTENFORMEN = ['45° abgeschrägt', 'unterputz', 'abgerundet'];
 const BEDIENUNGEN = ['Gurt', 'Kurbel', 'Motor (Schalter)', 'Funk-Motor'];
 const BEHANG = ['Aluminium', 'Kunststoff (PVC)'];
 // Lamellengröße je nach Behang-Material
