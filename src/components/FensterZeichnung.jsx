@@ -1159,26 +1159,35 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
 
       {/* Fensterkörper: durchgehende Form (Trennrahmen entfernt) / verbundene Teile / Sonderform / normaler Rahmen */}
       {durchPf ? (() => {
-        // Durchgehendes Glas: EINE Öffnungsart fürs ganze Fenster (Glas anklickbar, Symbol über alles).
+        // Durchgehendes Glas: wie ein echtes Fenster zeichnen – Blendrahmen + (bei Öffnungsart)
+        // Flügelrahmen + Glas + EIN Öffnungssymbol fürs ganze Fenster. Konturen via durchgehendPfade
+        // mit verschiedenen Rahmenbreiten (gleicher Außenrand, weiter innen versetzte Innenkonturen).
         const dfw = Math.max(6, 60 * scale);
         const dPane = (panesProp && panesProp[0]) || { fest: true };
+        const offen = !dPane.fest && dPane.open && dPane.open !== 'fest';
+        const dir2 = teilDir || 'h';
+        const blendIn = durchgehendPfade(r0, formTeile, dir2, dfw * (offen ? 0.42 : 0.66))?.inner;
+        const sashP = offen ? durchgehendPfade(r0, formTeile, dir2, dfw * 0.6)?.inner : null;
+        const glassP = durchgehendPfade(r0, formTeile, dir2, dfw)?.inner || durchPf.inner;
         const dBox = { x: r0.x + dfw, y: r0.y + dfw, w: Math.max(2, r0.w - 2 * dfw), h: Math.max(2, r0.h - 2 * dfw) };
-        const dLines = dPane.fest ? [] : oeffnungsLinien(dPane, dBox);
+        const dLines = offen ? oeffnungsLinien(dPane, dBox) : [];
         const dSel = selectedPane === 0;
         return (
           <g>
             <path d={durchPf.outer} fill="#fff" stroke="#0f1f3d" strokeWidth="2.5" strokeLinejoin="round" />
-            <path d={durchPf.inner} fill={glasFarbe} stroke="#0f1f3d" strokeWidth="1.6" strokeLinejoin="round" opacity="0.95" />
+            {blendIn && <path d={blendIn} fill="#fff" stroke="#0f1f3d" strokeWidth="1.6" strokeLinejoin="round" />}
+            {sashP && <path d={sashP} fill="#fff" stroke="#0f1f3d" strokeWidth="2" strokeLinejoin="round" />}
+            <path d={glassP} fill={glasFarbe} stroke="#0f1f3d" strokeWidth="1.4" strokeLinejoin="round" opacity="0.95" />
             {dLines.length > 0 && (
               <>
-                <clipPath id="dpclip"><path d={durchPf.inner} /></clipPath>
-                <g clipPath="url(#dpclip)">
+                <clipPath id={'dpclip-' + Math.round(r0.x) + '-' + Math.round(r0.y)}><path d={glassP} /></clipPath>
+                <g clipPath={`url(#dpclip-${Math.round(r0.x)}-${Math.round(r0.y)})`}>
                   {dLines.map((l, i) => <line key={'dpl' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="1.4" />)}
                 </g>
               </>
             )}
             {onPaneClick && (
-              <path d={durchPf.inner} fill={dSel ? 'rgba(192,21,46,0.12)' : 'transparent'}
+              <path d={glassP} fill={dSel ? 'rgba(192,21,46,0.12)' : 'transparent'}
                     stroke={dSel ? '#c0152e' : 'transparent'} strokeWidth="2.5"
                     style={{ cursor: 'pointer' }} onClick={() => onPaneClick(0)} />
             )}
