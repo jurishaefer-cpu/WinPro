@@ -6,7 +6,7 @@ import ManuellePositionModal from '../components/ManuellePositionModal';
 import NeuePositionEditor from '../components/NeuePositionEditor';
 import FensterZeichnung, { geometrieByCode, KombinationsZeichnung, RolloZeichnung } from '../components/FensterZeichnung';
 import BelegModal from '../components/BelegModal';
-import { ladeEinstellungen } from '../lib/einstellungen';
+import { ladeBelegEinstellungen } from '../lib/einstellungen';
 import { nummernConfig, formatBelegnummer, parseBelegnummer } from '../lib/belegHelfer';
 
 const STUFEN = ['Angebot', 'Auftragsbestätigung', 'Bestellung', 'Rechnung'];
@@ -84,7 +84,7 @@ function AngebotEditorPage() {
         .from('positionen').select('*').eq('angebot_id', angebotId)
         .order('sortierung', { ascending: true }).order('created_at', { ascending: true });
       setPositionen(p ?? []);
-      setEinstellungen(await ladeEinstellungen(user.id));
+      setEinstellungen(await ladeBelegEinstellungen(user.id));
       const { data: prof } = await supabase.from('profile').select('*');
       const map = {}; (prof ?? []).forEach(pr => { map[pr.id] = pr; });
       setProfileMap(map);
