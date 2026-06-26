@@ -1266,7 +1266,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
                 <span className="pane-option-thumb"><GeometrieThumb geometrie={geometrieByCode('T01')} /></span>
                 <span className="pane-option-label">Tür hinzufügen</span>
               </button>
-              {!geometrie?.form && !istRollo && !aktiv.verbunden && (
+              {!geometrie?.form && !istRollo && (
                 <>
                   <div className="pane-menu-sub">Pfosten ins aktive Fenster</div>
                   <button className="pane-option" onClick={addPfostenVertikal}>
