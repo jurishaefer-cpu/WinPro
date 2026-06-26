@@ -158,24 +158,47 @@ function elementRows(e) {
   return Math.ceil((e.panes?.length || 1) / (e.cols || 1));
 }
 
-// Findet einen verbindbaren Nachbarn des aktiven Elements:
-// nebeneinander (gleiche Höhe, beide einreihig) oder übereinander (gleiche Breite, beide einspaltig).
-// Bögen/Dreiecke dürfen mit Nachbarn verbunden werden (z. B. Rundbogen über Fenster) – das
-// Verbinden ist eine bewusste Aktion über den „Verbinden"-Knopf, passiert also nie automatisch.
+// Tatsächliche Lage jedes Elements im Raster (in mm), inkl. Zeilen-/Spaltengröße und Versatz –
+// damit wir prüfen können, ob zwei berührende Kanten EXAKT deckungsgleich (bündig) sind.
+function layoutExtents(els) {
+  const rows = [...new Set(els.map(e => e.row ?? 0))].sort((a, b) => a - b);
+  const cols = [...new Set(els.map(e => e.col ?? 0))].sort((a, b) => a - b);
+  const maxRow = Math.max(...rows), maxCol = Math.max(...cols);
+  const hMm = e => Math.max(200, Number(e.hoehe) || 1200);
+  const bMm = e => Math.max(200, Number(e.breite) || 1000);
+  // „gebunden" = Element bestimmt die Zeilen-/Spaltengröße (hat direkt einen Nachbarn dahinter
+  // oder liegt am Rand). Ein freies Element darf größer sein und über die Nachbarzellen reichen.
+  const gebundenH = e => { const c = e.col ?? 0, r = e.row ?? 0; return r === maxRow || els.some(o => (o.col ?? 0) === c && (o.row ?? 0) === r + 1); };
+  const gebundenB = e => { const c = e.col ?? 0, r = e.row ?? 0; return c === maxCol || els.some(o => (o.row ?? 0) === r && (o.col ?? 0) === c + 1); };
+  const rowH = {}; rows.forEach(rr => { const inR = els.filter(e => (e.row ?? 0) === rr); const pool = inR.filter(gebundenH); rowH[rr] = Math.max(...(pool.length ? pool : inR).map(hMm)); });
+  const colW = {}; cols.forEach(cc => { const inC = els.filter(e => (e.col ?? 0) === cc); const pool = inC.filter(gebundenB); colW[cc] = Math.max(...(pool.length ? pool : inC).map(bMm)); });
+  const rowTop = {}; { let y = 0; rows.forEach(rr => { rowTop[rr] = y; y += rowH[rr]; }); }
+  const colLeft = {}; { let x = 0; cols.forEach(cc => { colLeft[cc] = x; x += colW[cc]; }); }
+  const vExt = e => { const rr = e.row ?? 0, eh = hMm(e); const maxOff = Math.max(0, rowH[rr] - eh); const off = e.offset == null ? maxOff : Math.min(maxOff, Math.max(0, Number(e.offset))); const t = rowTop[rr] + off; return [t, t + eh]; };
+  const hExt = e => { const cc = e.col ?? 0, ew = bMm(e); const l = colLeft[cc]; return [l, l + ew]; };
+  return { vExt, hExt };
+}
+
+// Findet einen verbindbaren Nachbarn – NUR wenn die berührende Kante exakt bündig ist (gleiche
+// Länge UND gleiche Position). So entstehen keine schiefen Verbindungen. Bögen/Dreiecke sind
+// erlaubt; Verbinden ist immer eine bewusste Aktion (Knopf), passiert nie automatisch.
 function findMergePartner(a, els) {
   if (!a) return null;
   const ar = a.row ?? 0, ac = a.col ?? 0;
-  const sameNum = (x, y) => Math.round(Number(x)) === Math.round(Number(y));
+  const sameNum = (x, y) => Math.abs(Number(x) - Number(y)) < 0.5;
+  const { vExt, hExt } = layoutExtents(els);
+  const flushV = (p, q) => { const P = vExt(p), Q = vExt(q); return sameNum(P[0], Q[0]) && sameNum(P[1], Q[1]); }; // senkrechte Kante deckungsgleich
+  const flushH = (p, q) => { const P = hExt(p), Q = hExt(q); return sameNum(P[0], Q[0]) && sameNum(P[1], Q[1]); }; // waagrechte Kante deckungsgleich
   if (elementRows(a) === 1) {
-    const right = els.find(e => e.id !== a.id && (e.row ?? 0) === ar && (e.col ?? 0) === ac + 1 && elementRows(e) === 1 && sameNum(e.hoehe, a.hoehe));
+    const right = els.find(e => e.id !== a.id && (e.row ?? 0) === ar && (e.col ?? 0) === ac + 1 && elementRows(e) === 1 && flushV(a, e));
     if (right) return { dir: 'h', left: a, right };
-    const left = els.find(e => e.id !== a.id && (e.row ?? 0) === ar && (e.col ?? 0) === ac - 1 && elementRows(e) === 1 && sameNum(e.hoehe, a.hoehe));
+    const left = els.find(e => e.id !== a.id && (e.row ?? 0) === ar && (e.col ?? 0) === ac - 1 && elementRows(e) === 1 && flushV(a, e));
     if (left) return { dir: 'h', left, right: a };
   }
   if ((a.cols || 1) === 1) {
-    const below = els.find(e => e.id !== a.id && (e.col ?? 0) === ac && (e.row ?? 0) === ar + 1 && (e.cols || 1) === 1 && sameNum(e.breite, a.breite));
+    const below = els.find(e => e.id !== a.id && (e.col ?? 0) === ac && (e.row ?? 0) === ar + 1 && (e.cols || 1) === 1 && flushH(a, e));
     if (below) return { dir: 'v', top: a, bottom: below };
-    const above = els.find(e => e.id !== a.id && (e.col ?? 0) === ac && (e.row ?? 0) === ar - 1 && (e.cols || 1) === 1 && sameNum(e.breite, a.breite));
+    const above = els.find(e => e.id !== a.id && (e.col ?? 0) === ac && (e.row ?? 0) === ar - 1 && (e.cols || 1) === 1 && flushH(a, e));
     if (above) return { dir: 'v', top: above, bottom: a };
   }
   return null;
@@ -671,10 +694,14 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
     const el = elemente.find(e => e.id === id);
     if (!el) return;
     let h = Math.max(200, Math.round(Number(val) || 0));
-    const r = el.row ?? 0;
-    const rows = [...new Set(elemente.map(e => e.row ?? 0))];
-    const rowMax = (rr, hh) => Math.max(0, ...elemente.filter(e => (e.row ?? 0) === rr && e.id !== id).map(e => Number(e.hoehe) || 0), rr === r ? hh : 0);
-    const totalFor = hh => rows.reduce((a, rr) => a + rowMax(rr, hh), 0);
+    // Gesamthöhe der Kombination MIT der neuen Höhe – korrekt über Zeilen hinweg (ein Element,
+    // das über mehrere Zeilen reicht, wird NICHT doppelt gezählt). So lässt sich ein Element neben
+    // gestapelten Nachbarn auf die volle Höhe strecken, ohne dass sich die anderen ändern.
+    const totalFor = hh => {
+      const test = elemente.map(e => (e.id === id ? { ...e, hoehe: hh } : e));
+      const { vExt } = layoutExtents(test);
+      return Math.max(...test.map(e => vExt(e)[1]));
+    };
     if (rahmenH && totalFor(h) > rahmenH) { h = Math.max(200, h - (totalFor(h) - rahmenH)); zeigeWarnung('zu groß'); }
     setElemente(prev => prev.map(e => (e.id === id ? scaleHoehe(e, h) : e)));
   }
