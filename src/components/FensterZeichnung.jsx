@@ -328,7 +328,7 @@ export function RolloZeichnung({ breite = 1000, hoehe = 1400, kastenhoehe = 165,
           <line x1={ox} y1={oy - 8} x2={ox + rw} y2={oy - 8} stroke="#0f1f3d" strokeWidth="1" />
           {onBreite ? (
             <foreignObject x={ox + rw / 2 - 70} y={oy - 50} width={140} height={38}>
-              <input className="fz-massinput" type="number" value={Math.round(b)} onChange={e => onBreite(e.target.value)} />
+              <input className="fz-massinput" type="number" value={breite} onChange={e => onBreite(e.target.value)} />
             </foreignObject>
           ) : (
             <text x={ox + rw / 2} y={oy - 16} textAnchor="middle" {...txt}>{Math.round(b)}</text>
@@ -336,7 +336,7 @@ export function RolloZeichnung({ breite = 1000, hoehe = 1400, kastenhoehe = 165,
           {/* Höhe links – im Editor als Eingabefeld direkt in der Grafik */}
           {onHoehe ? (
             <foreignObject x={ox - 84} y={oy + rh / 2 - 19} width={70} height={38}>
-              <input className="fz-massinput" type="number" value={Math.round(h)} onChange={e => onHoehe(e.target.value)} />
+              <input className="fz-massinput" type="number" value={hoehe} onChange={e => onHoehe(e.target.value)} />
             </foreignObject>
           ) : (
             <text x={ox - 14} y={oy + rh / 2} textAnchor="middle" transform={`rotate(-90 ${ox - 14} ${oy + rh / 2})`} {...txt}>{Math.round(h)}</text>
