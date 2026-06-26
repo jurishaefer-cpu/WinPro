@@ -240,7 +240,7 @@ export function bedienungKuerzel(b) {
 
 // Eigenständige Rollladen-Skizze: Kasten oben, Rollopanzer (Lamellen) mit Führungsschienen darunter.
 // panzerOnly = nur der Behang (Rollo Panzer) ohne Vorbaukasten.
-export function RolloZeichnung({ breite = 1000, hoehe = 1400, kastenhoehe = 165, bedienung = 'Gurt', bedienungsseite = 'rechts', panzerOnly = false, beleg = false, kompakt = false }) {
+export function RolloZeichnung({ breite = 1000, hoehe = 1400, kastenhoehe = 165, bedienung = 'Gurt', bedienungsseite = 'rechts', panzerOnly = false, beleg = false, kompakt = false, onBreite, onHoehe }) {
   const b = Math.max(200, Number(breite) || 1000);
   const h = Math.max(200, Number(hoehe) || 1400);
   const kh = panzerOnly ? 0 : Math.min(h * 0.5, Math.max(40, Number(kastenhoehe) || 0));
@@ -271,9 +271,10 @@ export function RolloZeichnung({ breite = 1000, hoehe = 1400, kastenhoehe = 165,
     VB_W = ox + rw + Math.round(rightMargin(fMain));
     VB_H = oy + rh + 14;
   } else {
-    const PAD = 46;
-    fMain = 13; ox = PAD; oy = PAD;
-    VB_W = rw + PAD * 2; VB_H = rh + PAD * 2;
+    // Editor: links/oben mehr Rand für die editierbaren Maß-Felder (Breite oben, Höhe links)
+    const PAD_L = 92, PAD_T = 60, PAD_R = 50, PAD_B = 44;
+    fMain = 13; ox = PAD_L; oy = PAD_T;
+    VB_W = rw + PAD_L + PAD_R; VB_H = rh + PAD_T + PAD_B;
   }
   const rail = panzerOnly ? 0 : Math.max(6, Math.min(rw * 0.05, 14));
   const pz = { x: ox + rail, y: oy + khpx, w: rw - rail * 2, h: rh - khpx };
@@ -320,12 +321,26 @@ export function RolloZeichnung({ breite = 1000, hoehe = 1400, kastenhoehe = 165,
           </g>
         );
       })()}
-      {/* Maße – feste Variante (Editor) */}
+      {/* Maße – feste/editierbare Variante (Editor) */}
       {!beleg && !kompakt && (
         <>
-          <text x={ox + rw / 2} y={oy - 16} textAnchor="middle" {...txt}>{Math.round(b)}</text>
+          {/* Breite oben – im Editor als Eingabefeld direkt in der Grafik */}
           <line x1={ox} y1={oy - 8} x2={ox + rw} y2={oy - 8} stroke="#0f1f3d" strokeWidth="1" />
-          <text x={ox - 14} y={oy + rh / 2} textAnchor="middle" transform={`rotate(-90 ${ox - 14} ${oy + rh / 2})`} {...txt}>{Math.round(h)}</text>
+          {onBreite ? (
+            <foreignObject x={ox + rw / 2 - 70} y={oy - 50} width={140} height={38}>
+              <input className="fz-massinput" type="number" value={Math.round(b)} onChange={e => onBreite(e.target.value)} />
+            </foreignObject>
+          ) : (
+            <text x={ox + rw / 2} y={oy - 16} textAnchor="middle" {...txt}>{Math.round(b)}</text>
+          )}
+          {/* Höhe links – im Editor als Eingabefeld direkt in der Grafik */}
+          {onHoehe ? (
+            <foreignObject x={ox - 84} y={oy + rh / 2 - 19} width={70} height={38}>
+              <input className="fz-massinput" type="number" value={Math.round(h)} onChange={e => onHoehe(e.target.value)} />
+            </foreignObject>
+          ) : (
+            <text x={ox - 14} y={oy + rh / 2} textAnchor="middle" transform={`rotate(-90 ${ox - 14} ${oy + rh / 2})`} {...txt}>{Math.round(h)}</text>
+          )}
           {!panzerOnly && (
             <text x={ox + rw + 16} y={oy + khpx / 2 + 4} textAnchor="middle" transform={`rotate(-90 ${ox + rw + 16} ${oy + khpx / 2})`} fontSize="11" fill="#667085" fontWeight="600">Kasten {Math.round(kh)}</text>
           )}

@@ -1227,7 +1227,8 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
           <div className="np-canvas" onClick={e => { if (e.target === e.currentTarget) deselectAlles(); }}>
             {istRollo ? (
               <RolloZeichnung breite={aktiv.breite} hoehe={aktiv.hoehe} kastenhoehe={aktiv.kastenhoeheRollo}
-                bedienung={aktiv.bedienung} bedienungsseite={aktiv.bedienungsseiteRollo} panzerOnly={!!geometrie?.panzerOnly} />
+                bedienung={aktiv.bedienung} bedienungsseite={aktiv.bedienungsseiteRollo} panzerOnly={!!geometrie?.panzerOnly}
+                onBreite={setMainBreite} onHoehe={setMainHoehe} />
             ) : istKombi ? (
               <KombinationsZeichnung elemente={elemente} activeId={auswahlAktiv ? activeId : null}
                 onUnitClick={switchActive} onPaneClick={waehlePane} selectedPane={selectedPane}
