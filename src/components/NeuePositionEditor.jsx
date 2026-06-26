@@ -580,6 +580,15 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
       const winIdx = geometrieByCode(teile[0]?.code)?.form ? 1 : 0;   // der NICHT-Bogen-Teil = Fenster
       const upd = pfostenAdd(teile[winIdx], richtung);
       if (!upd) { zeigeWarnung('max. erreicht'); return; }
+      // Bogenfenster: neue horizontale Teilung erzeugt oben (unter dem Bogen) eine Festverglasung;
+      // der öffenbare Flügel bleibt unten. pfostenAdd hängt die feste Zeile unten an → nach oben holen.
+      if (richtung === 'h') {
+        const cols = upd.cols || teile[winIdx].cols || 1;
+        const rows = upd.panes.length / cols;
+        const zeilen = [];
+        for (let r = 0; r < rows; r++) zeilen.push(upd.panes.slice(r * cols, r * cols + cols));
+        upd.panes = [...zeilen[rows - 1], ...zeilen.slice(0, rows - 1).flat()];
+      }
       const newWin = { ...teile[winIdx], ...upd };
       const newTeile = teile.map((t, i) => (i === winIdx ? newWin : t));
       const archPanes = teile[1 - winIdx].panes || [{ fest: true }];
