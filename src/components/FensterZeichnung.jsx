@@ -1190,24 +1190,16 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
   function pressMove(e, id) {
     const pr = pressRef.current;
     if (!pr || pr.id !== id) return;
+    const p = svgPoint(e.clientX, e.clientY);
     if (!pr.dragging) {
       if (Math.hypot(e.clientX - pr.sx, e.clientY - pr.sy) < 5) return;   // erst ab kleiner Bewegung ziehen
       pr.dragging = true;
-      setDrag({ id, side: null });
+      setDrag({ id, side: null, px: p.x, py: p.y });
+      return;
     }
-    const p = svgPoint(e.clientX, e.clientY);
     const zone = zoneAt(p);
-    if (zone) {
-      setDrag(d => (d ? { ...d, side: zone.side, targetId: zone.targetId } : d));   // an Kante → Vorschau Um-Docken
-    } else {
-      setDrag(d => (d ? { ...d, side: null, targetId: null } : d));
-      const u = units.find(unit => unit.e._key === id);
-      if (u && onSlide && u.maxOffMm > 0) {
-        let offMm = (p.y - rowYpx[u.rr]) / scale - u.elHmm / 2;   // Element folgt dem Finger (mittig)
-        offMm = Math.min(u.maxOffMm, Math.max(0, offMm));
-        onSlide(id, offMm);
-      }
-    }
+    // Zeigerposition mitführen (für den ausgegrauten „Geist", der dem Finger folgt) + Andock-Vorschau
+    setDrag(d => (d ? { ...d, px: p.x, py: p.y, side: zone ? zone.side : null, targetId: zone ? zone.targetId : null } : d));
   }
   function pressUp(e, id) {
     const pr = pressRef.current;
@@ -1344,12 +1336,19 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
           });
         }
         const ziehbar = interaktiv && !istMainUnit;
+        // Beim Ziehen folgt das Element ausgegraut dem Finger → man sieht, wohin es andockt.
+        const wirdGezogen = drag && drag.id === u.e._key && drag.px != null;
+        const gx = wirdGezogen ? drag.px - (u.r0.x + u.r0.w / 2) : 0;
+        const gy = wirdGezogen ? drag.py - (u.r0.y + u.r0.h / 2) : 0;
         return (
           <g key={'u' + u.e._key}
              style={ziehbar ? { cursor: 'move', touchAction: 'none' } : undefined}
              onPointerDown={ziehbar ? e => pressDown(e, u.e._key) : undefined}
              onPointerMove={ziehbar ? e => pressMove(e, u.e._key) : undefined}
              onPointerUp={ziehbar ? e => pressUp(e, u.e._key) : undefined}>
+            <g opacity={wirdGezogen ? 0.4 : 1}
+               transform={wirdGezogen ? `translate(${gx} ${gy})` : undefined}
+               style={wirdGezogen ? { pointerEvents: 'none' } : undefined}>
             {teilBodies ? (
               <g>{teilBodies}</g>
             ) : uSonder ? (
@@ -1361,6 +1360,7 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
               <UnitBody c={u.c} glasFarbe={uGlas} keyPrefix={'u' + u.e._key + '-'}
                 onPaneClick={interaktiv && aktiv ? (i => { if (!justDraggedRef.current) onPaneClick(i); }) : undefined} selectedPane={aktiv ? selectedPane : null} />
             )}
+            </g>
             {aktiv && (
               <rect x={u.r0.x} y={u.r0.y} width={u.r0.w} height={u.r0.h} fill="none"
                     stroke="#c0152e" strokeWidth="2.5" strokeDasharray="6 4" pointerEvents="none" />
