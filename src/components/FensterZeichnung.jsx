@@ -919,9 +919,11 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
 
   return (
     <svg viewBox={viewBox} preserveAspectRatio="xMidYMid meet" className="fz-svg">
-      {/* Klick neben die Fenster (leerer Hintergrund) hebt die Auswahl auf */}
+      {/* Klick neben die Fenster (leerer Hintergrund) hebt die Auswahl auf. NUR die Zeichenfläche
+          abdecken (viewBox) – sonst ragt der Rect bei overflow:visible über die Kopfzeile und
+          fängt Klicks auf z. B. den „Verbinden"-Knopf ab. */}
       {onBackgroundClick && (
-        <rect x={-100000} y={-100000} width={200000} height={200000} fill="transparent" onClick={onBackgroundClick} />
+        <rect x={0} y={0} width={VB_W} height={VB_H} fill="transparent" onClick={onBackgroundClick} />
       )}
       {/* Hauptmaß Breite (oben) */}
       <line x1={x} y1={mainTopY} x2={x + rw} y2={mainTopY} stroke="#0f1f3d" strokeWidth="1.2" />
@@ -1272,9 +1274,11 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
   return (
     <svg ref={svgRef} viewBox={`0 0 ${VB_W} ${VB_H}`} preserveAspectRatio="xMidYMid meet" className="fz-svg"
          style={onUnitClick ? { overflow: 'visible' } : undefined}>
-      {/* Klick neben die Fenster (leerer Hintergrund) hebt die Auswahl auf */}
+      {/* Klick neben die Fenster (leerer Hintergrund) hebt die Auswahl auf. NUR die Zeichenfläche
+          abdecken (viewBox) – sonst ragt der Rect bei overflow:visible über die Kopfzeile und
+          fängt Klicks auf z. B. den „Verbinden"-Knopf ab. */}
       {onBackgroundClick && (
-        <rect x={-100000} y={-100000} width={200000} height={200000} fill="transparent" onClick={onBackgroundClick} />
+        <rect x={0} y={0} width={VB_W} height={VB_H} fill="transparent" onClick={onBackgroundClick} />
       )}
       {/* Wand/Maueröffnung: Begrenzung, über die die Fenster nicht hinausragen */}
       {hatWand && (
