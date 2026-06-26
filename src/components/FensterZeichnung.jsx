@@ -782,7 +782,7 @@ export function SonderBody({ sp, glas = '#cfe3ef', kp = '', oeffnung, onPaneClic
 // gerade Seiten + Boden), Kämpfer (Querbalken) am Übergang, oben das feste Oberlicht-Glas, unten
 // der Fenster-Flügel mit Glas und Öffnungssymbol. Liefert null, wenn der Fall nicht passt
 // (dann zeichnet der Aufrufer die Teile wie bisher).
-export function VerbundBogenBody({ r0, teile, scale, glasFarbe = '#cfe3ef', kp = '' }) {
+export function VerbundBogenBody({ r0, teile, scale, glasFarbe = '#cfe3ef', kp = '', panes, onPaneClick, selectedPane }) {
   if (!Array.isArray(teile) || teile.length !== 2) return null;
   const formIdx = geometrieByCode(teile[0]?.code)?.form ? 0 : (geometrieByCode(teile[1]?.code)?.form ? 1 : -1);
   if (formIdx !== 0) return null;                                  // nur Bogen OBEN
@@ -791,6 +791,9 @@ export function VerbundBogenBody({ r0, teile, scale, glasFarbe = '#cfe3ef', kp =
   const { x, y, w, h } = r0;
   const fw = Math.max(6, 60 * scale);
   const winTeil = teile[1];
+  // Öffnungsart des Fensterteils: liegt im Gesamt-panes-Array hinter den Bogen-Feldern.
+  const winPaneIdx = (teile[0].panes?.length || 1);
+  const winSelected = selectedPane === winPaneIdx;
   const total = (Number(teile[0].hoehe) || 0) + (Number(teile[1].hoehe) || 0) || 1;
   const archH = (Number(teile[0].hoehe) || 0) / total * h;
   const splitY = y + archH;
@@ -821,7 +824,7 @@ export function VerbundBogenBody({ r0, teile, scale, glasFarbe = '#cfe3ef', kp =
   const winInner = { x: x + fwB, y: splitY + kHalf, w: w - 2 * fwB, h: (y + h - fwB) - (splitY + kHalf) };
   const sash = inset(winInner, Math.max(3, fw * 0.30));
   const glasR = inset(sash, Math.max(3, fw * 0.5));
-  const pane = (winTeil.panes && winTeil.panes[0]) || { open: 'drehkipp', din: 'links' };
+  const pane = (panes && panes[winPaneIdx]) || (winTeil.panes && winTeil.panes[0]) || { open: 'drehkipp', din: 'links' };
   const oLines = pane.fest ? [] : oeffnungsLinien(pane, glasR);
   return (
     <g>
@@ -837,6 +840,13 @@ export function VerbundBogenBody({ r0, teile, scale, glasFarbe = '#cfe3ef', kp =
       {gehrung(sash, glasR).map((l, i) => <line key={kp + 'sm' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="1.4" />)}
       <rect x={glasR.x} y={glasR.y} width={glasR.w} height={glasR.h} fill={glasFarbe} stroke="#0f1f3d" strokeWidth="1.4" opacity="0.95" />
       {oLines.map((l, i) => <line key={kp + 'ol' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="1.4" />)}
+      {/* Fensterglas anklickbar → Öffnungsart des Fensterteils einstellen */}
+      {onPaneClick && (
+        <rect x={sash.x} y={sash.y} width={sash.w} height={sash.h}
+              fill={winSelected ? 'rgba(192,21,46,0.12)' : 'transparent'}
+              stroke={winSelected ? '#c0152e' : 'transparent'} strokeWidth="2.5"
+              style={{ cursor: 'pointer' }} onClick={() => onPaneClick(winPaneIdx)} />
+      )}
     </g>
   );
 }
@@ -1135,7 +1145,8 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
           <path d={durchPf.inner} fill={glasFarbe} stroke="#0f1f3d" strokeWidth="1.6" strokeLinejoin="round" opacity="0.95" />
         </g>
       ) : bogenOben ? (
-        <VerbundBogenBody r0={r0} teile={formTeile} scale={scale} glasFarbe={glasFarbe} kp="vb" />
+        <VerbundBogenBody r0={r0} teile={formTeile} scale={scale} glasFarbe={glasFarbe} kp="vb"
+          panes={panesProp} onPaneClick={onPaneClick} selectedPane={selectedPane} />
       ) : teilBodies ? (
         <g>{teilBodies}</g>
       ) : istSonderform ? (
@@ -1507,7 +1518,9 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
                transform={wirdGezogen ? `translate(${gx} ${gy})` : undefined}
                style={wirdGezogen ? { pointerEvents: 'none' } : undefined}>
             {uBogenOben ? (
-              <VerbundBogenBody r0={u.r0} teile={teile} scale={scale} glasFarbe={uGlas} kp={'u' + u.e._key + '-vb'} />
+              <VerbundBogenBody r0={u.r0} teile={teile} scale={scale} glasFarbe={uGlas} kp={'u' + u.e._key + '-vb'}
+                panes={u.e.panes} onPaneClick={interaktiv && aktiv ? (i => { if (!justDraggedRef.current) onPaneClick(i); }) : undefined}
+                selectedPane={aktiv ? selectedPane : null} />
             ) : teilBodies ? (
               <g>{teilBodies}</g>
             ) : uSonder ? (
@@ -1545,7 +1558,7 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
                       onPointerDown={e => pressDown(e, u.e._key)}
                       onPointerMove={e => pressMove(e, u.e._key)}
                       onPointerUp={e => pressUp(e, u.e._key)}
-                      onClick={() => { if (justDraggedRef.current) return; if (aktiv && uSonder && onPaneClick) onPaneClick(0); else onUnitClick(u.e._key); }} />
+                      onClick={() => { if (justDraggedRef.current) return; if (aktiv && onPaneClick && (uSonder || uBogenOben)) onPaneClick(uBogenOben ? (teile[0].panes?.length || 1) : 0); else onUnitClick(u.e._key); }} />
               );
             })()}
             {/* Höhen-Griff am Bogen-Scheitel (aktiver, unverbundener Bogen): vertikal ziehen = Höhe */}
