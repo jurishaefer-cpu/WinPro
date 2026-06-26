@@ -22,7 +22,7 @@ function LoginPage() {
   return (
     <div className="login-screen">
       <div className="login-card">
-        <img src="/logo-hero.png" alt="WinPro – Smart Calkulation Software" className="login-logo" />
+        <img src="/logo-hero-v2.png" alt="WinPro – Smart Calculation Software" className="login-logo" />
         <h1 className="login-title">Anmelden</h1>
         <p className="login-subtitle">Bitte melde dich mit deinem Konto an.</p>
 
