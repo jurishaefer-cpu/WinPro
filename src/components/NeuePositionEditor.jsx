@@ -319,7 +319,6 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
   const [stueckzahl, setStueckzahl] = useState(initial?.stueckzahl ?? 1);
   const [standort, setStandort] = useState(initial?.standort ?? '');
   const [standortOffen, setStandortOffen] = useState(false);
-  const [dividerMenu, setDividerMenu] = useState(false);
   const [montage, setMontage] = useState(initial?.montage ?? 140);
   const [ausbau, setAusbau] = useState(initial?.ausbau ?? 30);
   const [entsorgung, setEntsorgung] = useState(initial?.entsorgung ?? 15);
@@ -1133,6 +1132,20 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
                 <button className="np-merge-btn" onClick={verbinde}>Ja</button>
               </div>
             ) : null}
+            {/* Durchgehendes Glas (Trennrahmen entfernen) – nur bei verbundenem Bogen/Dreieck ÜBER/UNTER Fenster (vertikal) */}
+            {aktiv.verbunden && aktiv._dir === 'v' && Array.isArray(aktiv._teile) && aktiv._teile.some(t => geometrieByCode(t.code)?.form) && (
+              aktiv.durchgehend ? (
+                <div className="np-merge np-merge--on" title="Trennrahmen wieder einsetzen">
+                  <span className="np-merge-label">✓ Durchgeh. Glas</span>
+                  <button className="np-merge-btn" onClick={() => updAktiv({ durchgehend: false })}>Trennrahmen</button>
+                </div>
+              ) : (
+                <div className="np-merge" title="Trennrahmen entfernen – ein durchgehendes Glas">
+                  <span className="np-merge-label">Durchgeh. Glas</span>
+                  <button className="np-merge-btn" onClick={() => updAktiv({ durchgehend: true })}>Ja</button>
+                </div>
+              )
+            )}
           </div>
           {/* Mobiler In-Fluss-Knopf oben (Desktop nutzt den runden FAB in der Zeichnung) */}
           {!istAluSystem && !istRollo && (
@@ -1162,25 +1175,11 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
                 colWidths={aktiv.colWidths} rowHeights={aktiv.rowHeights}
                 onColWidth={setColWidth} onRowHeight={setRowHeight}
                 teile={aktiv.verbunden ? aktiv._teile : null} dir={aktiv._dir}
-                durchgehend={aktiv.durchgehend} onDivider={() => setDividerMenu(true)}
+                durchgehend={aktiv.durchgehend} onDivider={() => updAktiv({ durchgehend: true })}
                 onPaneClick={waehlePane} selectedPane={auswahlAktiv ? selectedPane : null}
                 onBackgroundClick={deselectAlles} />
             )}
 
-            {dividerMenu && (
-              <div className="pane-menu-backdrop" onClick={() => setDividerMenu(false)} />
-            )}
-            {dividerMenu && (
-              <div className="pane-menu">
-                <div className="pane-menu-head">
-                  <span>Trennrahmen</span>
-                  <button className="pane-menu-close" onClick={() => setDividerMenu(false)}>✕</button>
-                </div>
-                <button className="pane-option" onClick={() => { updAktiv({ durchgehend: true }); setDividerMenu(false); }}>
-                  <span className="pane-option-label">Entfernen – durchgehendes Glas</span>
-                </button>
-              </div>
-            )}
 
             {selectedPane != null && (
               <div className="pane-menu-backdrop" onClick={() => setSelectedPane(null)} />
