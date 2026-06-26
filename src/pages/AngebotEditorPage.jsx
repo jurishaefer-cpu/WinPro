@@ -449,20 +449,26 @@ function AngebotEditorPage() {
                         panzerOnly={!!geometrieByCode(c.code)?.panzerOnly} kompakt />
                     ) : c.elemente?.length > 1 ? (
                       <KombinationsZeichnung elemente={c.elemente} />
-                    ) : (
-                      <FensterZeichnung
-                        geometrie={geometrieByCode(c.code)}
-                        breite={c.breite}
-                        hoehe={c.hoehe}
-                        panes={c.panes}
-                        cols={c.cols}
-                        colWidths={c.colWidths}
-                        rowHeights={c.rowHeights}
-                        verbreiterung={c.verbreiterung ? c.verb : null}
-                        aufsatzkasten={c.aufsatzkasten ? c.kasten : null}
-                        glasFarbe={c.ornament ? '#7fb0cc' : undefined}
-                      />
-                    )}
+                    ) : (() => {
+                      // Verbund-Infos (Bogen über Fenster, durchgehendes Glas) liegen in elemente[0],
+                      // nicht in den flachen Feldern – sonst wird die Sonderform falsch gezeichnet.
+                      const m = c.elemente?.[0] || c;
+                      return (
+                        <FensterZeichnung
+                          geometrie={geometrieByCode(c.code)}
+                          breite={c.breite}
+                          hoehe={c.hoehe}
+                          panes={c.panes}
+                          cols={c.cols}
+                          colWidths={c.colWidths}
+                          rowHeights={c.rowHeights}
+                          verbreiterung={c.verbreiterung ? c.verb : null}
+                          aufsatzkasten={c.aufsatzkasten ? c.kasten : null}
+                          teile={m.verbunden ? m._teile : null} dir={m._dir} durchgehend={m.durchgehend}
+                          glasFarbe={c.ornament ? '#7fb0cc' : undefined}
+                        />
+                      );
+                    })()}
                   </div>
                   {foot}
                 </div>

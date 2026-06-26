@@ -86,6 +86,8 @@ function BelegDokument({ art, angebot, kunde, positionen, profileMap, einstellun
           {positionen.map((p, i) => {
             const c = p.config;
             const istFenster = p.typ === 'fenster' && c;
+            // Verbund-Infos (Bogen über Fenster, durchgehendes Glas) liegen in elemente[0], nicht flach.
+            const cm = (c && c.elemente?.[0]) || c || {};
             const menge = Number(p.menge || 1);
             const zeilen = istFenster ? positionZeilen(c, profileMap?.[c.profilId], false) : [];
             const montage = istFenster && meta.preise ? montageZeile(c) : null;
@@ -108,7 +110,7 @@ function BelegDokument({ art, angebot, kunde, positionen, profileMap, einstellun
                           aufsatzkasten={c.aufsatzkasten ? c.kasten : null}
                           schwelle={c.schwelle}
                           oberlichtHoehe={c.oberlichtHoehe}
-                          teile={c.verbunden ? c._teile : null} dir={c._dir}
+                          teile={cm.verbunden ? cm._teile : null} dir={cm._dir} durchgehend={cm.durchgehend}
                           glasFarbe="#ffffff"
                         />
                       )}
