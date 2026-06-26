@@ -402,14 +402,15 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
   // Klick neben die Fenster (leerer Canvas-Hintergrund) → Auswahl/Markierung aufheben.
   function deselectAlles() { setSelectedPane(null); setAuswahlAktiv(false); }
 
-  function waehleGeometrie(neuCode) {
+  function waehleGeometrie(neuCode, keepMass = false) {
     const geo = geometrieByCode(neuCode);
     const np = panesFromGeo(geo);
     const c = geo?.cols || np.length;
     const r = Math.ceil(np.length / c);
-    // ALU-Haustür-Geometrien bringen sinnvolle Standardmaße mit; sonst aktuelle Maße behalten.
-    const nb = Number(geo?.defBreite) || Number(aktiv.breite) || 1000;
-    const nh = Number(geo?.defHoehe) || Number(aktiv.hoehe) || 1200;
+    // keepMass = beim Kategorie-Wechsel die aktuellen Maße übernehmen (statt Standardmaße der Geometrie).
+    // Sonst: ALU-Haustür-Geometrien bringen sinnvolle Standardmaße mit; ansonsten aktuelle Maße behalten.
+    const nb = keepMass ? (Number(aktiv.breite) || 1000) : (Number(geo?.defBreite) || Number(aktiv.breite) || 1000);
+    const nh = keepMass ? (Number(aktiv.hoehe) || 1200) : (Number(geo?.defHoehe) || Number(aktiv.hoehe) || 1200);
     // Rollladen: Lamellenfarbe nutzt das Material-Preset (Samtgrau/Hellgrau); Kastenfarbe bleibt unverändert (globale Palette).
     const farbPatch = geo?.kategorie === 'rollo' ? { behangfarbe: rolloFarbe(aktiv.behang) } : {};
     updAktiv({
@@ -458,7 +459,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
   function wechselKategorie(k) {
     const erste = GEOMETRIEN.find(g => g.kategorie === k);
     updAktiv({ kategorie: k });
-    if (erste) waehleGeometrie(erste.code);
+    if (erste) waehleGeometrie(erste.code, true);   // Maße des bisherigen Fensters übernehmen
   }
 
   function setzePane(cfg) {
