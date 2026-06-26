@@ -1307,7 +1307,6 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
       {units.map((u) => {
         const aktiv = activeId != null && u.e._key === activeId;
         const istMainUnit = u.e._key === mainKey;
-        const hw = Math.max(64, Math.min(96, u.r0.w * 0.7));
         const uGeo = geometrieByCode(u.e.code);
         const uSonder = uGeo?.form ? sonderformPfade(u.r0, uGeo, Math.max(5, 60 * scale)) : null;
         const uGlas = weissesGlas ? '#ffffff' : (u.e.ornament ? '#7fb0cc' : glasFarbe);
@@ -1370,15 +1369,6 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
               <rect x={u.r0.x} y={u.r0.y} width={u.r0.w} height={u.r0.h} fill="transparent"
                     style={{ cursor: ziehbar ? 'move' : 'pointer' }}
                     onClick={() => { if (!justDraggedRef.current) onUnitClick(u.e._key); }} />
-            )}
-            {/* Hinweis „ziehen" (das ganze Element ist durch Gedrückthalten verschiebbar) */}
-            {ziehbar && (
-              <g style={{ pointerEvents: 'none' }}>
-                <rect x={u.r0.x + u.r0.w / 2 - hw / 2} y={u.r0.y + 7} width={hw} height={26} rx="13"
-                      fill="#0f1f3d" opacity={drag && drag.id === u.e._key ? 1 : 0.7} />
-                <text x={u.r0.x + u.r0.w / 2} y={u.r0.y + 7 + 13} textAnchor="middle" dominantBaseline="central"
-                      fontSize="12.5" fontWeight="700" fill="#fff">↔ ziehen</text>
-              </g>
             )}
           </g>
         );
