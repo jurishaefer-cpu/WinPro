@@ -1160,6 +1160,16 @@ body {
 .detail-contact-item a:hover {
   text-decoration: underline;
 }
+a.detail-contact-link {
+  text-decoration: none;
+  color: #444;
+  cursor: pointer;
+}
+a.detail-contact-link:hover {
+  color: #c0152e;
+}
+a.detail-contact-link:hover svg { color: #c0152e; }
+a.detail-contact-link:hover span { text-decoration: underline; }
 .detail-stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

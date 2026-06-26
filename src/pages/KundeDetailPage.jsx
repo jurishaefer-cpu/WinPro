@@ -102,6 +102,7 @@ function KundeDetailPage() {
   const adresse = [kunde.strasse, [kunde.plz, kunde.ort].filter(Boolean).join(' ')]
     .filter(Boolean)
     .join(' , ');
+  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([kunde.strasse, kunde.plz, kunde.ort].filter(Boolean).join(', '))}`;
   const gesamt = angebote.reduce((s, a) => s + Number(a.betrag || 0), 0);
   const letztes = angebote[0]?.created_at;
 
@@ -155,13 +156,13 @@ function KundeDetailPage() {
 
         <div className="detail-contact">
           {adresse && (
-            <div className="detail-contact-item">
+            <a className="detail-contact-item detail-contact-link" href={mapsUrl} target="_blank" rel="noopener noreferrer" title="In Google Maps öffnen">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
                 <circle cx="12" cy="10" r="3"/>
               </svg>
               <span>{adresse}</span>
-            </div>
+            </a>
           )}
           {kunde.telefon && (
             <div className="detail-contact-item">
