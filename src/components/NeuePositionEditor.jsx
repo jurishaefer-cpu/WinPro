@@ -1101,15 +1101,13 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
             <span className="np-chip">Maß <b>{Math.round(breiteGes).toLocaleString('de-DE')} × {Math.round(hoeheGes).toLocaleString('de-DE')} mm</b></span>
             <span className="np-chip">Fläche <b>{flaeche.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} m²</b></span>
             {aktiv.verbunden ? (
-              <div className="np-merge">
-                <span className="np-merge-label">Trennen</span>
-                <button className="np-merge-ja" onClick={trenne}>Ja</button>
+              <div className="np-merge np-merge--on">
+                <span className="np-merge-label">✓ Verbunden</span>
+                <button className="np-merge-btn" onClick={trenne}>Trennen</button>
               </div>
             ) : mergePartner ? (
-              <div className="np-merge">
-                <span className="np-merge-label">Verbinden</span>
-                <button className="np-merge-ja" onClick={verbinde}>Ja</button>
-              </div>
+              <button className="np-merge-btn np-merge-btn--ghost" onClick={verbinde}
+                      title="Dieses und das benachbarte Element zu EINEM Rahmen verbinden">🔗 Verbinden</button>
             ) : null}
           </div>
           {/* Mobiler In-Fluss-Knopf oben (Desktop nutzt den runden FAB in der Zeichnung) */}
