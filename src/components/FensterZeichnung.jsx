@@ -896,6 +896,12 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
   const istSonderform = !!geometrie?.form;
   const sonderOffen = !!(panesProp?.[0] && !panesProp[0].fest && panesProp[0].open && panesProp[0].open !== 'fest');
   const sonder = istSonderform ? sonderformPfade(r0, geometrie, Math.max(6, 60 * scale), sonderOffen) : null;
+  // Höhen-Griff am Bogen-Scheitel (nur unverbundene Sonderform): vertikal ziehen ändert die Höhe.
+  const archDrag = useRef(null);
+  const scaleRef = useRef(scale); scaleRef.current = scale;
+  function archDown(e) { e.stopPropagation(); e.currentTarget.setPointerCapture?.(e.pointerId); archDrag.current = { y: e.clientY, h: Number(hoehe) || 0 }; }
+  function archMove(e) { const d = archDrag.current; if (!d || !onHoehe) return; const nh = Math.max(100, Math.round(d.h + (d.y - e.clientY) / Math.max(0.0001, scaleRef.current))); onHoehe(nh); }
+  function archUp() { archDrag.current = null; }
   // Verbundenes Element mit Sonderform-Teil: gemeinsamer Rahmen, jedes Teil behält seine Form.
   const formTeile = (Array.isArray(teile) && teile.length > 1 && teile.some(t => geometrieByCode(t.code)?.form)) ? teile : null;
   let teilBodies = null;
@@ -1139,6 +1145,18 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
         <UnitBody c={c} glasFarbe={glasFarbe} onPaneClick={onPaneClick} selectedPane={selectedPane} />
       )}
 
+      {/* Höhen-Griff am Bogen-Scheitel (nur unverbundener Bogen/Dreieck): vertikal ziehen = Höhe */}
+      {istSonderform && !formTeile && !durchPf && onHoehe && (
+        <g>
+          <line x1={r0.x + r0.w / 2} y1={r0.y} x2={r0.x + r0.w / 2} y2={r0.y - 26} stroke="#c0152e" strokeWidth="1.6" pointerEvents="none" />
+          <circle cx={r0.x + r0.w / 2} cy={r0.y - 26} r="9" fill="#fff" stroke="#c0152e" strokeWidth="2.5"
+                  style={{ cursor: 'ns-resize', touchAction: 'none' }}
+                  onPointerDown={archDown} onPointerMove={archMove} onPointerUp={archUp}>
+            <title>Bogenhöhe ziehen</title>
+          </circle>
+        </g>
+      )}
+
       {/* Klickbarer Trennrahmen zwischen den Teilen → „Entfernen" macht durchgehendes Glas */}
       {dividerStrip && (
         <rect x={dividerStrip.x} y={dividerStrip.y} width={dividerStrip.w} height={dividerStrip.h}
@@ -1338,6 +1356,12 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
       justDraggedRef.current = true;   // den direkt folgenden Klick (Auswahl/Feld) unterdrücken
     }
   }
+  // Höhen-Griff am Bogen-Scheitel (nur unverbundener Bogen): vertikal ziehen ändert die Höhe.
+  const archDrag = useRef(null);
+  const scaleRef = useRef(scale); scaleRef.current = scale;
+  function archDown(e, h) { e.stopPropagation(); e.currentTarget.setPointerCapture?.(e.pointerId); archDrag.current = { y: e.clientY, h: Number(h) || 0 }; }
+  function archMove(e, id) { const d = archDrag.current; if (!d || !onElementHoehe) return; const nh = Math.max(100, Math.round(d.h + (d.y - e.clientY) / Math.max(0.0001, scaleRef.current))); onElementHoehe(id, nh); }
+  function archUp() { archDrag.current = null; }
 
   return (
     <svg ref={svgRef} viewBox={`0 0 ${VB_W} ${VB_H}`} preserveAspectRatio="xMidYMid meet" className="fz-svg"
@@ -1524,6 +1548,17 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
                       onClick={() => { if (justDraggedRef.current) return; if (aktiv && uSonder && onPaneClick) onPaneClick(0); else onUnitClick(u.e._key); }} />
               );
             })()}
+            {/* Höhen-Griff am Bogen-Scheitel (aktiver, unverbundener Bogen): vertikal ziehen = Höhe */}
+            {interaktiv && aktiv && uSonder && onElementHoehe && !wirdGezogen && (
+              <g>
+                <line x1={u.r0.x + u.r0.w / 2} y1={u.r0.y} x2={u.r0.x + u.r0.w / 2} y2={u.r0.y - 24} stroke="#c0152e" strokeWidth="1.6" pointerEvents="none" />
+                <circle cx={u.r0.x + u.r0.w / 2} cy={u.r0.y - 24} r="9" fill="#fff" stroke="#c0152e" strokeWidth="2.5"
+                        style={{ cursor: 'ns-resize', touchAction: 'none' }}
+                        onPointerDown={e => archDown(e, u.e.hoehe)} onPointerMove={e => archMove(e, u.e._key)} onPointerUp={archUp}>
+                  <title>Bogenhöhe ziehen</title>
+                </circle>
+              </g>
+            )}
           </g>
         );
       })}
