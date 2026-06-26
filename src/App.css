@@ -148,6 +148,41 @@ body {
   50%  { background-position: 100% 100%; }
   100% { background-position: 0% 0%; }
 }
+/* Intro-Video beim Öffnen der Login-Seite (Vollbild, läuft einmal, dann Login). */
+.login-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: #0a162e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  animation: introIn 0.4s ease both;
+}
+.login-intro-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.login-intro-skip {
+  position: absolute;
+  bottom: 24px;
+  right: 24px;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  padding: 10px 18px;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+.login-intro-skip:hover { background: rgba(0, 0, 0, 0.65); }
+@keyframes introIn { from { opacity: 0; } to { opacity: 1; } }
+
 .login-card {
   position: relative;
   z-index: 1;
