@@ -883,10 +883,14 @@ export function VerbundBogenBody({ r0, teile, scale, glasFarbe = '#cfe3ef', kp =
           </g>
         );
       }))}
-      {/* Pfosten (vertikal) bzw. Kämpfer (horizontal) zwischen den Feldern */}
+      {/* Vertikaler Pfosten: geht bis ganz oben durch den Bogen (auf die Innen-Silhouette geclippt). */}
+      {wCols > 1 && <clipPath id={'vbpfv-' + kp}><path d={sil(fwB)} /></clipPath>}
       {Array.from({ length: wCols - 1 }).map((_, i) => (
-        <rect key={kp + 'pfv' + i} x={colX[i + 1] - pfW / 2} y={winRect.y} width={pfW} height={winRect.h} fill="#fff" stroke="#0f1f3d" strokeWidth="1.6" />
+        <rect key={kp + 'pfv' + i} clipPath={`url(#vbpfv-${kp})`}
+              x={colX[i + 1] - pfW / 2} y={y + fwB} width={pfW} height={(y + h - fwB) - (y + fwB)}
+              fill="#fff" stroke="#0f1f3d" strokeWidth="1.6" />
       ))}
+      {/* Horizontaler Pfosten: nur im Fensterteil (1 Balken je hinzugefügter Zeile). */}
       {Array.from({ length: wRows - 1 }).map((_, i) => (
         <rect key={kp + 'pfh' + i} x={winRect.x} y={rowY[i + 1] - pfW / 2} width={winRect.w} height={pfW} fill="#fff" stroke="#0f1f3d" strokeWidth="1.6" />
       ))}
