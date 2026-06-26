@@ -252,7 +252,9 @@ export function RolloZeichnung({ breite = 1000, hoehe = 1400, kastenhoehe = 165,
   // Layout + Maß-Schrift: in der kompakten Übersicht exakt wie FensterZeichnung skalieren,
   // damit die Maße nach dem Einpassen (preserveAspectRatio) gleich groß erscheinen wie bei
   // den Fensterkarten. Editor- (PAD 46) und Beleg-Darstellung (PAD 12) bleiben unverändert.
-  const rightMargin = (f) => (panzerOnly ? 14 : 16 + f * 0.8);
+  // Auf dem Beleg kein „Kasten"-Label rechts (redundant zum Text) → gleicher rechter Rand
+  // wie bei den Fenstern, damit Rollo und Fenster identisch/symmetrisch positioniert sind.
+  const rightMargin = (f) => ((panzerOnly || beleg) ? 14 : 16 + f * 0.8);
   let fMain, ox, oy, VB_W, VB_H;
   if (kompakt || beleg) {
     const BOX_W = 185, BOX_H = 150, ZIEL_FONT = 13;
@@ -342,7 +344,7 @@ export function RolloZeichnung({ breite = 1000, hoehe = 1400, kastenhoehe = 165,
           <line x1={ox - 40} y1={oy} x2={ox - 28} y2={oy} stroke="#0f1f3d" strokeWidth="1.2" />
           <line x1={ox - 40} y1={oy + rh} x2={ox - 28} y2={oy + rh} stroke="#0f1f3d" strokeWidth="1.2" />
           <text x={ox - 44} y={oy + rh / 2} textAnchor="middle" transform={`rotate(-90 ${ox - 44} ${oy + rh / 2})`} {...txt}>{Math.round(h)}</text>
-          {!panzerOnly && (
+          {!panzerOnly && !beleg && (
             <text x={ox + rw + 16} y={oy + khpx / 2 + 4} textAnchor="middle" transform={`rotate(-90 ${ox + rw + 16} ${oy + khpx / 2})`} fontSize={Math.round(fMain * 0.55)} fill="#667085" fontWeight="600">Kasten {Math.round(kh)}</text>
           )}
         </>
