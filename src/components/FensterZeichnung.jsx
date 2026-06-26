@@ -793,7 +793,6 @@ export function VerbundBogenBody({ r0, teile, scale, glasFarbe = '#cfe3ef', kp =
   const winTeil = teile[1];
   // Öffnungsart des Fensterteils: liegt im Gesamt-panes-Array hinter den Bogen-Feldern.
   const winPaneIdx = (teile[0].panes?.length || 1);
-  const winSelected = selectedPane === winPaneIdx;
   const total = (Number(teile[0].hoehe) || 0) + (Number(teile[1].hoehe) || 0) || 1;
   const archH = (Number(teile[0].hoehe) || 0) / total * h;
   const splitY = y + archH;
@@ -820,12 +819,19 @@ export function VerbundBogenBody({ r0, teile, scale, glasFarbe = '#cfe3ef', kp =
     const ww = w - 2 * gd, R = (ww * ww / 4 + ry * ry) / (2 * ry);
     return `M ${gL},${gBot} A ${R},${R} 0 0 1 ${gR},${gBot} Z`;
   })();
-  // Fenster-Bereich (rechteckig) unter dem Kämpfer:
-  const winInner = { x: x + fwB, y: splitY + kHalf, w: w - 2 * fwB, h: (y + h - fwB) - (splitY + kHalf) };
-  const sash = inset(winInner, Math.max(3, fw * 0.30));
-  const glasR = inset(sash, Math.max(3, fw * 0.5));
-  const pane = (panes && panes[winPaneIdx]) || (winTeil.panes && winTeil.panes[0]) || { open: 'drehkipp', din: 'links' };
-  const oLines = pane.fest ? [] : oeffnungsLinien(pane, glasR);
+  // Fenster-Bereich (rechteckig) unter dem Kämpfer – als Feld-Raster (Pfosten teilen es).
+  const winRect = { x: x + fwB, y: splitY + kHalf, w: w - 2 * fwB, h: (y + h - fwB) - (splitY + kHalf) };
+  const wCols = Math.max(1, winTeil.cols || 1);
+  const wPanes = (winTeil.panes && winTeil.panes.length) ? winTeil.panes : [{ open: 'drehkipp', din: 'links' }];
+  const wRows = Math.max(1, Math.ceil(wPanes.length / wCols));
+  const wCW = (winTeil.colWidths && winTeil.colWidths.length === wCols) ? winTeil.colWidths.map(v => Math.max(1, Number(v) || 1)) : Array(wCols).fill(1);
+  const wRH = (winTeil.rowHeights && winTeil.rowHeights.length === wRows) ? winTeil.rowHeights.map(v => Math.max(1, Number(v) || 1)) : Array(wRows).fill(1);
+  const sumCW = wCW.reduce((a, c) => a + c, 0) || 1, sumRH = wRH.reduce((a, c) => a + c, 0) || 1;
+  const colX = []; { let acc = 0; for (let c = 0; c < wCols; c++) { colX.push(winRect.x + (acc / sumCW) * winRect.w); acc += wCW[c]; } }
+  const colW = wCW.map(cw => (cw / sumCW) * winRect.w);
+  const rowY = []; { let acc = 0; for (let r = 0; r < wRows; r++) { rowY.push(winRect.y + (acc / sumRH) * winRect.h); acc += wRH[r]; } }
+  const rowH = wRH.map(rh => (rh / sumRH) * winRect.h);
+  const pfW = Math.max(3, fwB * 0.8);                       // Pfostenbreite
   // Oberlicht (Bogen) – ebenfalls einstellbar: Öffnungsart aus panes[0], Symbol auf die Kuppel.
   const archPane = (panes && panes[0]) || { fest: true };
   const archBox = { x: x + gd, y: y + gd, w: Math.max(2, w - 2 * gd), h: Math.max(2, gBot - (y + gd)) };
@@ -854,18 +860,36 @@ export function VerbundBogenBody({ r0, teile, scale, glasFarbe = '#cfe3ef', kp =
       )}
       {/* Kämpfer (waagrechter Querbalken am Übergang) */}
       <rect x={x + fwB} y={splitY - kHalf} width={w - 2 * fwB} height={fw} fill="#fff" stroke="#0f1f3d" strokeWidth="1.6" />
-      {/* Fenster-Flügel + Glas + Öffnungssymbol */}
-      <rect x={sash.x} y={sash.y} width={sash.w} height={sash.h} fill="#fff" stroke="#0f1f3d" strokeWidth="2" />
-      {gehrung(sash, glasR).map((l, i) => <line key={kp + 'sm' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="1.4" />)}
-      <rect x={glasR.x} y={glasR.y} width={glasR.w} height={glasR.h} fill={glasFarbe} stroke="#0f1f3d" strokeWidth="1.4" opacity="0.95" />
-      {oLines.map((l, i) => <line key={kp + 'ol' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="1.4" />)}
-      {/* Fensterglas anklickbar → Öffnungsart des Fensterteils einstellen */}
-      {onPaneClick && (
-        <rect x={sash.x} y={sash.y} width={sash.w} height={sash.h}
-              fill={winSelected ? 'rgba(192,21,46,0.12)' : 'transparent'}
-              stroke={winSelected ? '#c0152e' : 'transparent'} strokeWidth="2.5"
-              style={{ cursor: 'pointer' }} onClick={() => onPaneClick(winPaneIdx)} />
-      )}
+      {/* Fenster-Felder: je Feld Flügel + Glas + Öffnungssymbol (Pfosten teilen den Fensterteil) */}
+      {Array.from({ length: wRows }).map((_, r) => Array.from({ length: wCols }).map((__, c) => {
+        const idx = r * wCols + c;
+        const cell = { x: colX[c], y: rowY[r], w: colW[c], h: rowH[r] };
+        const sashG = inset(cell, Math.max(2, pfW * 0.45));
+        const glassG = inset(sashG, Math.max(2, pfW * 0.55));
+        const cellPane = (panes && panes[winPaneIdx + idx]) || wPanes[idx] || { fest: true };
+        const cLines = cellPane.fest ? [] : oeffnungsLinien(cellPane, glassG);
+        const cSel = selectedPane === (winPaneIdx + idx);
+        return (
+          <g key={kp + 'wf' + idx}>
+            <rect x={sashG.x} y={sashG.y} width={sashG.w} height={sashG.h} fill="#fff" stroke="#0f1f3d" strokeWidth="2" />
+            {gehrung(sashG, glassG).map((l, i) => <line key={kp + 'sm' + idx + '-' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="1.4" />)}
+            <rect x={glassG.x} y={glassG.y} width={glassG.w} height={glassG.h} fill={glasFarbe} stroke="#0f1f3d" strokeWidth="1.4" opacity="0.95" />
+            {cLines.map((l, i) => <line key={kp + 'ol' + idx + '-' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="1.4" />)}
+            {onPaneClick && (
+              <rect x={sashG.x} y={sashG.y} width={sashG.w} height={sashG.h}
+                    fill={cSel ? 'rgba(192,21,46,0.12)' : 'transparent'} stroke={cSel ? '#c0152e' : 'transparent'} strokeWidth="2.5"
+                    style={{ cursor: 'pointer' }} onClick={() => onPaneClick(winPaneIdx + idx)} />
+            )}
+          </g>
+        );
+      }))}
+      {/* Pfosten (vertikal) bzw. Kämpfer (horizontal) zwischen den Feldern */}
+      {Array.from({ length: wCols - 1 }).map((_, i) => (
+        <rect key={kp + 'pfv' + i} x={colX[i + 1] - pfW / 2} y={winRect.y} width={pfW} height={winRect.h} fill="#fff" stroke="#0f1f3d" strokeWidth="1.6" />
+      ))}
+      {Array.from({ length: wRows - 1 }).map((_, i) => (
+        <rect key={kp + 'pfh' + i} x={winRect.x} y={rowY[i + 1] - pfW / 2} width={winRect.w} height={pfW} fill="#fff" stroke="#0f1f3d" strokeWidth="1.6" />
+      ))}
     </g>
   );
 }

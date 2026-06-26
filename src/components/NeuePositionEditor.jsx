@@ -511,39 +511,55 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
     setSelectedPane(null);
     setAddMenu(false);
   }
-  // Pfosten frei ins aktive Fenster einfügen: vertikal = neue Spalte, horizontal = neue Zeile.
-  // Das neue Feld ist zunächst fest verglast und lässt sich danach per Klick einstellen.
-  function addPfostenVertikal() {
-    const el = aktiv;
-    const cols = Math.max(1, el.cols || 1);
-    if (cols >= 6) { zeigeWarnung('max. erreicht'); return; }
-    const panes = (el.panes && el.panes.length) ? el.panes : [{ fest: true }];
+  // Pfosten in ein Feld-Raster einfügen: 'v' = neue Spalte, 'h' = neue Zeile. Liefert die
+  // geänderten Felder (panes/cols/colWidths bzw. rowHeights) oder null (Maximum erreicht).
+  // Neues Feld ist zunächst fest verglast und danach per Klick einstellbar.
+  function pfostenAdd(cfg, richtung) {
+    const cols = Math.max(1, cfg.cols || 1);
+    const panes = (cfg.panes && cfg.panes.length) ? cfg.panes : [{ fest: true }];
     const rows = Math.max(1, Math.ceil(panes.length / cols));
-    const newCols = cols + 1;
-    const neu = [];
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) neu.push({ ...(panes[r * cols + c] || { fest: true }) });
-      neu.push({ fest: true });                                   // neues Feld rechts
+    if (richtung === 'v') {
+      if (cols >= 6) return null;
+      const newCols = cols + 1;
+      const neu = [];
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) neu.push({ ...(panes[r * cols + c] || { fest: true }) });
+        neu.push({ fest: true });
+      }
+      const breite = Number(cfg.breite) || 1000;
+      const cw = Array(newCols).fill(Math.round(breite / newCols));
+      cw[newCols - 1] += breite - cw.reduce((a, c) => a + c, 0);
+      return { panes: neu, cols: newCols, colWidths: cw };
     }
-    const breite = Number(el.breite) || 1000;
-    const cw = Array(newCols).fill(Math.round(breite / newCols));
-    cw[newCols - 1] += breite - cw.reduce((a, c) => a + c, 0);
-    updAktiv({ panes: neu, cols: newCols, colWidths: cw });
-    setSelectedPane(null); setAddMenu(false);
-  }
-  function addPfostenHorizontal() {
-    const el = aktiv;
-    const cols = Math.max(1, el.cols || 1);
-    const panes = (el.panes && el.panes.length) ? el.panes : [{ fest: true }];
-    const rows = Math.max(1, Math.ceil(panes.length / cols));
-    if (rows >= 6) { zeigeWarnung('max. erreicht'); return; }
+    if (rows >= 6) return null;
     const newRows = rows + 1;
     const neu = panes.map(p => ({ ...p }));
-    for (let c = 0; c < cols; c++) neu.push({ fest: true });      // neue Zeile unten
-    const hoehe = Number(el.hoehe) || 1200;
+    for (let c = 0; c < cols; c++) neu.push({ fest: true });
+    const hoehe = Number(cfg.hoehe) || 1200;
     const rh = Array(newRows).fill(Math.round(hoehe / newRows));
     rh[newRows - 1] += hoehe - rh.reduce((a, c) => a + c, 0);
-    updAktiv({ panes: neu, rowHeights: rh });
+    return { panes: neu, cols, rowHeights: rh };
+  }
+  // Pfosten ins aktive Element einfügen. Beim verbundenen Bogenfenster wandert der Pfosten in den
+  // Fensterteil (Bogen bleibt eine Scheibe) und „durchgehendes Glas" wird aufgehoben (echte Teilung).
+  function addPfosten(richtung) {
+    const el = aktiv;
+    const istBogenMerge = el.verbunden && Array.isArray(el._teile) && geometrieByCode(el.code)?.form;
+    if (istBogenMerge) {
+      const teile = el._teile;
+      const winIdx = geometrieByCode(teile[0]?.code)?.form ? 1 : 0;   // der NICHT-Bogen-Teil = Fenster
+      const upd = pfostenAdd(teile[winIdx], richtung);
+      if (!upd) { zeigeWarnung('max. erreicht'); return; }
+      const newWin = { ...teile[winIdx], ...upd };
+      const newTeile = teile.map((t, i) => (i === winIdx ? newWin : t));
+      const archPanes = teile[1 - winIdx].panes || [{ fest: true }];
+      const combined = winIdx === 1 ? [...archPanes, ...newWin.panes] : [...newWin.panes, ...archPanes];
+      updAktiv({ _teile: newTeile, panes: combined, durchgehend: false });
+    } else {
+      const upd = pfostenAdd(el, richtung);
+      if (!upd) { zeigeWarnung('max. erreicht'); return; }
+      updAktiv(upd);
+    }
     setSelectedPane(null); setAddMenu(false);
   }
   function removeElement(id) {
@@ -1266,14 +1282,14 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
                 <span className="pane-option-thumb"><GeometrieThumb geometrie={geometrieByCode('T01')} /></span>
                 <span className="pane-option-label">Tür hinzufügen</span>
               </button>
-              {!geometrie?.form && !istRollo && (
+              {!istRollo && (!geometrie?.form || (aktiv.verbunden && Array.isArray(aktiv._teile))) && (
                 <>
                   <div className="pane-menu-sub">Pfosten ins aktive Fenster</div>
-                  <button className="pane-option" onClick={addPfostenVertikal}>
+                  <button className="pane-option" onClick={() => addPfosten('v')}>
                     <span className="pane-option-thumb" aria-hidden>┃</span>
                     <span className="pane-option-label">Vertikaler Pfosten</span>
                   </button>
-                  <button className="pane-option" onClick={addPfostenHorizontal}>
+                  <button className="pane-option" onClick={() => addPfosten('h')}>
                     <span className="pane-option-thumb" aria-hidden>━</span>
                     <span className="pane-option-label">Horizontaler Pfosten</span>
                   </button>
