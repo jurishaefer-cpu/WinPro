@@ -244,7 +244,9 @@ export function RolloZeichnung({ breite = 1000, hoehe = 1400, kastenhoehe = 165,
   const b = Math.max(200, Number(breite) || 1000);
   const h = Math.max(200, Number(hoehe) || 1400);
   const kh = panzerOnly ? 0 : Math.min(h * 0.5, Math.max(40, Number(kastenhoehe) || 0));
-  const maxW = 360, maxH = 300;
+  // Gleiche Zeichenflächen-Skalierung wie FensterZeichnung (maxW/maxH), damit Rollo,
+  // Panzer und Kasten auf Belegen optisch gleich groß/proportional zu den Fenstern wirken.
+  const maxW = 360, maxH = 430;
   const scale = Math.min(maxW / b, maxH / h);
   const rw = b * scale, rh = h * scale, khpx = kh * scale;
   // Layout + Maß-Schrift: in der kompakten Übersicht exakt wie FensterZeichnung skalieren,

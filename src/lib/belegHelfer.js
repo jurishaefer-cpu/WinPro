@@ -89,6 +89,7 @@ function rolloZeilen(config, profil, mitMontage = true) {
   z.push(`Ausführung: ${panzerOnly ? 'Rollo Panzer' : 'Vorbau Rollladen'}`);
   z.push(`Maß: ${Math.round(config.breite)} × ${Math.round(config.hoehe)} mm`);
   if (!panzerOnly && config.kastenhoeheRollo) z.push(`Kastenhöhe: ${Math.round(config.kastenhoeheRollo)} mm`);
+  if (!panzerOnly) z.push(`Kastenform: ${esc((config.kastenform || '').trim() || '45° abgeschrägt')}`);
   if (config.behang) z.push(`Rollopanzer: ${esc(config.behang)}${config.lamelle ? `, ${esc(config.lamelle)}` : ''}`);
   if (!panzerOnly && config.bedienung) z.push(`Bedienung: ${esc(config.bedienung)}${config.bedienungsseiteRollo ? ` (${esc(config.bedienungsseiteRollo)})` : ''}`);
   const lamFarbe = rolloLamellenFarbe(config);
