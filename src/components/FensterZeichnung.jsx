@@ -135,6 +135,13 @@ export function fensterBezeichnung(geometrie, panes, cols) {
   const g = geometrie;
   if (!g) return '';
   if (g.kategorie === 'tuer') return g.label;                 // Türen: immer Katalogname (kein „Stulpfenster")
+  if (g.form) {                                               // Sonderform (Bogen/Dreieck): Name + ggf. Öffnungsart
+    const p = (panes && panes[0]) || (g.panes && g.panes[0]) || {};
+    if (p.fest || !p.open || p.open === 'fest') return g.label;
+    const art = fluegelArt(p);
+    const din = (p.din && (art === 'Dreh' || art === 'Drehkipp')) ? (p.din === 'links' ? ' DIN Links' : ' DIN Rechts') : '';
+    return `${g.label} ${art}${din}`;
+  }
   const ps = panes || g.panes;
   if (!Array.isArray(ps) || ps.length < 2) return g.label;   // einflügelig: Katalogname
 
@@ -723,12 +730,18 @@ export function sonderformPfade(r, geo, frame) {
   const c0 = contour(0), c1 = contour(d1), c3 = contour(d3);
   // Gehrung nur am Blendrahmen (c0→c1) – fest verglast hat keinen Flügelrahmen.
   const miter = c0.corners.map((p, i) => [p, c1.corners[i]]);
-  return { outer: c0.path, mid: c1.path, inner: c3.path, miter };
+  // Glas-Box (für die Öffnungsart-Symbole; Linien werden später auf die Glasform geclippt).
+  const glasBox = { x: x + fw, y: y + fw, w: Math.max(1, w - 2 * fw), h: Math.max(1, h - 2 * fw) };
+  return { outer: c0.path, mid: c1.path, inner: c3.path, miter, glasBox };
 }
 
-// Zeichnet den Sonderform-Rahmen (Bögen/Dreiecke) wie einen Fensterrahmen:
-// Blendrahmen (außen) + Flügelrahmen (innen), beide mit Gehrung, dann Glas.
-export function SonderBody({ sp, glas = '#cfe3ef', kp = '' }) {
+// Zeichnet den Sonderform-Rahmen (Bögen/Dreiecke) wie einen Fensterrahmen: Blendrahmen + Glas.
+// oeffnung: { open, din } – zeichnet die Öffnungssymbole (Dreh/Kipp …) auf die Glasfläche.
+// onPaneClick/selected: macht die Glasfläche anklickbar (Öffnungsart wählen).
+export function SonderBody({ sp, glas = '#cfe3ef', kp = '', oeffnung, onPaneClick, selected }) {
+  const offen = oeffnung && !oeffnung.fest && oeffnung.open && oeffnung.open !== 'fest';
+  const lines = offen ? oeffnungsLinien(oeffnung, sp.glasBox) : [];
+  const clipId = 'sbclip-' + kp;
   return (
     <g>
       <path d={sp.outer} fill="#fff" stroke="#0f1f3d" strokeWidth="2.5" strokeLinejoin="round" />
@@ -738,6 +751,21 @@ export function SonderBody({ sp, glas = '#cfe3ef', kp = '' }) {
       {(sp.miter || []).map((l, i) => (
         <line key={kp + 'm' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="1.4" />
       ))}
+      {lines.length > 0 && (
+        <>
+          <clipPath id={clipId}><path d={sp.inner} /></clipPath>
+          <g clipPath={`url(#${clipId})`}>
+            {lines.map((l, i) => (
+              <line key={kp + 'o' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="1.4" />
+            ))}
+          </g>
+        </>
+      )}
+      {onPaneClick && (
+        <path d={sp.inner} fill={selected ? 'rgba(192,21,46,0.12)' : 'transparent'}
+              stroke={selected ? '#c0152e' : 'transparent'} strokeWidth="2.5"
+              style={{ cursor: 'pointer' }} onClick={onPaneClick} />
+      )}
     </g>
   );
 }
@@ -1026,7 +1054,8 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
       ) : teilBodies ? (
         <g>{teilBodies}</g>
       ) : istSonderform ? (
-        <SonderBody sp={sonder} glas={glasFarbe} kp="s" />
+        <SonderBody sp={sonder} glas={glasFarbe} kp="s" oeffnung={panesProp?.[0]}
+          onPaneClick={onPaneClick ? () => onPaneClick(0) : undefined} selected={selectedPane === 0} />
       ) : (
         <UnitBody c={c} glasFarbe={glasFarbe} onPaneClick={onPaneClick} selectedPane={selectedPane} />
       )}
@@ -1371,7 +1400,9 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
             {teilBodies ? (
               <g>{teilBodies}</g>
             ) : uSonder ? (
-              <SonderBody sp={uSonder} glas={uGlas} kp={'u' + u.e._key + '-'} />
+              <SonderBody sp={uSonder} glas={uGlas} kp={'u' + u.e._key + '-'} oeffnung={u.e.panes?.[0]}
+                onPaneClick={interaktiv && aktiv ? () => { if (!justDraggedRef.current) onPaneClick(0); } : undefined}
+                selected={aktiv && selectedPane === 0} />
             ) : (
               <UnitBody c={u.c} glasFarbe={uGlas} keyPrefix={'u' + u.e._key + '-'}
                 onPaneClick={interaktiv && aktiv ? (i => { if (!justDraggedRef.current) onPaneClick(i); }) : undefined} selectedPane={aktiv ? selectedPane : null} />
@@ -1403,7 +1434,7 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
                       onPointerDown={e => pressDown(e, u.e._key)}
                       onPointerMove={e => pressMove(e, u.e._key)}
                       onPointerUp={e => pressUp(e, u.e._key)}
-                      onClick={() => { if (!justDraggedRef.current) onUnitClick(u.e._key); }} />
+                      onClick={() => { if (justDraggedRef.current) return; if (aktiv && uSonder && onPaneClick) onPaneClick(0); else onUnitClick(u.e._key); }} />
               );
             })()}
           </g>
