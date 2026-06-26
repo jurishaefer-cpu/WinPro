@@ -421,6 +421,16 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
       updAktiv({ lamelle: val });
     }
   }
+  // Kastenform: Listenwert übernehmen oder bei „Manuell eingeben…" zur Texteingabe wechseln
+  function waehleKastenform(val) {
+    if (val === '__manuell__') {
+      const aktuell = KASTENFORMEN.includes(aktiv.kastenform) ? '' : (aktiv.kastenform ?? '');
+      const eingabe = window.prompt('Kastenform manuell eingeben:', aktuell);
+      if (eingabe != null && eingabe.trim() !== '') updAktiv({ kastenform: eingabe.trim() });
+    } else {
+      updAktiv({ kastenform: val });
+    }
+  }
   function switchActive(id) {
     setActiveId(id);
     setSelectedPane(null);
@@ -1035,17 +1045,11 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
               {!geometrie?.panzerOnly && (
                 <>
                   <label className="np-field-label">Kastenform</label>
-                  <select className="np-select np-select--block"
-                          value={KASTENFORMEN.includes(aktiv.kastenform) ? aktiv.kastenform : 'Manuell'}
-                          onChange={e => updAktiv({ kastenform: e.target.value === 'Manuell' ? '' : e.target.value })}>
+                  <select className="np-select np-select--block" value={aktiv.kastenform} onChange={e => waehleKastenform(e.target.value)}>
                     {KASTENFORMEN.map(x => <option key={x} value={x}>{x}</option>)}
-                    <option value="Manuell">✏️ Manuell eingeben…</option>
+                    {aktiv.kastenform && !KASTENFORMEN.includes(aktiv.kastenform) && <option value={aktiv.kastenform}>{aktiv.kastenform}</option>}
+                    <option value="__manuell__">✏️ Manuell eingeben…</option>
                   </select>
-                  {!KASTENFORMEN.includes(aktiv.kastenform) && (
-                    <input className="np-input" style={{ marginTop: 8 }} value={aktiv.kastenform}
-                           onChange={e => updAktiv({ kastenform: e.target.value })}
-                           placeholder="Kastenform eingeben…" />
-                  )}
                   <label className="np-field-label">Kastenhöhe (mm)</label>
                   <input className="np-input" type="number" min="0" value={aktiv.kastenhoeheRollo}
                          onChange={e => updAktiv({ kastenhoeheRollo: e.target.value })} placeholder="z. B. 165" />
