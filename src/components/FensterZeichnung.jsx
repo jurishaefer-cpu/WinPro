@@ -808,10 +808,10 @@ export function VerbundBogenBody({ r0, teile, scale, glasFarbe = '#cfe3ef', kp =
     const ww = w - 2 * d, R = (ww * ww / 4 + rise * rise) / (2 * rise);
     return `M ${L},${bot} L ${L},${splitY} A ${R},${R} 0 0 1 ${Rr},${splitY} L ${Rr},${bot} Z`;
   };
-  const kHalf = fw / 2;
+  const kHalf = 0;                      // KEIN automatischer Kämpfer – Bogen grenzt direkt ans Fenster
   const fwB = fw * 0.6;                 // Blendrahmen innen (durchgehend)
   const gd = fw;                        // Glasleiste (Reveal) – Oberlicht-Glas weiter innen als Blendrahmen
-  const gBot = splitY - kHalf;          // Unterkante Oberlicht-Glas (Oberkante Kämpfer)
+  const gBot = splitY - kHalf;          // Unterkante Oberlicht-Glas (am Übergang zum Fenster)
   // Oberlicht-Glas als Bogen (Kuppel), Sehne auf Höhe des Kämpfers, oben um gd eingerückt.
   const archGlass = (() => {
     const gL = x + gd, gR = x + w - gd, ry = Math.max(2, archH - kHalf - gd);
@@ -858,8 +858,7 @@ export function VerbundBogenBody({ r0, teile, scale, glasFarbe = '#cfe3ef', kp =
               stroke={archSelected ? '#c0152e' : 'transparent'} strokeWidth="2.5"
               style={{ cursor: 'pointer' }} onClick={() => onPaneClick(0)} />
       )}
-      {/* Kämpfer (waagrechter Querbalken am Übergang) */}
-      <rect x={x + fwB} y={splitY - kHalf} width={w - 2 * fwB} height={fw} fill="#fff" stroke="#0f1f3d" strokeWidth="1.6" />
+      {/* Kein automatischer Kämpfer – ein Querbalken entsteht nur über „Horizontaler Pfosten". */}
       {/* Fenster-Felder: je Feld Flügel + Glas + Öffnungssymbol (Pfosten teilen den Fensterteil) */}
       {Array.from({ length: wRows }).map((_, r) => Array.from({ length: wCols }).map((__, c) => {
         const idx = r * wCols + c;
