@@ -1177,32 +1177,46 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
     }
     return null;
   }
-  function handleDown(e, id) {
+  // Press-and-Hold: das ganze Element lässt sich durch Gedrückthalten + Ziehen verschieben.
+  // Kurzes Tippen (unter der Schwelle) bleibt ein Klick (Auswahl / Öffnungsart).
+  const pressRef = useRef(null);
+  const justDraggedRef = useRef(false);
+  function pressDown(e, id) {
     e.stopPropagation();
     e.currentTarget.setPointerCapture?.(e.pointerId);
-    setDrag({ id, side: null });
+    justDraggedRef.current = false;
+    pressRef.current = { id, sx: e.clientX, sy: e.clientY, dragging: false };
   }
-  function handleMove(e, id) {
-    if (!drag || drag.id !== id) return;
+  function pressMove(e, id) {
+    const pr = pressRef.current;
+    if (!pr || pr.id !== id) return;
+    if (!pr.dragging) {
+      if (Math.hypot(e.clientX - pr.sx, e.clientY - pr.sy) < 5) return;   // erst ab kleiner Bewegung ziehen
+      pr.dragging = true;
+      setDrag({ id, side: null });
+    }
     const p = svgPoint(e.clientX, e.clientY);
     const zone = zoneAt(p);
     if (zone) {
       setDrag(d => (d ? { ...d, side: zone.side, targetId: zone.targetId } : d));   // an Kante → Vorschau Um-Docken
     } else {
       setDrag(d => (d ? { ...d, side: null, targetId: null } : d));
-      // entlang der Kante verschieben: Element folgt vertikal dem Zeiger, bleibt in der Zeile
       const u = units.find(unit => unit.e._key === id);
       if (u && onSlide && u.maxOffMm > 0) {
-        // Griff sitzt ~15px unter der Element-Oberkante → unter dem Finger halten
-        let offMm = (p.y - 15 - rowYpx[u.rr]) / scale;
+        let offMm = (p.y - rowYpx[u.rr]) / scale - u.elHmm / 2;   // Element folgt dem Finger (mittig)
         offMm = Math.min(u.maxOffMm, Math.max(0, offMm));
         onSlide(id, offMm);
       }
     }
   }
-  function handleUp(e, id) {
-    if (drag && drag.id === id && drag.side && onDock) onDock(id, drag.side, drag.targetId);
-    setDrag(null);
+  function pressUp(e, id) {
+    const pr = pressRef.current;
+    pressRef.current = null;
+    if (pr && pr.dragging) {
+      if (drag && drag.id === id && drag.side && onDock) onDock(id, drag.side, drag.targetId);
+      setDrag(null);
+      justDraggedRef.current = true;   // den direkt folgenden Klick (Auswahl/Feld) unterdrücken
+    }
   }
 
   return (
@@ -1330,8 +1344,13 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
             return <UnitBody key={'t' + ti} c={tc} glasFarbe={tGlas} keyPrefix={'u' + u.e._key + '-t' + ti + '-'} />;
           });
         }
+        const ziehbar = interaktiv && !istMainUnit;
         return (
-          <g key={'u' + u.e._key}>
+          <g key={'u' + u.e._key}
+             style={ziehbar ? { cursor: 'move', touchAction: 'none' } : undefined}
+             onPointerDown={ziehbar ? e => pressDown(e, u.e._key) : undefined}
+             onPointerMove={ziehbar ? e => pressMove(e, u.e._key) : undefined}
+             onPointerUp={ziehbar ? e => pressUp(e, u.e._key) : undefined}>
             {teilBodies ? (
               <g>{teilBodies}</g>
             ) : uSonder ? (
@@ -1341,7 +1360,7 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
               </g>
             ) : (
               <UnitBody c={u.c} glasFarbe={uGlas} keyPrefix={'u' + u.e._key + '-'}
-                onPaneClick={interaktiv && aktiv ? onPaneClick : undefined} selectedPane={aktiv ? selectedPane : null} />
+                onPaneClick={interaktiv && aktiv ? (i => { if (!justDraggedRef.current) onPaneClick(i); }) : undefined} selectedPane={aktiv ? selectedPane : null} />
             )}
             {aktiv && (
               <rect x={u.r0.x} y={u.r0.y} width={u.r0.w} height={u.r0.h} fill="none"
@@ -1349,18 +1368,16 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
             )}
             {interaktiv && !aktiv && (
               <rect x={u.r0.x} y={u.r0.y} width={u.r0.w} height={u.r0.h} fill="transparent"
-                    style={{ cursor: 'pointer' }} onClick={() => onUnitClick(u.e._key)} />
+                    style={{ cursor: ziehbar ? 'move' : 'pointer' }}
+                    onClick={() => { if (!justDraggedRef.current) onUnitClick(u.e._key); }} />
             )}
-            {/* Verschiebe-Griff (nicht am Hauptelement) */}
-            {interaktiv && !istMainUnit && (
-              <g style={{ cursor: 'move', touchAction: 'none' }}
-                 onPointerDown={e => handleDown(e, u.e._key)}
-                 onPointerMove={e => handleMove(e, u.e._key)}
-                 onPointerUp={e => handleUp(e, u.e._key)}>
+            {/* Hinweis „ziehen" (das ganze Element ist durch Gedrückthalten verschiebbar) */}
+            {ziehbar && (
+              <g style={{ pointerEvents: 'none' }}>
                 <rect x={u.r0.x + u.r0.w / 2 - hw / 2} y={u.r0.y + 7} width={hw} height={26} rx="13"
-                      fill="#0f1f3d" opacity={drag && drag.id === u.e._key ? 1 : 0.85} />
+                      fill="#0f1f3d" opacity={drag && drag.id === u.e._key ? 1 : 0.7} />
                 <text x={u.r0.x + u.r0.w / 2} y={u.r0.y + 7 + 13} textAnchor="middle" dominantBaseline="central"
-                      fontSize="12.5" fontWeight="700" fill="#fff" style={{ pointerEvents: 'none' }}>↔ ziehen</text>
+                      fontSize="12.5" fontWeight="700" fill="#fff">↔ ziehen</text>
               </g>
             )}
           </g>
