@@ -1350,7 +1350,11 @@ a.detail-contact-link:hover span { text-decoration: underline; }
 .beleg-toolbar-titel { font-size: 16px; font-weight: 700; color: #1a1a1a; }
 .beleg-toolbar-actions { display: flex; gap: 12px; }
 .beleg-scroll { flex: 1; overflow-y: auto; padding: 28px 12px; }
-.beleg-buehne { width: 794px; margin: 0; transform-origin: top left; }
+/* Bühne = exakt die skalierten Maße (per JS gesetzt), zentriert; clippt das
+   skalierte Innere. Sie wird NICHT transformiert (das machte iOS leer). */
+.beleg-buehne { width: 794px; margin: 0 auto; overflow: hidden; }
+/* Inneres Dokument wird per JS skaliert (transform-origin oben links). */
+#beleg-druck { width: 794px; transform-origin: top left; }
 
 .beleg {
   width: 794px;            /* DIN A4 Breite (210 mm @ 96 dpi) */
@@ -1431,9 +1435,9 @@ a.detail-contact-link:hover span { text-decoration: underline; }
   }
   body * { visibility: hidden !important; }
   #beleg-druck, #beleg-druck * { visibility: visible !important; }
-  .beleg-buehne { transform: none !important; height: auto !important; width: 210mm !important; margin: 0 !important; }
+  .beleg-buehne { transform: none !important; height: auto !important; width: 210mm !important; margin: 0 !important; overflow: visible !important; }
   /* Feste A4-Breite statt 100%: iOS koppelt position:fixed sonst an die Viewport-Breite */
-  #beleg-druck { position: absolute; left: 0; top: 0; width: 210mm; }
+  #beleg-druck { position: absolute; left: 0; top: 0; width: 210mm; transform: none !important; }
   /* Im Druck normaler Blockfluss: Flexbox/min-height brechen den mehrseitigen Umbruch */
   .beleg {
     box-shadow: none;

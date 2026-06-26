@@ -40,10 +40,15 @@ function BelegModal({ onClose, ...docProps }) {
     function fit() {
       if (!scrollRef.current || !buehneRef.current || !druckRef.current) return;
       const contentW = scrollRef.current.clientWidth - 24; // 2 × 12px Innenabstand
+      if (contentW <= 0) return;                            // Layout noch nicht bereit (iOS) → kein scale 0
       const scale = Math.min(1, contentW / A4_BREITE);
-      const tx = Math.max(0, (contentW - A4_BREITE * scale) / 2);
-      const h = druckRef.current.offsetHeight;
-      buehneRef.current.style.transform = `translateX(${tx}px) scale(${scale})`;
+      const h = druckRef.current.offsetHeight;              // ungeskalierte A4-Höhe (Transform ignoriert offsetHeight)
+      // WICHTIG: das INNERE Dokument skalieren und der Bühne die exakten skalierten
+      // Maße geben (layout-korrekt). Die früher transformierte Bühne erzeugte einen
+      // Box-/Visual-Mismatch, den iOS-Safari als leere Vorschau rendert.
+      druckRef.current.style.transformOrigin = 'top left';
+      druckRef.current.style.transform = `scale(${scale})`;
+      buehneRef.current.style.width = `${A4_BREITE * scale}px`;
       buehneRef.current.style.height = `${h * scale}px`;
     }
     fit();
@@ -76,6 +81,10 @@ function BelegModal({ onClose, ...docProps }) {
       // Klon im Blockfluss (wie ein echtes A4-Blatt)
       const clone = druckRef.current.cloneNode(true);
       clone.removeAttribute('id');
+      // Vorschau-Skalierung des Originals NICHT in den Export übernehmen (sonst winzige PDF).
+      clone.style.transform = 'none';
+      clone.style.transformOrigin = '';
+      clone.style.width = `${A4_BREITE}px`;
       const beleg = clone.querySelector('.beleg');
       Object.assign(beleg.style, { width: `${A4_BREITE}px`, minHeight: '0', display: 'block', boxShadow: 'none', padding: '0 54px' });
 
