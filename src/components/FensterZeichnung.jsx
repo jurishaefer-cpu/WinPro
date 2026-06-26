@@ -801,7 +801,7 @@ export function SonderBody({ sp, glas = '#cfe3ef', kp = '', oeffnung, onPaneClic
 // gerade Seiten + Boden), Kämpfer (Querbalken) am Übergang, oben das feste Oberlicht-Glas, unten
 // der Fenster-Flügel mit Glas und Öffnungssymbol. Liefert null, wenn der Fall nicht passt
 // (dann zeichnet der Aufrufer die Teile wie bisher).
-export function VerbundBogenBody({ r0, teile, scale, glasFarbe = '#cfe3ef', kp = '', panes, onPaneClick, selectedPane }) {
+export function VerbundBogenBody({ r0, teile, scale, glasFarbe = '#cfe3ef', kp = '', panes, onPaneClick, selectedPane, onRowDrag }) {
   if (!Array.isArray(teile) || teile.length !== 2) return null;
   const formIdx = geometrieByCode(teile[0]?.code)?.form ? 0 : (geometrieByCode(teile[1]?.code)?.form ? 1 : -1);
   if (formIdx !== 0) return null;                                  // nur Bogen OBEN
@@ -843,6 +843,12 @@ export function VerbundBogenBody({ r0, teile, scale, glasFarbe = '#cfe3ef', kp =
   const rowH = wRH.map(rh => (rh / sumRH) * winRect.h);
   const pfW = Math.max(3, fwB * 0.8);                       // Pfostenbreite
   const pad = (d) => Math.max(2, d);
+  // Horizontalen Pfosten vertikal ziehen → Zeilenhöhen im Fensterteil verschieben.
+  const rowDrag = useRef(null);
+  const vbScaleRef = useRef(scale); vbScaleRef.current = scale;
+  const pfDown = (e, i) => { e.stopPropagation(); e.currentTarget.setPointerCapture?.(e.pointerId); rowDrag.current = { y: e.clientY, h0: wRH[i] }; };
+  const pfMove = (e, i) => { const d = rowDrag.current; if (!d || !onRowDrag) return; const nh = Math.round(d.h0 + (e.clientY - d.y) / Math.max(0.0001, vbScaleRef.current)); onRowDrag(i, nh); };
+  const pfUp = () => { rowDrag.current = null; };
   return (
     <g>
       {/* Durchgehender Blendrahmen (außen + innen) */}
@@ -888,7 +894,17 @@ export function VerbundBogenBody({ r0, teile, scale, glasFarbe = '#cfe3ef', kp =
       ))}
       {/* Horizontaler Pfosten: nur im Fensterteil (1 Balken je hinzugefügter Zeile). */}
       {Array.from({ length: wRows - 1 }).map((_, i) => (
-        <rect key={kp + 'pfh' + i} x={winRect.x} y={rowY[i + 1] - pfW / 2} width={winRect.w} height={pfW} fill="#fff" stroke="#0f1f3d" strokeWidth="1.6" />
+        <g key={kp + 'pfh' + i}>
+          <rect x={winRect.x} y={rowY[i + 1] - pfW / 2} width={winRect.w} height={pfW} fill="#fff" stroke="#0f1f3d" strokeWidth="1.6" />
+          {/* Breite, unsichtbare Ziehfläche zum vertikalen Verschieben des Pfostens */}
+          {onRowDrag && (
+            <rect x={winRect.x} y={rowY[i + 1] - Math.max(11, pfW)} width={winRect.w} height={Math.max(22, pfW * 2)}
+                  fill="transparent" style={{ cursor: 'ns-resize', touchAction: 'none' }}
+                  onPointerDown={e => pfDown(e, i)} onPointerMove={e => pfMove(e, i)} onPointerUp={pfUp}>
+              <title>Pfosten ziehen</title>
+            </rect>
+          )}
+        </g>
       ))}
     </g>
   );
@@ -933,7 +949,7 @@ export function durchgehendPfade(r0, teile, dir, frame) {
   return { outer: path(pts), inner: path(ip) };
 }
 
-function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkasten, schwelle, oberlichtHoehe, glasFarbe = '#cfe3ef', onBreite, onHoehe, onOberlichtHoehe, onBottomHoehe, panes: panesProp, cols: colsProp, colWidths, rowHeights, onColWidth, onRowHeight, onPaneClick, selectedPane, teile, dir: teilDir, durchgehend, onDivider, onBackgroundClick }) {
+function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkasten, schwelle, oberlichtHoehe, glasFarbe = '#cfe3ef', onBreite, onHoehe, onOberlichtHoehe, onBottomHoehe, panes: panesProp, cols: colsProp, colWidths, rowHeights, onColWidth, onRowHeight, onPaneClick, selectedPane, teile, dir: teilDir, durchgehend, onDivider, onBackgroundClick, onBogenRowHeight }) {
   const b = Math.max(200, Number(breite) || 1000);
   const hh = Math.max(200, Number(hoehe) || 1200);
 
@@ -1219,7 +1235,7 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
         );
       })() : bogenOben ? (
         <VerbundBogenBody r0={r0} teile={formTeile} scale={scale} glasFarbe={glasFarbe} kp="vb"
-          panes={panesProp} onPaneClick={onPaneClick} selectedPane={selectedPane} />
+          panes={panesProp} onPaneClick={onPaneClick} selectedPane={selectedPane} onRowDrag={onBogenRowHeight} />
       ) : teilBodies ? (
         <g>{teilBodies}</g>
       ) : istSonderform ? (

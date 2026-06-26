@@ -493,6 +493,22 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
     const next = aktiv.rowHeights.map((rr, idx) => (idx === i ? (Number(val) || 0) : rr));
     updAktiv({ rowHeights: next, hoehe: next.reduce((a, c) => a + c, 0) });
   }
+  // Verbund-Bogenfenster: horizontalen Pfosten ziehen → Zeilen i / i+1 im Fensterteil verschieben
+  // (Summe bleibt = Höhe des Fensterteils, Bogenanteil und Gesamthöhe bleiben unverändert).
+  function setBogenRowHeight(i, val) {
+    const el = aktiv;
+    if (!el.verbunden || !Array.isArray(el._teile)) return;
+    const teile = el._teile;
+    const winIdx = geometrieByCode(teile[0]?.code)?.form ? 1 : 0;   // der NICHT-Bogen-Teil = Fenster
+    const win = teile[winIdx];
+    const rh = (win.rowHeights && win.rowHeights.length) ? win.rowHeights.map(v => Math.round(Number(v) || 0)) : null;
+    if (!rh || i < 0 || i + 1 >= rh.length) return;
+    const pair = rh[i] + rh[i + 1];
+    const nh = Math.max(100, Math.min(pair - 100, Math.round(Number(val) || 0)));
+    rh[i] = nh; rh[i + 1] = pair - nh;
+    const newTeile = teile.map((t, idx) => (idx === winIdx ? { ...t, rowHeights: rh } : t));
+    updAktiv({ _teile: newTeile });
+  }
 
   function wechselKategorie(k) {
     const erste = GEOMETRIEN.find(g => g.kategorie === k);
@@ -1247,7 +1263,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
                 onOberlichtHoehe={setOberlichtHoehe} onBottomHoehe={setBottomHoehe}
                 panes={aktiv.panes} cols={aktiv.cols}
                 colWidths={aktiv.colWidths} rowHeights={aktiv.rowHeights}
-                onColWidth={setColWidth} onRowHeight={setRowHeight}
+                onColWidth={setColWidth} onRowHeight={setRowHeight} onBogenRowHeight={setBogenRowHeight}
                 teile={aktiv.verbunden ? aktiv._teile : null} dir={aktiv._dir}
                 durchgehend={aktiv.durchgehend} onDivider={() => updAktiv({ durchgehend: true })}
                 onPaneClick={waehlePane} selectedPane={auswahlAktiv ? selectedPane : null}
