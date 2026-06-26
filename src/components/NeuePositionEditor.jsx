@@ -158,29 +158,24 @@ function elementRows(e) {
   return Math.ceil((e.panes?.length || 1) / (e.cols || 1));
 }
 
-// Sonderform (Bogen o.ä.)? Diese bleiben immer eigenständig – sie lassen sich nicht mit
-// Nachbarn verbinden (ein Bogen-neben-Fenster in EINEM Rahmen ergibt keinen sinnvollen Beleg).
-function istSonderform(e) {
-  return !!geometrieByCode(e?.code)?.form;
-}
-
 // Findet einen verbindbaren Nachbarn des aktiven Elements:
 // nebeneinander (gleiche Höhe, beide einreihig) oder übereinander (gleiche Breite, beide einspaltig).
-// Bögen/Sonderformen werden NIE verbunden – weder als aktives Element noch als Partner.
+// Bögen/Dreiecke dürfen mit Nachbarn verbunden werden (z. B. Rundbogen über Fenster) – das
+// Verbinden ist eine bewusste Aktion über den „Verbinden"-Knopf, passiert also nie automatisch.
 function findMergePartner(a, els) {
-  if (!a || istSonderform(a)) return null;
+  if (!a) return null;
   const ar = a.row ?? 0, ac = a.col ?? 0;
   const sameNum = (x, y) => Math.round(Number(x)) === Math.round(Number(y));
   if (elementRows(a) === 1) {
-    const right = els.find(e => e.id !== a.id && !istSonderform(e) && (e.row ?? 0) === ar && (e.col ?? 0) === ac + 1 && elementRows(e) === 1 && sameNum(e.hoehe, a.hoehe));
+    const right = els.find(e => e.id !== a.id && (e.row ?? 0) === ar && (e.col ?? 0) === ac + 1 && elementRows(e) === 1 && sameNum(e.hoehe, a.hoehe));
     if (right) return { dir: 'h', left: a, right };
-    const left = els.find(e => e.id !== a.id && !istSonderform(e) && (e.row ?? 0) === ar && (e.col ?? 0) === ac - 1 && elementRows(e) === 1 && sameNum(e.hoehe, a.hoehe));
+    const left = els.find(e => e.id !== a.id && (e.row ?? 0) === ar && (e.col ?? 0) === ac - 1 && elementRows(e) === 1 && sameNum(e.hoehe, a.hoehe));
     if (left) return { dir: 'h', left, right: a };
   }
   if ((a.cols || 1) === 1) {
-    const below = els.find(e => e.id !== a.id && !istSonderform(e) && (e.col ?? 0) === ac && (e.row ?? 0) === ar + 1 && (e.cols || 1) === 1 && sameNum(e.breite, a.breite));
+    const below = els.find(e => e.id !== a.id && (e.col ?? 0) === ac && (e.row ?? 0) === ar + 1 && (e.cols || 1) === 1 && sameNum(e.breite, a.breite));
     if (below) return { dir: 'v', top: a, bottom: below };
-    const above = els.find(e => e.id !== a.id && !istSonderform(e) && (e.col ?? 0) === ac && (e.row ?? 0) === ar - 1 && (e.cols || 1) === 1 && sameNum(e.breite, a.breite));
+    const above = els.find(e => e.id !== a.id && (e.col ?? 0) === ac && (e.row ?? 0) === ar - 1 && (e.cols || 1) === 1 && sameNum(e.breite, a.breite));
     if (above) return { dir: 'v', top: above, bottom: a };
   }
   return null;
