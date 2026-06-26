@@ -794,36 +794,47 @@ export function VerbundBogenBody({ r0, teile, scale, glasFarbe = '#cfe3ef', kp =
   const total = (Number(teile[0].hoehe) || 0) + (Number(teile[1].hoehe) || 0) || 1;
   const archH = (Number(teile[0].hoehe) || 0) / total * h;
   const splitY = y + archH;
+  // Segmentbogen funktioniert nur flach (Stich < halbe Breite); sonst als Ellipse (Rundbogen) zeichnen.
+  const ellipse = g.form === 'rundbogen' || archH > w * 0.5;
   // Silhouette des Bogenfensters, um d nach innen versetzt.
   const sil = (d) => {
     const L = x + d, Rr = x + w - d, bot = y + h - d;
     const rise = Math.max(2, archH - d);
-    if (g.form === 'rundbogen') {
+    if (ellipse) {
       return `M ${L},${bot} L ${L},${splitY} A ${Math.max(2, w / 2 - d)},${rise} 0 0 1 ${Rr},${splitY} L ${Rr},${bot} Z`;
     }
     const ww = w - 2 * d, R = (ww * ww / 4 + rise * rise) / (2 * rise);
     return `M ${L},${bot} L ${L},${splitY} A ${R},${R} 0 0 1 ${Rr},${splitY} L ${Rr},${bot} Z`;
   };
-  const clipId = 'vb-' + kp;
   const kHalf = fw / 2;
+  const fwB = fw * 0.6;                 // Blendrahmen innen (durchgehend)
+  const gd = fw;                        // Glasleiste (Reveal) – Oberlicht-Glas weiter innen als Blendrahmen
+  const gBot = splitY - kHalf;          // Unterkante Oberlicht-Glas (Oberkante Kämpfer)
+  // Oberlicht-Glas als Bogen (Kuppel), Sehne auf Höhe des Kämpfers, oben um gd eingerückt.
+  const archGlass = (() => {
+    const gL = x + gd, gR = x + w - gd, ry = Math.max(2, archH - kHalf - gd);
+    if (ellipse) return `M ${gL},${gBot} A ${Math.max(2, w / 2 - gd)},${ry} 0 0 1 ${gR},${gBot} Z`;
+    const ww = w - 2 * gd, R = (ww * ww / 4 + ry * ry) / (2 * ry);
+    return `M ${gL},${gBot} A ${R},${R} 0 0 1 ${gR},${gBot} Z`;
+  })();
+  // Gehrung an den Bogen-Fußpunkten (Übergang Bogen ↔ gerade Seite) – wie beim Einzelbogen.
+  const archMiter = [[[x, splitY], [x + fwB, splitY - fwB]], [[x + w, splitY], [x + w - fwB, splitY - fwB]]];
   // Fenster-Bereich (rechteckig) unter dem Kämpfer:
-  const winInner = { x: x + fw, y: splitY + kHalf, w: w - 2 * fw, h: (y + h - fw) - (splitY + kHalf) };
-  const sash = inset(winInner, Math.max(3, fw * 0.28));
+  const winInner = { x: x + fwB, y: splitY + kHalf, w: w - 2 * fwB, h: (y + h - fwB) - (splitY + kHalf) };
+  const sash = inset(winInner, Math.max(3, fw * 0.30));
   const glasR = inset(sash, Math.max(3, fw * 0.5));
   const pane = (winTeil.panes && winTeil.panes[0]) || { open: 'drehkipp', din: 'links' };
   const oLines = pane.fest ? [] : oeffnungsLinien(pane, glasR);
   return (
     <g>
-      <clipPath id={clipId}><path d={sil(fw)} /></clipPath>
       {/* Durchgehender Blendrahmen (außen + innen) */}
       <path d={sil(0)} fill="#fff" stroke="#0f1f3d" strokeWidth="2.5" strokeLinejoin="round" />
-      <path d={sil(fw)} fill="#fff" stroke="#0f1f3d" strokeWidth="1.6" strokeLinejoin="round" />
-      {/* Oberlicht-Glas (Bogen) – auf die Silhouette geclippt, endet über dem Kämpfer */}
-      <g clipPath={`url(#${clipId})`}>
-        <rect x={x} y={y + fw} width={w} height={Math.max(0, (splitY - kHalf) - (y + fw))} fill={glasFarbe} opacity="0.95" />
-      </g>
+      <path d={sil(fwB)} fill="#fff" stroke="#0f1f3d" strokeWidth="1.6" strokeLinejoin="round" />
+      {/* Oberlicht: Glas mit Glasleiste (Reveal) + Gehrung – behält den Bogen-Rahmen */}
+      <path d={archGlass} fill={glasFarbe} stroke="#0f1f3d" strokeWidth="1.4" strokeLinejoin="round" opacity="0.95" />
+      {archMiter.map((l, i) => <line key={kp + 'am' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="1.4" />)}
       {/* Kämpfer (waagrechter Querbalken am Übergang) */}
-      <rect x={x + fw} y={splitY - kHalf} width={w - 2 * fw} height={fw} fill="#fff" stroke="#0f1f3d" strokeWidth="1.6" />
+      <rect x={x + fwB} y={splitY - kHalf} width={w - 2 * fwB} height={fw} fill="#fff" stroke="#0f1f3d" strokeWidth="1.6" />
       {/* Fenster-Flügel + Glas + Öffnungssymbol */}
       <rect x={sash.x} y={sash.y} width={sash.w} height={sash.h} fill="#fff" stroke="#0f1f3d" strokeWidth="2" />
       {gehrung(sash, glasR).map((l, i) => <line key={kp + 'sm' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="1.4" />)}
