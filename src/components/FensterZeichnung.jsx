@@ -1374,13 +1374,19 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
                     style={{ cursor: 'pointer' }}
                     onClick={() => { if (!justDraggedRef.current) onUnitClick(u.e._key); }} />
             )}
-            {/* Ziehfläche NUR auf dem Rahmen (Ring) – die Glas-/Feldmitte bleibt für die Öffnungsart klickbar */}
+            {/* Ziehfläche: bei Bögen/Sonderformen das GANZE Element (kein Feld-Klick nötig, da
+                fest) – die rechteckige Ring-Trefferfläche passt nicht zur Bogenkontur, sonst
+                lässt sich der Bogen nicht greifen. Sonst nur der Rahmen-Ring (Feldmitte bleibt
+                für die Öffnungsart klickbar). */}
             {ziehbar && (() => {
               const { x, y, w, h } = u.r0;
+              const istSonder = !!(uSonder || teilForm);
               const fw = Math.max(14, Math.min(w, h) * 0.16);
-              const ring = `M ${x},${y} H ${x + w} V ${y + h} H ${x} Z M ${x + fw},${y + fw} H ${x + w - fw} V ${y + h - fw} H ${x + fw} Z`;
+              const d = istSonder
+                ? `M ${x},${y} H ${x + w} V ${y + h} H ${x} Z`
+                : `M ${x},${y} H ${x + w} V ${y + h} H ${x} Z M ${x + fw},${y + fw} H ${x + w - fw} V ${y + h - fw} H ${x + fw} Z`;
               return (
-                <path d={ring} fillRule="evenodd" fill="transparent"
+                <path d={d} fillRule="evenodd" fill="transparent"
                       style={{ cursor: 'move', touchAction: 'none' }}
                       onPointerDown={e => pressDown(e, u.e._key)}
                       onPointerMove={e => pressMove(e, u.e._key)}
