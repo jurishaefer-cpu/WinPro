@@ -11,6 +11,8 @@ const VERGLASUNGEN = [
 ];
 const DICHTUNGEN = ['Grau', 'Schwarz'];
 const ROLLLADEN = ['42x42mm'];
+// Kastenform (nur Vorbau Rollladen); zusätzlich „Manuell" für freie Eingabe.
+const KASTENFORMEN = ['45° abgeschrägt', 'unter Putzkasten', 'abgerundet'];
 const BEDIENUNGEN = ['Gurt', 'Kurbel', 'Motor (Schalter)', 'Funk-Motor'];
 const BEHANG = ['Aluminium', 'Kunststoff (PVC)'];
 // Lamellengröße je nach Behang-Material
@@ -141,6 +143,7 @@ function makeElement(src, id) {
     lamelle: src?.lamelle ?? 'Mini 37mm',
     behangfarbe: src?.behangfarbe ?? 'WEISS',
     kastenhoeheRollo: src?.kastenhoeheRollo ?? 165,
+    kastenform: src?.kastenform ?? '45° abgeschrägt',
     kastenfarbe: src?.kastenfarbe ?? 'WEISS',
     kommentar: src?.kommentar ?? '',
     nettoJeStueck: src?.nettoJeStueck ?? 0,
@@ -805,6 +808,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
       const panzerOnly = !!geometrie?.panzerOnly;
       teile.push(`<strong>${panzerOnly ? 'Rollo Panzer' : 'Vorbau Rollladen'}</strong>`);
       teile.push(`${Math.round(el.breite)} × ${Math.round(el.hoehe)} mm`);
+      if (!panzerOnly && (el.kastenform || '').trim()) teile.push(`Kastenform: ${el.kastenform}`);
       if (!panzerOnly) teile.push(`Kastenhöhe: ${Math.round(Number(el.kastenhoeheRollo) || 0)} mm`);
       teile.push(`Rollopanzer: ${el.behang}${el.lamelle ? `, ${el.lamelle}` : ''}`);
       if (!panzerOnly) teile.push(`Bedienung: ${el.bedienung} (${el.bedienungsseiteRollo})`);
@@ -875,6 +879,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
       dichtungInnen: main.dichtungInnen, dichtungAussen: main.dichtungAussen,
       // Rollladen-Felder
       bedienung: main.bedienung, bedienungsseiteRollo: main.bedienungsseiteRollo, behang: main.behang, lamelle: main.lamelle, kastenhoeheRollo: Number(main.kastenhoeheRollo) || 0,
+      kastenform: main.kastenform,
       kastenfarbe: main.kastenfarbe, behangfarbe: main.behangfarbe,
       kommentar: main.kommentar, nettoJeStueck: Number(main.nettoJeStueck),
       // Wand/Maueröffnung (begrenzt die Fenster, verändert sie nicht)
@@ -1029,6 +1034,18 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
               <div className="np-group-label" style={{ marginTop: 24 }}>ROLLLADEN</div>
               {!geometrie?.panzerOnly && (
                 <>
+                  <label className="np-field-label">Kastenform</label>
+                  <select className="np-select np-select--block"
+                          value={KASTENFORMEN.includes(aktiv.kastenform) ? aktiv.kastenform : 'Manuell'}
+                          onChange={e => updAktiv({ kastenform: e.target.value === 'Manuell' ? '' : e.target.value })}>
+                    {KASTENFORMEN.map(x => <option key={x} value={x}>{x}</option>)}
+                    <option value="Manuell">✏️ Manuell eingeben…</option>
+                  </select>
+                  {!KASTENFORMEN.includes(aktiv.kastenform) && (
+                    <input className="np-input" style={{ marginTop: 8 }} value={aktiv.kastenform}
+                           onChange={e => updAktiv({ kastenform: e.target.value })}
+                           placeholder="Kastenform eingeben…" />
+                  )}
                   <label className="np-field-label">Kastenhöhe (mm)</label>
                   <input className="np-input" type="number" min="0" value={aktiv.kastenhoeheRollo}
                          onChange={e => updAktiv({ kastenhoeheRollo: e.target.value })} placeholder="z. B. 165" />
