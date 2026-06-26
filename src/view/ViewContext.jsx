@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../auth/AuthContext';
 
@@ -13,10 +13,18 @@ export function ViewProvider({ children }) {
   const [users, setUsers] = useState([]);            // Verzeichnis aller Nutzer (app_users)
   const [selectedOwner, setSelectedOwner] = useState(null); // uuid eines Nutzers oder 'alle'
 
-  // Standardansicht = eigene Kunden, sobald der Nutzer bekannt ist
+  // Standardansicht = eigene Kunden. WICHTIG: auch beim Benutzerwechsel (Ab-/Anmelden
+  // ohne Seiten-Reload) auf den NEUEN Nutzer zurücksetzen – sonst behält der Filter die ID
+  // des vorherigen Nutzers und man sieht dessen Kunden. Manuelle Auswahl bleibt innerhalb
+  // derselben Anmeldung erhalten (Token-Refresh ändert die ID nicht).
+  const lastUserId = useRef(null);
   useEffect(() => {
-    if (user && selectedOwner === null) setSelectedOwner(user.id);
-  }, [user, selectedOwner]);
+    if (!user) { lastUserId.current = null; setSelectedOwner(null); return; }
+    if (user.id !== lastUserId.current) {
+      lastUserId.current = user.id;
+      setSelectedOwner(user.id);
+    }
+  }, [user]);
 
   // Eigenen Eintrag ins Verzeichnis schreiben + Liste laden
   useEffect(() => {

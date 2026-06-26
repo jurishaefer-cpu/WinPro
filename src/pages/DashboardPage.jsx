@@ -1,10 +1,16 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useView } from '../view/ViewContext';
+import { useAuth } from '../auth/AuthContext';
 import DashboardCards from '../components/DashboardCards';
 
-// TODO: später aus den Einstellungen (Firmen-/Benutzername) laden
-const NAME = 'Juri';
+// Anrede-Name aus den Konto-Daten des eingeloggten Nutzers (Vorname, sonst E-Mail).
+function getName(user) {
+  const v = (user?.user_metadata?.first_name || '').trim();
+  if (v) return v;
+  const local = (user?.email || '').split('@')[0];
+  return local || '';
+}
 
 function getGreeting(hour) {
   if (hour < 11) return 'Guten Morgen';
@@ -17,6 +23,7 @@ function DashboardPage() {
   const [kundenCount, setKundenCount] = useState(null);
   const [profileCount, setProfileCount] = useState(null);
   const { selectedOwner } = useView();
+  const { user } = useAuth();
 
   // Live-Uhr: jede Sekunde aktualisieren
   useEffect(() => {
@@ -54,7 +61,7 @@ function DashboardPage() {
 
   return (
     <main className="app-main">
-      <h1>{getGreeting(now.getHours())}, {NAME}!</h1>
+      <h1>{getGreeting(now.getHours())}, {getName(user)}!</h1>
       <p className="date-text">{datum} · {uhrzeit} Uhr</p>
       <DashboardCards kundenCount={kundenCount} profileCount={profileCount} />
     </main>
