@@ -817,8 +817,6 @@ export function VerbundBogenBody({ r0, teile, scale, glasFarbe = '#cfe3ef', kp =
     const ww = w - 2 * gd, R = (ww * ww / 4 + ry * ry) / (2 * ry);
     return `M ${gL},${gBot} A ${R},${R} 0 0 1 ${gR},${gBot} Z`;
   })();
-  // Gehrung an den Bogen-Fußpunkten (Übergang Bogen ↔ gerade Seite) – wie beim Einzelbogen.
-  const archMiter = [[[x, splitY], [x + fwB, splitY - fwB]], [[x + w, splitY], [x + w - fwB, splitY - fwB]]];
   // Fenster-Bereich (rechteckig) unter dem Kämpfer:
   const winInner = { x: x + fwB, y: splitY + kHalf, w: w - 2 * fwB, h: (y + h - fwB) - (splitY + kHalf) };
   const sash = inset(winInner, Math.max(3, fw * 0.30));
@@ -830,9 +828,8 @@ export function VerbundBogenBody({ r0, teile, scale, glasFarbe = '#cfe3ef', kp =
       {/* Durchgehender Blendrahmen (außen + innen) */}
       <path d={sil(0)} fill="#fff" stroke="#0f1f3d" strokeWidth="2.5" strokeLinejoin="round" />
       <path d={sil(fwB)} fill="#fff" stroke="#0f1f3d" strokeWidth="1.6" strokeLinejoin="round" />
-      {/* Oberlicht: Glas mit Glasleiste (Reveal) + Gehrung – behält den Bogen-Rahmen */}
+      {/* Oberlicht: Glas mit Glasleiste (Reveal) – behält den Bogen-Rahmen, OHNE 45°-Gehrung */}
       <path d={archGlass} fill={glasFarbe} stroke="#0f1f3d" strokeWidth="1.4" strokeLinejoin="round" opacity="0.95" />
-      {archMiter.map((l, i) => <line key={kp + 'am' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="1.4" />)}
       {/* Kämpfer (waagrechter Querbalken am Übergang) */}
       <rect x={x + fwB} y={splitY - kHalf} width={w - 2 * fwB} height={fw} fill="#fff" stroke="#0f1f3d" strokeWidth="1.6" />
       {/* Fenster-Flügel + Glas + Öffnungssymbol */}
