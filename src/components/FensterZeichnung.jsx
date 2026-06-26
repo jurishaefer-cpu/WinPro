@@ -1337,9 +1337,15 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
         }
         const ziehbar = interaktiv && !istMainUnit;
         // Beim Ziehen folgt das Element ausgegraut dem Finger → man sieht, wohin es andockt.
+        // Die Position wird so begrenzt, dass das Element IMMER vollständig sichtbar bleibt.
         const wirdGezogen = drag && drag.id === u.e._key && drag.px != null;
-        const gx = wirdGezogen ? drag.px - (u.r0.x + u.r0.w / 2) : 0;
-        const gy = wirdGezogen ? drag.py - (u.r0.y + u.r0.h / 2) : 0;
+        let gx = 0, gy = 0;
+        if (wirdGezogen) {
+          gx = drag.px - (u.r0.x + u.r0.w / 2);
+          gy = drag.py - (u.r0.y + u.r0.h / 2);
+          gx = Math.max(-u.r0.x, Math.min(VB_W - u.r0.x - u.r0.w, gx));
+          gy = Math.max(-u.r0.y, Math.min(VB_H - u.r0.y - u.r0.h, gy));
+        }
         return (
           <g key={'u' + u.e._key}
              style={ziehbar ? { cursor: 'move', touchAction: 'none' } : undefined}
