@@ -684,14 +684,16 @@ export function UnitBody({ c, glasFarbe = '#cfe3ef', onPaneClick, selectedPane, 
 }
 
 // --- Sonderformen (Bögen & Dreiecke) ---
-// Festverglasung wie beim Fenster: NUR Blendrahmen (außen + innen, mit 45°-Gehrung) + Glas.
-// KEIN Flügel-/Zwischenrahmen (fest verglast hat keinen Flügel). Drei konzentrische Konturen:
-// c0 Blendrahmen außen, c1 Blendrahmen innen, c3 Glas – Gesamtrahmen = fw.
-export function sonderformPfade(r, geo, frame) {
+// Festverglasung: NUR Blendrahmen (außen + innen, mit 45°-Gehrung) + Glas (kein Flügelrahmen).
+// Mit Öffnungsart (offen=true): zusätzlich der innere Flügelrahmen wie beim öffenbaren Fenster.
+//   c0 Blendrahmen außen, c1 Blendrahmen innen, (c2 Flügel außen), c3 Glas – Gesamtrahmen = fw.
+export function sonderformPfade(r, geo, frame, offen = false) {
   const { x, y, w, h } = r;
   const fw = Math.max(4, frame || 0);
-  const d1 = fw * 0.66;   // Blendrahmen innen
-  const d3 = fw;          // Glas (schmale Glasleiste innerhalb des Blendrahmens)
+  // Fest: breiter Blendrahmen + schmale Glasleiste. Offen: Blendrahmen + Luft + Flügelrahmen.
+  const d1 = offen ? fw * 0.40 : fw * 0.66;   // Blendrahmen innen
+  const d2 = fw * 0.58;                        // Flügel außen (nur bei offen)
+  const d3 = fw;                               // Glas
 
   // contour(d) → { path, corners } : Kontur um d nach innen versetzt + ihre geraden Ecken (für Gehrung).
   let contour;
@@ -728,11 +730,17 @@ export function sonderformPfade(r, geo, frame) {
   }
 
   const c0 = contour(0), c1 = contour(d1), c3 = contour(d3);
-  // Gehrung nur am Blendrahmen (c0→c1) – fest verglast hat keinen Flügelrahmen.
+  // Gehrung am Blendrahmen (c0→c1); bei Öffnungsart zusätzlich am Flügelrahmen (c2→c3).
   const miter = c0.corners.map((p, i) => [p, c1.corners[i]]);
+  let sash;
+  if (offen) {
+    const c2 = contour(d2);
+    sash = c2.path;
+    c2.corners.forEach((p, i) => miter.push([p, c3.corners[i]]));
+  }
   // Glas-Box (für die Öffnungsart-Symbole; Linien werden später auf die Glasform geclippt).
   const glasBox = { x: x + fw, y: y + fw, w: Math.max(1, w - 2 * fw), h: Math.max(1, h - 2 * fw) };
-  return { outer: c0.path, mid: c1.path, inner: c3.path, miter, glasBox };
+  return { outer: c0.path, mid: c1.path, sash, inner: c3.path, miter, glasBox };
 }
 
 // Zeichnet den Sonderform-Rahmen (Bögen/Dreiecke) wie einen Fensterrahmen: Blendrahmen + Glas.
@@ -823,7 +831,8 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
 
   const r0 = { x, y, w: rw, h: rh };                            // Gesamtmaß (mit Verbreiterung/Kasten)
   const istSonderform = !!geometrie?.form;
-  const sonder = istSonderform ? sonderformPfade(r0, geometrie, Math.max(6, 60 * scale)) : null;
+  const sonderOffen = !!(panesProp?.[0] && !panesProp[0].fest && panesProp[0].open && panesProp[0].open !== 'fest');
+  const sonder = istSonderform ? sonderformPfade(r0, geometrie, Math.max(6, 60 * scale), sonderOffen) : null;
   // Verbundenes Element mit Sonderform-Teil: gemeinsamer Rahmen, jedes Teil behält seine Form.
   const formTeile = (Array.isArray(teile) && teile.length > 1 && teile.some(t => geometrieByCode(t.code)?.form)) ? teile : null;
   let teilBodies = null;
@@ -1350,7 +1359,8 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
         const aktiv = activeId != null && u.e._key === activeId;
         const istMainUnit = u.e._key === mainKey;
         const uGeo = geometrieByCode(u.e.code);
-        const uSonder = uGeo?.form ? sonderformPfade(u.r0, uGeo, Math.max(5, 60 * scale)) : null;
+        const uOffen = !!(u.e.panes?.[0] && !u.e.panes[0].fest && u.e.panes[0].open && u.e.panes[0].open !== 'fest');
+        const uSonder = uGeo?.form ? sonderformPfade(u.r0, uGeo, Math.max(5, 60 * scale), uOffen) : null;
         const uGlas = weissesGlas ? '#ffffff' : (u.e.ornament ? '#7fb0cc' : glasFarbe);
         // Verbundenes Element mit Sonderform-Teil: gemeinsamer Rahmen, aber jedes Teil
         // behält im Inneren seine eigene Form (statt zu einem rechteckigen Mehrfeld zu werden).
