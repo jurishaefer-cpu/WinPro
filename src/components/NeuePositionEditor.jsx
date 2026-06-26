@@ -901,13 +901,9 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
         <div className="np-header-right">
           <button className="np-undo" onClick={undo} disabled={histLen === 0} title="Letzte Änderung rückgängig">↩ Zurück</button>
           <span className="np-system-label">System</span>
-          {istRollo ? (
-            <span className="np-select np-system-fest">Rollladen</span>
-          ) : (
-            <select className="np-select" value={profilId ?? ''} onChange={e => setProfilId(Number(e.target.value))}>
-              {profile.map(p => <option key={p.id} value={p.id}>{`${p.hersteller} ${p.system}`.trim()}</option>)}
-            </select>
-          )}
+          <select className="np-select" value={profilId ?? ''} onChange={e => setProfilId(Number(e.target.value))}>
+            {profile.map(p => <option key={p.id} value={p.id}>{`${p.hersteller} ${p.system}`.trim()}</option>)}
+          </select>
           <button className="np-close" onClick={onClose} title="Schließen">✕</button>
         </div>
       </header>
@@ -1160,16 +1156,12 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
         <section className="np-col np-col--center">
           {warnung && <div className="np-warnung">{warnung}</div>}
           <div className="np-chips">
-            {istRollo ? (
-              <span className="np-chip"><span className="np-dot" /> Rollladen</span>
-            ) : (
-              <label className="np-chip np-chip--select" title="System wechseln">
-                <span className="np-dot" />
-                <select className="np-chip-select" value={profilId ?? ''} onChange={e => setProfilId(Number(e.target.value))}>
-                  {profile.map(p => <option key={p.id} value={p.id}>{`${p.hersteller} ${p.system}`.trim()}</option>)}
-                </select>
-              </label>
-            )}
+            <label className="np-chip np-chip--select" title="System wechseln">
+              <span className="np-dot" />
+              <select className="np-chip-select" value={profilId ?? ''} onChange={e => setProfilId(Number(e.target.value))}>
+                {profile.map(p => <option key={p.id} value={p.id}>{`${p.hersteller} ${p.system}`.trim()}</option>)}
+              </select>
+            </label>
             <span className="np-chip">Maß <b>{Math.round(breiteGes).toLocaleString('de-DE')} × {Math.round(hoeheGes).toLocaleString('de-DE')} mm</b></span>
             <span className="np-chip">Fläche <b>{flaeche.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} m²</b></span>
             {aktiv.verbunden ? (
