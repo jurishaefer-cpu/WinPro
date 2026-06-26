@@ -808,19 +808,10 @@ export function VerbundBogenBody({ r0, teile, scale, glasFarbe = '#cfe3ef', kp =
     const ww = w - 2 * d, R = (ww * ww / 4 + rise * rise) / (2 * rise);
     return `M ${L},${bot} L ${L},${splitY} A ${R},${R} 0 0 1 ${Rr},${splitY} L ${Rr},${bot} Z`;
   };
-  const kHalf = 0;                      // KEIN automatischer Kämpfer – Bogen grenzt direkt ans Fenster
   const fwB = fw * 0.6;                 // Blendrahmen innen (durchgehend)
-  const gd = fw;                        // Glasleiste (Reveal) – Oberlicht-Glas weiter innen als Blendrahmen
-  const gBot = splitY - kHalf;          // Unterkante Oberlicht-Glas (am Übergang zum Fenster)
-  // Oberlicht-Glas als Bogen (Kuppel), Sehne auf Höhe des Kämpfers, oben um gd eingerückt.
-  const archGlass = (() => {
-    const gL = x + gd, gR = x + w - gd, ry = Math.max(2, archH - kHalf - gd);
-    if (ellipse) return `M ${gL},${gBot} A ${Math.max(2, w / 2 - gd)},${ry} 0 0 1 ${gR},${gBot} Z`;
-    const ww = w - 2 * gd, R = (ww * ww / 4 + ry * ry) / (2 * ry);
-    return `M ${gL},${gBot} A ${R},${R} 0 0 1 ${gR},${gBot} Z`;
-  })();
-  // Fenster-Bereich (rechteckig) unter dem Kämpfer – als Feld-Raster (Pfosten teilen es).
-  const winRect = { x: x + fwB, y: splitY + kHalf, w: w - 2 * fwB, h: (y + h - fwB) - (splitY + kHalf) };
+  // Fenster-Felder gehen über die VOLLE Höhe (Bogen + gerader Teil = eine Scheibe je Spalte).
+  // Das Öffnungssymbol sitzt im geraden Fensterteil (unterhalb des Bogenansatzes splitY).
+  const winRect = { x: x + fwB, y: splitY, w: w - 2 * fwB, h: (y + h - fwB) - splitY };
   const wCols = Math.max(1, winTeil.cols || 1);
   const wPanes = (winTeil.panes && winTeil.panes.length) ? winTeil.panes : [{ open: 'drehkipp', din: 'links' }];
   const wRows = Math.max(1, Math.ceil(wPanes.length / wCols));
@@ -832,53 +823,40 @@ export function VerbundBogenBody({ r0, teile, scale, glasFarbe = '#cfe3ef', kp =
   const rowY = []; { let acc = 0; for (let r = 0; r < wRows; r++) { rowY.push(winRect.y + (acc / sumRH) * winRect.h); acc += wRH[r]; } }
   const rowH = wRH.map(rh => (rh / sumRH) * winRect.h);
   const pfW = Math.max(3, fwB * 0.8);                       // Pfostenbreite
-  // Oberlicht (Bogen) – ebenfalls einstellbar: Öffnungsart aus panes[0], Symbol auf die Kuppel.
-  const archPane = (panes && panes[0]) || { fest: true };
-  const archBox = { x: x + gd, y: y + gd, w: Math.max(2, w - 2 * gd), h: Math.max(2, gBot - (y + gd)) };
-  const archOLines = archPane.fest ? [] : oeffnungsLinien(archPane, archBox);
-  const archSelected = selectedPane === 0;
-  const archClipId = 'vbarch-' + kp;
+  const pad = (d) => Math.max(2, d);
   return (
     <g>
       {/* Durchgehender Blendrahmen (außen + innen) */}
       <path d={sil(0)} fill="#fff" stroke="#0f1f3d" strokeWidth="2.5" strokeLinejoin="round" />
       <path d={sil(fwB)} fill="#fff" stroke="#0f1f3d" strokeWidth="1.6" strokeLinejoin="round" />
-      {/* Oberlicht: Glas mit Glasleiste (Reveal) – behält den Bogen-Rahmen, OHNE 45°-Gehrung */}
-      <path d={archGlass} fill={glasFarbe} stroke="#0f1f3d" strokeWidth="1.4" strokeLinejoin="round" opacity="0.95" />
-      {archOLines.length > 0 && (
-        <>
-          <clipPath id={archClipId}><path d={archGlass} /></clipPath>
-          <g clipPath={`url(#${archClipId})`}>
-            {archOLines.map((l, i) => <line key={kp + 'aol' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="1.4" />)}
-          </g>
-        </>
-      )}
-      {onPaneClick && (
-        <path d={archGlass} fill={archSelected ? 'rgba(192,21,46,0.12)' : 'transparent'}
-              stroke={archSelected ? '#c0152e' : 'transparent'} strokeWidth="2.5"
-              style={{ cursor: 'pointer' }} onClick={() => onPaneClick(0)} />
-      )}
-      {/* Kein automatischer Kämpfer – ein Querbalken entsteht nur über „Horizontaler Pfosten". */}
-      {/* Fenster-Felder: je Feld Flügel + Glas + Öffnungssymbol (Pfosten teilen den Fensterteil) */}
+      {/* Felder über die VOLLE Höhe: je Spalte (und Zeile) eine durchgehende Scheibe bis in den Bogen. */}
       {Array.from({ length: wRows }).map((_, r) => Array.from({ length: wCols }).map((__, c) => {
         const idx = r * wCols + c;
-        const cell = { x: colX[c], y: rowY[r], w: colW[c], h: rowH[r] };
-        const sashG = inset(cell, Math.max(2, pfW * 0.45));
-        const glassG = inset(sashG, Math.max(2, pfW * 0.55));
+        const cellTop = r === 0 ? y : rowY[r];                 // oberste Zeile reicht bis zum Bogen-Scheitel
+        const cellBot = rowY[r] + rowH[r];
+        const cClip = kp + 'cf' + idx;
         const cellPane = (panes && panes[winPaneIdx + idx]) || wPanes[idx] || { fest: true };
-        const cLines = cellPane.fest ? [] : oeffnungsLinien(cellPane, glassG);
+        const offen = !cellPane.fest && cellPane.open && cellPane.open !== 'fest';
+        const sashD = fwB + pad(pfW * 0.3);                    // Flügel-Außenkante
+        const glasD = offen ? sashD + pad(pfW * 0.5) : fw;     // Glaskante
+        // Öffnungssymbol nur im geraden Fensterteil der Zelle (unter splitY).
+        const symTop = Math.max(cellTop, splitY) + pad(pfW * 0.6);
+        const symBox = { x: colX[c] + pad(pfW * 0.7), y: symTop, w: colW[c] - 2 * pad(pfW * 0.7), h: cellBot - pad(pfW * 0.6) - symTop };
+        const cLines = (offen && symBox.h > 10 && symBox.w > 10) ? oeffnungsLinien(cellPane, symBox) : [];
         const cSel = selectedPane === (winPaneIdx + idx);
         return (
           <g key={kp + 'wf' + idx}>
-            <rect x={sashG.x} y={sashG.y} width={sashG.w} height={sashG.h} fill="#fff" stroke="#0f1f3d" strokeWidth="2" />
-            {gehrung(sashG, glassG).map((l, i) => <line key={kp + 'sm' + idx + '-' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="1.4" />)}
-            <rect x={glassG.x} y={glassG.y} width={glassG.w} height={glassG.h} fill={glasFarbe} stroke="#0f1f3d" strokeWidth="1.4" opacity="0.95" />
-            {cLines.map((l, i) => <line key={kp + 'ol' + idx + '-' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="1.4" />)}
-            {onPaneClick && (
-              <rect x={sashG.x} y={sashG.y} width={sashG.w} height={sashG.h}
-                    fill={cSel ? 'rgba(192,21,46,0.12)' : 'transparent'} stroke={cSel ? '#c0152e' : 'transparent'} strokeWidth="2.5"
-                    style={{ cursor: 'pointer' }} onClick={() => onPaneClick(winPaneIdx + idx)} />
-            )}
+            <clipPath id={cClip}><rect x={colX[c]} y={cellTop} width={colW[c]} height={Math.max(1, cellBot - cellTop)} /></clipPath>
+            <g clipPath={`url(#${cClip})`}>
+              {offen && <path d={sil(sashD)} fill="#fff" stroke="#0f1f3d" strokeWidth="2" strokeLinejoin="round" />}
+              <path d={sil(glasD)} fill={glasFarbe} stroke="#0f1f3d" strokeWidth="1.4" strokeLinejoin="round" opacity="0.95" />
+              {cLines.map((l, i) => <line key={kp + 'ol' + idx + '-' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="1.4" />)}
+              {onPaneClick && (
+                <path d={sil(fwB)} fill={cSel ? 'rgba(192,21,46,0.12)' : 'transparent'}
+                      stroke={cSel ? '#c0152e' : 'transparent'} strokeWidth="2.5"
+                      style={{ cursor: 'pointer' }} onClick={() => onPaneClick(winPaneIdx + idx)} />
+              )}
+            </g>
           </g>
         );
       }))}
