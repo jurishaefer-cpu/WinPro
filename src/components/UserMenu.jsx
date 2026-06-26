@@ -37,6 +37,13 @@ function UserMenu() {
     setOpen(false);
   }
 
+  // Eingeloggter Nutzer („Du") immer zuoberst, der Rest alphabetisch nach Vorname.
+  const orderedUsers = [...users].sort((a, b) => {
+    if (a.id === user.id) return -1;
+    if (b.id === user.id) return 1;
+    return (a.vorname || '').localeCompare(b.vorname || '', 'de');
+  });
+
   return (
     <div className="user-menu" ref={ref}>
       <button className="user-avatar" onClick={() => setOpen(o => !o)} title={user.email}>
@@ -47,7 +54,7 @@ function UserMenu() {
           <div className="user-dropdown-email">{user.email}</div>
 
           <div className="user-dropdown-label">Kunden anzeigen von</div>
-          {users.map(u => (
+          {orderedUsers.map(u => (
             <button
               key={u.id}
               className={'user-dropdown-item' + (selectedOwner === u.id ? ' is-active' : '')}
