@@ -826,6 +826,12 @@ export function VerbundBogenBody({ r0, teile, scale, glasFarbe = '#cfe3ef', kp =
   const glasR = inset(sash, Math.max(3, fw * 0.5));
   const pane = (panes && panes[winPaneIdx]) || (winTeil.panes && winTeil.panes[0]) || { open: 'drehkipp', din: 'links' };
   const oLines = pane.fest ? [] : oeffnungsLinien(pane, glasR);
+  // Oberlicht (Bogen) – ebenfalls einstellbar: Öffnungsart aus panes[0], Symbol auf die Kuppel.
+  const archPane = (panes && panes[0]) || { fest: true };
+  const archBox = { x: x + gd, y: y + gd, w: Math.max(2, w - 2 * gd), h: Math.max(2, gBot - (y + gd)) };
+  const archOLines = archPane.fest ? [] : oeffnungsLinien(archPane, archBox);
+  const archSelected = selectedPane === 0;
+  const archClipId = 'vbarch-' + kp;
   return (
     <g>
       {/* Durchgehender Blendrahmen (außen + innen) */}
@@ -833,6 +839,19 @@ export function VerbundBogenBody({ r0, teile, scale, glasFarbe = '#cfe3ef', kp =
       <path d={sil(fwB)} fill="#fff" stroke="#0f1f3d" strokeWidth="1.6" strokeLinejoin="round" />
       {/* Oberlicht: Glas mit Glasleiste (Reveal) – behält den Bogen-Rahmen, OHNE 45°-Gehrung */}
       <path d={archGlass} fill={glasFarbe} stroke="#0f1f3d" strokeWidth="1.4" strokeLinejoin="round" opacity="0.95" />
+      {archOLines.length > 0 && (
+        <>
+          <clipPath id={archClipId}><path d={archGlass} /></clipPath>
+          <g clipPath={`url(#${archClipId})`}>
+            {archOLines.map((l, i) => <line key={kp + 'aol' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="1.4" />)}
+          </g>
+        </>
+      )}
+      {onPaneClick && (
+        <path d={archGlass} fill={archSelected ? 'rgba(192,21,46,0.12)' : 'transparent'}
+              stroke={archSelected ? '#c0152e' : 'transparent'} strokeWidth="2.5"
+              style={{ cursor: 'pointer' }} onClick={() => onPaneClick(0)} />
+      )}
       {/* Kämpfer (waagrechter Querbalken am Übergang) */}
       <rect x={x + fwB} y={splitY - kHalf} width={w - 2 * fwB} height={fw} fill="#fff" stroke="#0f1f3d" strokeWidth="1.6" />
       {/* Fenster-Flügel + Glas + Öffnungssymbol */}
@@ -1139,12 +1158,33 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
       })()}
 
       {/* Fensterkörper: durchgehende Form (Trennrahmen entfernt) / verbundene Teile / Sonderform / normaler Rahmen */}
-      {durchPf ? (
-        <g>
-          <path d={durchPf.outer} fill="#fff" stroke="#0f1f3d" strokeWidth="2.5" strokeLinejoin="round" />
-          <path d={durchPf.inner} fill={glasFarbe} stroke="#0f1f3d" strokeWidth="1.6" strokeLinejoin="round" opacity="0.95" />
-        </g>
-      ) : bogenOben ? (
+      {durchPf ? (() => {
+        // Durchgehendes Glas: EINE Öffnungsart fürs ganze Fenster (Glas anklickbar, Symbol über alles).
+        const dfw = Math.max(6, 60 * scale);
+        const dPane = (panesProp && panesProp[0]) || { fest: true };
+        const dBox = { x: r0.x + dfw, y: r0.y + dfw, w: Math.max(2, r0.w - 2 * dfw), h: Math.max(2, r0.h - 2 * dfw) };
+        const dLines = dPane.fest ? [] : oeffnungsLinien(dPane, dBox);
+        const dSel = selectedPane === 0;
+        return (
+          <g>
+            <path d={durchPf.outer} fill="#fff" stroke="#0f1f3d" strokeWidth="2.5" strokeLinejoin="round" />
+            <path d={durchPf.inner} fill={glasFarbe} stroke="#0f1f3d" strokeWidth="1.6" strokeLinejoin="round" opacity="0.95" />
+            {dLines.length > 0 && (
+              <>
+                <clipPath id="dpclip"><path d={durchPf.inner} /></clipPath>
+                <g clipPath="url(#dpclip)">
+                  {dLines.map((l, i) => <line key={'dpl' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="1.4" />)}
+                </g>
+              </>
+            )}
+            {onPaneClick && (
+              <path d={durchPf.inner} fill={dSel ? 'rgba(192,21,46,0.12)' : 'transparent'}
+                    stroke={dSel ? '#c0152e' : 'transparent'} strokeWidth="2.5"
+                    style={{ cursor: 'pointer' }} onClick={() => onPaneClick(0)} />
+            )}
+          </g>
+        );
+      })() : bogenOben ? (
         <VerbundBogenBody r0={r0} teile={formTeile} scale={scale} glasFarbe={glasFarbe} kp="vb"
           panes={panesProp} onPaneClick={onPaneClick} selectedPane={selectedPane} />
       ) : teilBodies ? (
