@@ -38,8 +38,8 @@ export const GEOMETRIEN = [
   { code: 'F21', kategorie: 'fenster', gruppe: 'Übereinander', label: 'Oberlicht Fest, unten Drehkipp', cols: 1,
     panes: [{ fest: true }, { open: 'drehkipp', din: 'links' }] },
   // Sonderformen (feststehende Sonderform-Verglasungen): Bögen & Dreiecke. Eigene Zeichen-Routine.
-  { code: 'S01', kategorie: 'fenster', gruppe: 'Sonderformen', label: 'Rundbogenfenster', form: 'rundbogen', open: 'fest', defBreite: 1000, defHoehe: 1200 },
-  { code: 'S02', kategorie: 'fenster', gruppe: 'Sonderformen', label: 'Segmentbogenfenster', form: 'segmentbogen', open: 'fest', defBreite: 1200, defHoehe: 1000 },
+  { code: 'S01', kategorie: 'fenster', gruppe: 'Sonderformen', label: 'Rundbogen', form: 'rundbogen', open: 'fest', defBreite: 1000, defHoehe: 500 },
+  { code: 'S02', kategorie: 'fenster', gruppe: 'Sonderformen', label: 'Segmentbogen', form: 'segmentbogen', open: 'fest', defBreite: 1200, defHoehe: 350 },
   { code: 'S03', kategorie: 'fenster', gruppe: 'Sonderformen', label: 'Dreieckfenster gleichschenklig', form: 'dreieck', variante: 'gleich', open: 'fest', defBreite: 1200, defHoehe: 800 },
   { code: 'S04', kategorie: 'fenster', gruppe: 'Sonderformen', label: 'Dreieckfenster rechtwinklig (Spitze links)', form: 'dreieck', variante: 'links', open: 'fest', defBreite: 1200, defHoehe: 800 },
   { code: 'S05', kategorie: 'fenster', gruppe: 'Sonderformen', label: 'Dreieckfenster rechtwinklig (Spitze rechts)', form: 'dreieck', variante: 'rechts', open: 'fest', defBreite: 1200, defHoehe: 800 },
@@ -694,14 +694,23 @@ export function sonderformPfade(r, geo, frame) {
     const inner = `M ${ip[0][0]},${ip[0][1]} L ${ip[1][0]},${ip[1][1]} L ${ip[2][0]},${ip[2][1]} Z`;
     return { outer, inner };
   }
-  // Bögen: Rundbogen (Halbkreis, rise = w/2) bzw. Segmentbogen (flacher Kreissegment-Bogen).
-  const rise = geo.form === 'rundbogen' ? Math.min(w / 2, h * 0.92) : Math.min(w * 0.22, h * 0.6);
+  // Bögen: nur der Bogen selbst – flacher Boden (da, wo der Bogen anfängt) + Rundung oben,
+  // KEIN Fenster mit geraden Seiten darunter.
+  if (geo.form === 'rundbogen') {
+    // Rundbogen: Halbellipse (füllt die Box; an den unteren Ecken senkrecht → klassischer Rundbogen).
+    const rx = w / 2, ry = h;
+    const outer = `M ${x},${y + h} A ${rx},${ry} 0 0 1 ${x + w},${y + h} Z`;
+    const irx = Math.max(2, rx - fw), iry = Math.max(2, ry - fw);
+    const inner = `M ${x + fw},${y + h - fw} A ${irx},${iry} 0 0 1 ${x + w - fw},${y + h - fw} Z`;
+    return { outer, inner };
+  }
+  // Segmentbogen: flacher Kreissegment-Bogen (Sehne = Breite, Stich = Höhe).
+  const rise = Math.max(2, h);
   const R = (w * w / 4 + rise * rise) / (2 * rise);
-  const outer = `M ${x},${y + h} L ${x},${y + rise} A ${R},${R} 0 0 1 ${x + w},${y + rise} L ${x + w},${y + h} Z`;
-  const ix = x + fw, iw = w - 2 * fw, iyTop = y + fw, iBot = y + h - fw;
-  const irise = Math.max(2, rise - fw);
+  const outer = `M ${x},${y + h} A ${R},${R} 0 0 1 ${x + w},${y + h} Z`;
+  const iw = w - 2 * fw, irise = Math.max(2, rise - fw);
   const iR = (iw * iw / 4 + irise * irise) / (2 * irise);
-  const inner = `M ${ix},${iBot} L ${ix},${iyTop + irise} A ${iR},${iR} 0 0 1 ${ix + iw},${iyTop + irise} L ${ix + iw},${iBot} Z`;
+  const inner = `M ${x + fw},${y + h - fw} A ${iR},${iR} 0 0 1 ${x + w - fw},${y + h - fw} Z`;
   return { outer, inner };
 }
 
@@ -717,9 +726,16 @@ export function durchgehendPfade(r0, teile, dir, frame) {
   const formOnTop = formIdx === 0;
   const total = (Number(teile[0].hoehe) || 0) + (Number(teile[1].hoehe) || 0) || 1;
   const splitY = y + (Number(teile[0].hoehe) / total) * h;
-  // Bogen + Rechteck = einfach ein Bogenfenster über die volle Höhe.
+  // Bogen + Rechteck verschmolzen = Bogenfenster mit geraden Seiten + Rundung oben (über die volle Höhe).
   if (g.form === 'rundbogen' || g.form === 'segmentbogen') {
-    return sonderformPfade(r0, g, fw);
+    const rise = g.form === 'rundbogen' ? Math.min(w / 2, h * 0.92) : Math.min(w * 0.22, h * 0.6);
+    const R = (w * w / 4 + rise * rise) / (2 * rise);
+    const outer = `M ${x},${y + h} L ${x},${y + rise} A ${R},${R} 0 0 1 ${x + w},${y + rise} L ${x + w},${y + h} Z`;
+    const ix = x + fw, iw = w - 2 * fw, iyTop = y + fw, iBot = y + h - fw;
+    const irise = Math.max(2, rise - fw);
+    const iR = (iw * iw / 4 + irise * irise) / (2 * irise);
+    const inner = `M ${ix},${iBot} L ${ix},${iyTop + irise} A ${iR},${iR} 0 0 1 ${ix + iw},${iyTop + irise} L ${ix + iw},${iBot} Z`;
+    return { outer, inner };
   }
   // Dreieck oben/unten + Rechteck = Fünfeck (Giebel-/Hausform).
   let pts;
