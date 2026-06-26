@@ -511,6 +511,41 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
     setSelectedPane(null);
     setAddMenu(false);
   }
+  // Pfosten frei ins aktive Fenster einfügen: vertikal = neue Spalte, horizontal = neue Zeile.
+  // Das neue Feld ist zunächst fest verglast und lässt sich danach per Klick einstellen.
+  function addPfostenVertikal() {
+    const el = aktiv;
+    const cols = Math.max(1, el.cols || 1);
+    if (cols >= 6) { zeigeWarnung('max. erreicht'); return; }
+    const panes = (el.panes && el.panes.length) ? el.panes : [{ fest: true }];
+    const rows = Math.max(1, Math.ceil(panes.length / cols));
+    const newCols = cols + 1;
+    const neu = [];
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) neu.push({ ...(panes[r * cols + c] || { fest: true }) });
+      neu.push({ fest: true });                                   // neues Feld rechts
+    }
+    const breite = Number(el.breite) || 1000;
+    const cw = Array(newCols).fill(Math.round(breite / newCols));
+    cw[newCols - 1] += breite - cw.reduce((a, c) => a + c, 0);
+    updAktiv({ panes: neu, cols: newCols, colWidths: cw });
+    setSelectedPane(null); setAddMenu(false);
+  }
+  function addPfostenHorizontal() {
+    const el = aktiv;
+    const cols = Math.max(1, el.cols || 1);
+    const panes = (el.panes && el.panes.length) ? el.panes : [{ fest: true }];
+    const rows = Math.max(1, Math.ceil(panes.length / cols));
+    if (rows >= 6) { zeigeWarnung('max. erreicht'); return; }
+    const newRows = rows + 1;
+    const neu = panes.map(p => ({ ...p }));
+    for (let c = 0; c < cols; c++) neu.push({ fest: true });      // neue Zeile unten
+    const hoehe = Number(el.hoehe) || 1200;
+    const rh = Array(newRows).fill(Math.round(hoehe / newRows));
+    rh[newRows - 1] += hoehe - rh.reduce((a, c) => a + c, 0);
+    updAktiv({ panes: neu, rowHeights: rh });
+    setSelectedPane(null); setAddMenu(false);
+  }
   function removeElement(id) {
     if (elemente.length <= 1) return;                   // mind. ein Element muss bleiben
     const rest0 = elemente.filter(e => e.id !== id);
@@ -1231,6 +1266,19 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
                 <span className="pane-option-thumb"><GeometrieThumb geometrie={geometrieByCode('T01')} /></span>
                 <span className="pane-option-label">Tür hinzufügen</span>
               </button>
+              {!geometrie?.form && !istRollo && !aktiv.verbunden && (
+                <>
+                  <div className="pane-menu-sub">Pfosten ins aktive Fenster</div>
+                  <button className="pane-option" onClick={addPfostenVertikal}>
+                    <span className="pane-option-thumb" aria-hidden>┃</span>
+                    <span className="pane-option-label">Vertikaler Pfosten</span>
+                  </button>
+                  <button className="pane-option" onClick={addPfostenHorizontal}>
+                    <span className="pane-option-thumb" aria-hidden>━</span>
+                    <span className="pane-option-label">Horizontaler Pfosten</span>
+                  </button>
+                </>
+              )}
               <div className="pane-menu-sub">Sonderformen</div>
               {['S01', 'S02', 'S03', 'S04', 'S05'].map(code => {
                 const g = geometrieByCode(code);
