@@ -2278,11 +2278,19 @@ a.detail-contact-link:hover span { text-decoration: underline; }
   border-radius: 7px; padding: 6px 18px; font-size: 13px; cursor: pointer;
 }
 .np-merge-btn:hover { background: #731515; }
-/* Getrennt-Zustand: dezenter Outline-Knopf, damit nichts nach „bereits verbunden" aussieht. */
+/* Getrennt-Zustand: größerer Outline-Knopf mit „Ja"-Bestätigung zum Verbinden. */
 .np-merge-btn--ghost {
   margin-left: auto; background: #fff; color: #8b1a1a; border: 1.5px solid #c8a6a6;
+  display: inline-flex; align-items: center; gap: 10px;
+  font-size: 16px; padding: 11px 22px; border-radius: 9px;
 }
 .np-merge-btn--ghost:hover { background: #faf2f2; border-color: #8b1a1a; }
+/* „✓ Ja"-Badge im Verbinden-Knopf. */
+.np-merge-ja {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: #1f7a37; color: #fff; font-weight: 800;
+  font-size: 14px; line-height: 1; padding: 5px 10px; border-radius: 6px;
+}
 .fz-svg { display: block; }
 /* Editierbare Maßfelder direkt in der Zeichnung */
 .fz-massinput {
