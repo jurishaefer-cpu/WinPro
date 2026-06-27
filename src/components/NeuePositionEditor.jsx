@@ -725,10 +725,13 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
     const akt = elemente.find(e => e.id === activeId) || elemente[0];
     const C = akt.col ?? 0, R = akt.row ?? 0;
     const id = `el${nextId.current++}`;
+    const breite = Number(akt.breite) || 1000;
+    // Trapez: Höhe beim Einfügen = halbe Breite. Andere Sonderformen: Geometrie-Standardhöhe.
+    const hoehe = geo?.form === 'trapez' ? Math.round(breite / 2) : (Number(geo?.defHoehe) || 500);
     const neu = makeElement({
       kategorie: 'fenster', code,
-      breite: Number(akt.breite) || 1000,
-      hoehe: Number(geo?.defHoehe) || 500,
+      breite,
+      hoehe,
       row: R, col: C,
       innenfarbe: akt.innenfarbe, aussenfarbe: akt.aussenfarbe,
       verglasung: akt.verglasung, dichtungInnen: akt.dichtungInnen, dichtungAussen: akt.dichtungAussen,
@@ -1568,11 +1571,9 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
               <div className="pane-menu-sub">Sonderformen</div>
               {['S01', 'S02', 'S03', 'S04', 'S05', 'S06', 'S07'].map(code => {
                 const g = geometrieByCode(code);
-                // Trapez ist ein vollwertiges Fenster → als neues Element einfügen (nicht als Aufsatz).
-                const istTrapez = g.form === 'trapez';
                 return (
                   <button key={code} className="pane-option"
-                          onClick={() => (istTrapez ? addElement('fenster', code) : addSonderform(code))}>
+                          onClick={() => addSonderform(code)}>
                     <span className="pane-option-thumb"><GeometrieThumb geometrie={g} /></span>
                     <span className="pane-option-label">{g.label}</span>
                   </button>
