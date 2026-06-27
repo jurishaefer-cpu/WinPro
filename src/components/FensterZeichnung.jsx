@@ -966,18 +966,22 @@ export function VerbundBogenBody({ r0, teile, scale, glasFarbe = '#cfe3ef', kp =
         const offen = !cellPane.fest && cellPane.open && cellPane.open !== 'fest';
         const sashD = fwB + pad(pfW * 0.3);                    // Flügel-Außenkante
         const glasD = offen ? sashD + pad(pfW * 0.5) : fw;     // Glaskante
-        // Öffnungssymbol nur im geraden Fensterteil der Zelle (unter splitY).
-        const symTop = Math.max(cellTop, splitY) + pad(pfW * 0.6);
+        // Öffnungssymbol: bei durchgehendem Glas bis ganz oben in den Bogen (auf die Glasform
+        // geclippt); sonst nur im geraden Fensterteil (unter splitY).
+        const symTop = (durchgehend ? cellTop : Math.max(cellTop, splitY)) + pad(pfW * 0.6);
         const symBox = { x: colX[c] + pad(pfW * 0.7), y: symTop, w: colW[c] - 2 * pad(pfW * 0.7), h: cellBot - pad(pfW * 0.6) - symTop };
         const cLines = (offen && symBox.h > 10 && symBox.w > 10) ? oeffnungsLinien(cellPane, symBox) : [];
         const cSel = selectedPane === (winPaneIdx + idx);
         return (
           <g key={kp + 'wf' + idx}>
             <clipPath id={cClip}><rect x={colX[c]} y={cellTop} width={colW[c]} height={Math.max(1, cellBot - cellTop)} /></clipPath>
+            <clipPath id={cClip + 'g'}><path d={sil(glasD)} /></clipPath>
             <g clipPath={`url(#${cClip})`}>
               {offen && <path d={sil(sashD)} fill="#fff" stroke="#0f1f3d" strokeWidth="2" strokeLinejoin="round" />}
               <path d={sil(glasD)} fill={glasFarbe} stroke="#0f1f3d" strokeWidth="1.4" strokeLinejoin="round" opacity="0.95" />
-              {cLines.map((l, i) => <line key={kp + 'ol' + idx + '-' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="1.4" />)}
+              <g clipPath={`url(#${cClip}g)`}>
+                {cLines.map((l, i) => <line key={kp + 'ol' + idx + '-' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="1.4" />)}
+              </g>
               {onPaneClick && (
                 <path d={sil(fwB)} fill={cSel ? 'rgba(192,21,46,0.12)' : 'transparent'}
                       stroke={cSel ? '#c0152e' : 'transparent'} strokeWidth="2.5"
