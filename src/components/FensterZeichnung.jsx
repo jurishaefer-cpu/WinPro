@@ -840,25 +840,28 @@ export function sonderformPfade(r, geo, frame, offen = false) {
 // Zeichnet den Sonderform-Rahmen (Bögen/Dreiecke) wie einen Fensterrahmen: Blendrahmen + Glas.
 // oeffnung: { open, din } – zeichnet die Öffnungssymbole (Dreh/Kipp …) auf die Glasfläche.
 // onPaneClick/selected: macht die Glasfläche anklickbar (Öffnungsart wählen).
-export function SonderBody({ sp, glas = '#cfe3ef', kp = '', oeffnung, onPaneClick, selected, mullions, pfW = 6 }) {
-  const offen = oeffnung && !oeffnung.fest && oeffnung.open && oeffnung.open !== 'fest';
-  const lines = offen ? oeffnungsLinien(oeffnung, sp.glasBox) : [];
+export function SonderBody({ sp, glas = '#cfe3ef', kp = '', oeffnung, panes, onPaneClick, selectedPane, selected, mullions, pfW = 6 }) {
   const clipId = 'sbclip-' + kp;
+  const gb = sp.glasBox;
+  // Mehrere Felder (durch Mittelpfosten geteilter Bogen): jedes Feld eigene Öffnungsart/Klickfläche.
+  const mehrFeld = Array.isArray(panes) && panes.length > 1 && mullions && mullions.length > 0;
+  const colXs = mehrFeld ? [gb.x, ...mullions, gb.x + gb.w] : [gb.x, gb.x + gb.w];
+  const felder = mehrFeld ? panes : [oeffnung || (panes && panes[0]) || { fest: true }];
+  const selIdx = selectedPane != null ? selectedPane : (selected ? 0 : -1);
   return (
     <g>
       <path d={sp.outer} fill="#fff" stroke="#0f1f3d" strokeWidth="2.5" strokeLinejoin="round" />
       {sp.mid && <path d={sp.mid} fill="#fff" stroke="#0f1f3d" strokeWidth="1.6" strokeLinejoin="round" />}
       {sp.sash && <path d={sp.sash} fill="#fff" stroke="#0f1f3d" strokeWidth="2" strokeLinejoin="round" />}
       <path d={sp.inner} fill={glas} stroke="#0f1f3d" strokeWidth="1.4" strokeLinejoin="round" opacity="0.95" />
-      {/* Vertikale Mittelpfosten: auf den Blendrahmen-Innenrand (sp.mid) geclippt und vertikal
-          durchgezogen → laufen oben sauber in den Bogenrahmen und unten in den Rahmen, wie ein
-          echter Pfosten der zum Rahmen gehört. */}
+      {/* Vertikale Mittelpfosten: auf den Blendrahmen-Innenrand (sp.mid) geclippt, laufen sauber in
+          den Bogen- und unteren Rahmen. */}
       {mullions && mullions.length > 0 && (
         <>
           <clipPath id={'sbm-' + kp}><path d={sp.mid || sp.inner} /></clipPath>
           {mullions.map((mx, i) => (
             <rect key={kp + 'pf' + i} clipPath={`url(#sbm-${kp})`} x={mx - pfW / 2}
-                  y={sp.glasBox.y - sp.glasBox.h} width={pfW} height={sp.glasBox.h * 3}
+                  y={gb.y - gb.h} width={pfW} height={gb.h * 3}
                   fill="#fff" stroke="#0f1f3d" strokeWidth="1.6" />
           ))}
         </>
@@ -866,20 +869,31 @@ export function SonderBody({ sp, glas = '#cfe3ef', kp = '', oeffnung, onPaneClic
       {(sp.miter || []).map((l, i) => (
         <line key={kp + 'm' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="1.4" />
       ))}
-      {lines.length > 0 && (
-        <>
-          <clipPath id={clipId}><path d={sp.inner} /></clipPath>
-          <g clipPath={`url(#${clipId})`}>
-            {lines.map((l, i) => (
-              <line key={kp + 'o' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="1.4" />
-            ))}
-          </g>
-        </>
-      )}
+      {/* Öffnungssymbole je Feld – auf die Glasform geclippt */}
+      <clipPath id={clipId}><path d={sp.inner} /></clipPath>
+      <g clipPath={`url(#${clipId})`}>
+        {felder.map((p, i) => {
+          const offen = p && !p.fest && p.open && p.open !== 'fest';
+          if (!offen) return null;
+          const pad = 4;
+          const box = { x: colXs[i] + pad, y: gb.y + pad, w: Math.max(2, (colXs[i + 1] - colXs[i]) - 2 * pad), h: Math.max(2, gb.h - 2 * pad) };
+          return oeffnungsLinien(p, box).map((l, j) => (
+            <line key={kp + 'o' + i + '-' + j} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="1.4" />
+          ));
+        })}
+      </g>
+      {/* Auswahl-/Klickflächen je Feld */}
       {onPaneClick && (
-        <path d={sp.inner} fill={selected ? 'rgba(192,21,46,0.12)' : 'transparent'}
-              stroke={selected ? '#c0152e' : 'transparent'} strokeWidth="2.5"
-              style={{ cursor: 'pointer' }} onClick={onPaneClick} />
+        <g clipPath={`url(#${clipId})`}>
+          {felder.map((p, i) => (
+            <rect key={kp + 'h' + i} x={colXs[i]} y={gb.y - gb.h} width={colXs[i + 1] - colXs[i]} height={gb.h * 3}
+                  fill={selIdx === i ? 'rgba(192,21,46,0.12)' : 'transparent'}
+                  style={{ cursor: 'pointer' }} onClick={() => onPaneClick(i)} />
+          ))}
+        </g>
+      )}
+      {onPaneClick && selIdx >= 0 && !mehrFeld && (
+        <path d={sp.inner} fill="none" stroke="#c0152e" strokeWidth="2.5" pointerEvents="none" />
       )}
     </g>
   );
@@ -1410,9 +1424,9 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
       ) : teilBodies ? (
         <g>{teilBodies}</g>
       ) : istSonderform ? (
-        <SonderBody sp={sonder} glas={glasFarbe} kp="s" oeffnung={panesProp?.[0]}
+        <SonderBody sp={sonder} glas={glasFarbe} kp="s" oeffnung={panesProp?.[0]} panes={panesProp}
           mullions={sonderMullions} pfW={sonderPfW}
-          onPaneClick={onPaneClick ? () => onPaneClick(0) : undefined} selected={selectedPane === 0} />
+          onPaneClick={onPaneClick} selectedPane={selectedPane} />
       ) : (
         <UnitBody c={c} glasFarbe={glasFarbe} onPaneClick={onPaneClick} selectedPane={selectedPane}
           scale={scale} onPfostenV={onPfostenV} onPfostenStart={onPfostenStart} onPfostenEnd={onPfostenEnd} />
@@ -1838,10 +1852,10 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
             ) : teilBodies ? (
               <g>{teilBodies}</g>
             ) : uSonder ? (
-              <SonderBody sp={uSonder} glas={uGlas} kp={'u' + u.e._key + '-'} oeffnung={u.e.panes?.[0]}
+              <SonderBody sp={uSonder} glas={uGlas} kp={'u' + u.e._key + '-'} oeffnung={u.e.panes?.[0]} panes={u.e.panes}
                 mullions={uSonderMullions} pfW={Math.max(5, 60 * scale * 0.7)}
-                onPaneClick={interaktiv && aktiv ? () => { if (!justDraggedRef.current) onPaneClick(0); } : undefined}
-                selected={aktiv && selectedPane === 0} />
+                onPaneClick={interaktiv && aktiv ? (i => { if (!justDraggedRef.current) onPaneClick(i); }) : undefined}
+                selectedPane={aktiv ? selectedPane : null} />
             ) : (
               <UnitBody c={u.c} glasFarbe={uGlas} keyPrefix={'u' + u.e._key + '-'}
                 onPaneClick={interaktiv && aktiv ? (i => { if (!justDraggedRef.current) onPaneClick(i); }) : undefined} selectedPane={aktiv ? selectedPane : null}
