@@ -702,6 +702,29 @@ export function UnitBody({ c, glasFarbe = '#cfe3ef', onPaneClick, selectedPane, 
   );
 }
 
+// Polygon um d nach innen versetzen: jede Kante parallel (Normale Richtung Schwerpunkt) um d
+// verschieben, neue Ecken = Schnittpunkt benachbarter versetzter Kanten → überall gleich dicker
+// Rahmen (anders als Skalieren zum Schwerpunkt, das je Kante ungleich versetzt).
+function insetPolygon(pts, d) {
+  const n = pts.length;
+  const cx = pts.reduce((a, p) => a + p[0], 0) / n, cy = pts.reduce((a, p) => a + p[1], 0) / n;
+  const lines = pts.map((a, i) => {
+    const b = pts[(i + 1) % n];
+    let nx = b[1] - a[1], ny = -(b[0] - a[0]);
+    const len = Math.hypot(nx, ny) || 1; nx /= len; ny /= len;
+    const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+    if ((cx - mx) * nx + (cy - my) * ny < 0) { nx = -nx; ny = -ny; }   // Normale nach innen
+    return { px: a[0] + nx * d, py: a[1] + ny * d, dx: b[0] - a[0], dy: b[1] - a[1] };
+  });
+  return pts.map((_, i) => {
+    const L1 = lines[(i - 1 + n) % n], L2 = lines[i];                  // Ecke i: Kante i-1 ∩ Kante i
+    const den = L1.dx * L2.dy - L1.dy * L2.dx;
+    if (Math.abs(den) < 1e-6) return [L2.px, L2.py];
+    const t = ((L2.px - L1.px) * L2.dy - (L2.py - L1.py) * L2.dx) / den;
+    return [L1.px + t * L1.dx, L1.py + t * L1.dy];
+  });
+}
+
 // --- Sonderformen (Bögen & Dreiecke) ---
 // Festverglasung: NUR Blendrahmen (außen + innen, mit 45°-Gehrung) + Glas (kein Flügelrahmen).
 // Mit Öffnungsart (offen=true): zusätzlich der innere Flügelrahmen wie beim öffenbaren Fenster.
@@ -721,29 +744,8 @@ export function sonderformPfade(r, geo, frame, offen = false) {
     if (geo.variante === 'links') pts = [[x, y], [x, y + h], [x + w, y + h]];            // Spitze oben links
     else if (geo.variante === 'rechts') pts = [[x + w, y], [x, y + h], [x + w, y + h]];  // Spitze oben rechts
     else pts = [[x + w / 2, y], [x, y + h], [x + w, y + h]];                             // gleichschenklig
-    const cx = (pts[0][0] + pts[1][0] + pts[2][0]) / 3, cy = (pts[0][1] + pts[1][1] + pts[2][1]) / 3;
-    // Echter Parallel-Versatz: jede Kante um d nach innen schieben (Normale Richtung Schwerpunkt),
-    // neue Ecken = Schnittpunkt benachbarter versetzter Kanten → überall gleich dicker Rahmen.
-    const n = pts.length;
-    const inset = (d) => {
-      const lines = pts.map((a, i) => {
-        const b = pts[(i + 1) % n];
-        let nx = b[1] - a[1], ny = -(b[0] - a[0]);
-        const len = Math.hypot(nx, ny) || 1; nx /= len; ny /= len;
-        const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
-        if ((cx - mx) * nx + (cy - my) * ny < 0) { nx = -nx; ny = -ny; }   // Normale nach innen
-        return { px: a[0] + nx * d, py: a[1] + ny * d, dx: b[0] - a[0], dy: b[1] - a[1] };
-      });
-      return pts.map((_, i) => {
-        const L1 = lines[(i - 1 + n) % n], L2 = lines[i];                  // Ecke i: Kante i-1 ∩ Kante i
-        const den = L1.dx * L2.dy - L1.dy * L2.dx;
-        if (Math.abs(den) < 1e-6) return [L2.px, L2.py];
-        const t = ((L2.px - L1.px) * L2.dy - (L2.py - L1.py) * L2.dx) / den;
-        return [L1.px + t * L1.dx, L1.py + t * L1.dy];
-      });
-    };
     contour = (d) => {
-      const ip = inset(d);
+      const ip = insetPolygon(pts, d);   // echter Parallel-Versatz → gleich dicker Rahmen
       return { path: `M ${ip[0][0]},${ip[0][1]} L ${ip[1][0]},${ip[1][1]} L ${ip[2][0]},${ip[2][1]} Z`, corners: ip };
     };
   } else if (geo.form === 'rundbogen') {
@@ -972,9 +974,7 @@ export function durchgehendPfade(r0, teile, dir, frame) {
     pts = [[x, y], [x + w, y], [x + w, splitY], apex, [x, splitY]];
   }
   const path = ps => 'M ' + ps.map(p => `${p[0]},${p[1]}`).join(' L ') + ' Z';
-  const cx = pts.reduce((a, p) => a + p[0], 0) / pts.length, cy = pts.reduce((a, p) => a + p[1], 0) / pts.length;
-  const s = Math.max(0.3, 1 - (2.6 * fw) / Math.min(w, h));
-  const ip = pts.map(([px, py]) => [cx + (px - cx) * s, cy + (py - cy) * s]);
+  const ip = insetPolygon(pts, fw);   // echter Parallel-Versatz → überall gleich dicker Rahmen
   return { outer: path(pts), inner: path(ip) };
 }
 
