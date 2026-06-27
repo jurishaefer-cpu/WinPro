@@ -1175,7 +1175,7 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
   })() : null;
 
   // Maß-Positionen: Hauptmaß weiter außen, wenn Zwischenmaße vorhanden (auch Trapez-Oberkante)
-  const hatTrapezMass = istTrapez && (onBreite || onHoehe);
+  const hatTrapezMass = istTrapez;   // Oberkanten-Maß immer zeigen (auch im Beleg/gespeichert)
   const mainTopY = (hatSubB || hatTrapezMass) ? y - 78 : y - 34;
   const subTopY = y - 32;
   const mainLeftX = hatSubH ? x - 86 : x - 34;
@@ -1262,8 +1262,8 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
         );
       })}
 
-      {/* Trapez: editierbares Maß der geraden Oberkante (oben, an der flachen Seite). */}
-      {hatTrapezMass && onTrapezFlach && (() => {
+      {/* Trapez: Maß der geraden Oberkante – immer sichtbar; editierbar im Editor. */}
+      {hatTrapezMass && (() => {
         const rechts = geometrie.variante !== 'links';
         const flatPx = trapezFrac * rw;
         const x0 = rechts ? x : x + rw - flatPx;
@@ -1275,12 +1275,16 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
             <line x1={x0} y1={subTopY} x2={x1} y2={subTopY} stroke="#0f1f3d" strokeWidth="1" />
             <line x1={x0} y1={subTopY - 5} x2={x0} y2={subTopY + 5} stroke="#0f1f3d" strokeWidth="1" />
             <line x1={x1} y1={subTopY - 5} x2={x1} y2={subTopY + 5} stroke="#0f1f3d" strokeWidth="1" />
-            <foreignObject x={mid - 42} y={subTopY - 38} width={84} height={30}>
-              <input className="fz-massinput fz-massinput--sub" type="number"
-                     key={'tf_' + flatMm} defaultValue={flatMm}
-                     onBlur={e => onTrapezFlach(e.target.value)}
-                     onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); }} />
-            </foreignObject>
+            {onTrapezFlach ? (
+              <foreignObject x={mid - 42} y={subTopY - 38} width={84} height={30}>
+                <input className="fz-massinput fz-massinput--sub" type="number"
+                       key={'tf_' + flatMm} defaultValue={flatMm}
+                       onBlur={e => onTrapezFlach(e.target.value)}
+                       onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); }} />
+              </foreignObject>
+            ) : (
+              <text x={mid} y={subTopY - 7} textAnchor="middle" fontSize={fSub} fill="#0f1f3d" fontWeight="700">{flatMm}</text>
+            )}
           </g>
         );
       })()}
@@ -1949,8 +1953,8 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
                 </circle>
               </g>
             )}
-            {/* Trapez: Maß der geraden Oberkante – immer sichtbar, editierbar wenn ausgewählt. */}
-            {interaktiv && uTrapez && !wirdGezogen && (() => {
+            {/* Trapez: Maß der geraden Oberkante – immer sichtbar (auch Beleg), editierbar wenn ausgewählt. */}
+            {uTrapez && !wirdGezogen && (() => {
               const rechts = uGeo.variante !== 'links';
               const flatPx = uTrapezFrac * u.r0.w;
               const x0 = rechts ? u.r0.x : u.r0.x + u.r0.w - flatPx;
