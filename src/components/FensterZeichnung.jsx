@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useId } from 'react';
 
 // Katalog der Fenster-/Tür-Geometrien.
 // open: Öffnungsart, din: Anschlag (Bänder), apex = Griffseite (gegenüber den Bändern).
@@ -1079,6 +1079,7 @@ export function durchgehendPfade(r0, teile, dir, frame) {
 function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkasten, schwelle, oberlichtHoehe, glasFarbe = '#cfe3ef', onBreite, onHoehe, onOberlichtHoehe, onBottomHoehe, panes: panesProp, cols: colsProp, colWidths, rowHeights, onColWidth, onRowHeight, onPaneClick, selectedPane, teile, dir: teilDir, durchgehend, onDivider, onBackgroundClick, onBogenRowHeight, onPfostenV, onPfostenStart, onPfostenEnd, trapezFlach, onTrapezFlach }) {
   const b = Math.max(200, Number(breite) || 1000);
   const hh = Math.max(200, Number(hoehe) || 1200);
+  const uid = useId().replace(/[^a-zA-Z0-9]/g, '');   // eindeutiges Präfix für clipPath-IDs je Instanz
 
   // Zeichenfläche
   const VB_W = 780, VB_H = 720;
@@ -1137,7 +1138,7 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
             wk: Math.round(Math.atan2(Number(t.breite) || 0, Number(t.hoehe) || 1) * 180 / Math.PI) });
         }
         const sp = sonderformPfade(sub, tGeo, Math.max(6, 60 * scale));
-        return <SonderBody key={'t' + ti} sp={sp} glas={tGlas} kp={'t' + ti + '-'} />;
+        return <SonderBody key={'t' + ti} sp={sp} glas={tGlas} kp={'t' + uid + ti + '-'} />;
       }
       const tc = computeUnit(sub, scale, {
         geometrie: tGeo, breite: tdir === 'h' ? size : Number(t.breite), hoehe: tdir === 'h' ? Number(t.hoehe) : size,
@@ -1418,8 +1419,8 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
             <path d={glassP} fill={glasFarbe} stroke="#0f1f3d" strokeWidth="1.4" strokeLinejoin="round" opacity="0.95" />
             {dLines.length > 0 && (
               <>
-                <clipPath id={'dpclip-' + Math.round(r0.x) + '-' + Math.round(r0.y)}><path d={glassP} /></clipPath>
-                <g clipPath={`url(#dpclip-${Math.round(r0.x)}-${Math.round(r0.y)})`}>
+                <clipPath id={'dpclip-' + uid}><path d={glassP} /></clipPath>
+                <g clipPath={`url(#dpclip-${uid})`}>
                   {dLines.map((l, i) => <line key={'dpl' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="1.4" />)}
                 </g>
               </>
@@ -1432,12 +1433,12 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
           </g>
         );
       })() : bogenOben ? (
-        <VerbundBogenBody r0={r0} teile={formTeile} scale={scale} glasFarbe={glasFarbe} kp="vb"
+        <VerbundBogenBody r0={r0} teile={formTeile} scale={scale} glasFarbe={glasFarbe} kp={'vb' + uid}
           panes={panesProp} onPaneClick={onPaneClick} selectedPane={selectedPane} onRowDrag={onBogenRowHeight} durchgehend={durchgehend} />
       ) : teilBodies ? (
         <g>{teilBodies}</g>
       ) : istSonderform ? (
-        <SonderBody sp={sonder} glas={glasFarbe} kp="s" oeffnung={panesProp?.[0]} panes={panesProp}
+        <SonderBody sp={sonder} glas={glasFarbe} kp={'s' + uid} oeffnung={panesProp?.[0]} panes={panesProp}
           mullions={sonderMullions} pfW={sonderPfW}
           onPaneClick={onPaneClick} selectedPane={selectedPane} />
       ) : (
@@ -1495,6 +1496,7 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
 // Kombination mehrerer gekoppelter Einheiten (eigener Rahmen je Element), im Raster (row/col).
 export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weissesGlas = false, onUnitClick, activeId, onPaneClick, selectedPane, onDock, onSlide, onTotalBreite, onTotalHoehe, onElementBreite, onElementHoehe, onBackgroundClick, rahmen, onElementPfostenV, onElementRowHeight, onElementTrapezFlach, onPfostenStart, onPfostenEnd }) {
   const svgRef = useRef(null);
+  const uid = useId().replace(/[^a-zA-Z0-9]/g, '');   // eindeutiges Präfix für clipPath-IDs je Instanz
   const [drag, setDrag] = useState(null); // { id, side, targetId }
   function svgPoint(clientX, clientY) {
     const svg = svgRef.current;
@@ -1833,7 +1835,7 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
             const tGlas = weissesGlas ? '#ffffff' : (t.ornament ? '#7fb0cc' : glasFarbe);
             if (tGeo?.form) {
               const sp = sonderformPfade(sub, tGeo, Math.max(5, 60 * scale));
-              return <SonderBody key={'t' + ti} sp={sp} glas={tGlas} kp={'kt' + ti + '-'} />;
+              return <SonderBody key={'t' + ti} sp={sp} glas={tGlas} kp={uid + 'kt' + u.e._key + '-' + ti + '-'} />;
             }
             const tc = computeUnit(sub, scale, {
               geometrie: tGeo, breite: dir === 'h' ? size : Number(t.breite), hoehe: dir === 'h' ? Number(t.hoehe) : size,
@@ -1863,13 +1865,13 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
                transform={wirdGezogen ? `translate(${gx} ${gy})` : undefined}
                style={wirdGezogen ? { pointerEvents: 'none' } : undefined}>
             {uBogenOben ? (
-              <VerbundBogenBody r0={u.r0} teile={teile} scale={scale} glasFarbe={uGlas} kp={'u' + u.e._key + '-vb'}
+              <VerbundBogenBody r0={u.r0} teile={teile} scale={scale} glasFarbe={uGlas} kp={uid + 'u' + u.e._key + '-vb'}
                 panes={u.e.panes} onPaneClick={interaktiv && aktiv ? (i => { if (!justDraggedRef.current) onPaneClick(i); }) : undefined}
                 selectedPane={aktiv ? selectedPane : null} durchgehend={u.e.durchgehend} />
             ) : teilBodies ? (
               <g>{teilBodies}</g>
             ) : uSonder ? (
-              <SonderBody sp={uSonder} glas={uGlas} kp={'u' + u.e._key + '-'} oeffnung={u.e.panes?.[0]} panes={u.e.panes}
+              <SonderBody sp={uSonder} glas={uGlas} kp={uid + 'u' + u.e._key + '-'} oeffnung={u.e.panes?.[0]} panes={u.e.panes}
                 mullions={uSonderMullions} pfW={Math.max(5, 60 * scale * 0.7)}
                 onPaneClick={interaktiv && aktiv ? (i => { if (!justDraggedRef.current) onPaneClick(i); }) : undefined}
                 selectedPane={aktiv ? selectedPane : null} />
