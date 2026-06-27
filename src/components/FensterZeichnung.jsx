@@ -1099,8 +1099,11 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
           <line x1={s.x1} y1={subTopY - 5} x2={s.x1} y2={subTopY + 5} stroke="#0f1f3d" strokeWidth="1" />
           {onColWidth ? (
             <foreignObject x={(s.x0 + s.x1) / 2 - 42} y={subTopY - 38} width={84} height={30}>
-              <input className="fz-massinput fz-massinput--sub" type="number" value={(colWidths && colWidths[s.idx]) ?? s.mm}
-                     onChange={e => onColWidth(s.idx, e.target.value)} />
+              <input className="fz-massinput fz-massinput--sub" type="number"
+                     key={'sbw' + s.idx + '_' + Math.round((colWidths && colWidths[s.idx]) ?? s.mm)}
+                     defaultValue={Math.round((colWidths && colWidths[s.idx]) ?? s.mm)}
+                     onBlur={e => onColWidth(s.idx, e.target.value)}
+                     onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); }} />
             </foreignObject>
           ) : (
             <text x={(s.x0 + s.x1) / 2} y={subTopY - 7} textAnchor="middle" fontSize={fSub} fill="#0f1f3d" fontWeight="700">{s.mm}</text>
@@ -1133,8 +1136,11 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
             <line x1={subLeftX - 5} y1={s.y1} x2={subLeftX + 5} y2={s.y1} stroke="#0f1f3d" strokeWidth="1" />
             {onRowHeight ? (
               <foreignObject x={cxr - 42} y={mid - 15} width={84} height={30} transform={`rotate(-90 ${cxr} ${mid})`}>
-                <input className="fz-massinput fz-massinput--sub" type="number" value={(rowHeights && rowHeights[s.idx]) ?? s.mm}
-                       onChange={e => onRowHeight(s.idx, e.target.value)} />
+                <input className="fz-massinput fz-massinput--sub" type="number"
+                       key={'shh' + s.idx + '_' + Math.round((rowHeights && rowHeights[s.idx]) ?? s.mm)}
+                       defaultValue={Math.round((rowHeights && rowHeights[s.idx]) ?? s.mm)}
+                       onBlur={e => onRowHeight(s.idx, e.target.value)}
+                       onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); }} />
               </foreignObject>
             ) : (
               <text x={subLeftX - 7} y={mid} textAnchor="middle" fontSize={fSub} fill="#0f1f3d" fontWeight="700"
@@ -1162,8 +1168,10 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
               <line x1={subLeftX - 5} y1={band.y1} x2={subLeftX + 5} y2={band.y1} stroke="#0f1f3d" strokeWidth="1" />
               {on ? (
                 <foreignObject x={cxr - 42} y={mid - 15} width={84} height={30} transform={`rotate(-90 ${cxr} ${mid})`}>
-                  <input className="fz-massinput fz-massinput--sub" type="number" value={val}
-                         onChange={e => on(e.target.value)} />
+                  <input className="fz-massinput fz-massinput--sub" type="number"
+                         key={key + '_' + Math.round(val)} defaultValue={Math.round(val)}
+                         onBlur={e => on(e.target.value)}
+                         onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); }} />
                 </foreignObject>
               ) : (
                 <text x={subLeftX - 7} y={mid} textAnchor="middle" fontSize={fSub} fill="#0f1f3d" fontWeight="700"
