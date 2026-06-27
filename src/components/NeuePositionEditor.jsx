@@ -221,6 +221,53 @@ function teileOf(e) {
             panes: e.panes, cols: e.cols || 1, colWidths: e.colWidths, ornament: e.ornament }];
 }
 
+// Zwei benachbarte Teile (cand aus findMergePartner) zu EINEM Element zusammenführen.
+// Reine Funktion: nimmt die Elementliste, gibt die neue Liste zurück.
+function mergePair(prev, cand, newId) {
+  if (cand.dir === 'h') {
+    const L = prev.find(e => e.id === cand.left.id);
+    const R = prev.find(e => e.id === cand.right.id);
+    if (!L || !R) return prev;
+    const M = makeElement({
+      ...L,
+      panes: [...L.panes, ...R.panes],
+      cols: (L.cols || 1) + (R.cols || 1),
+      colWidths: [...L.colWidths, ...R.colWidths],
+      rowHeights: [Number(L.hoehe)],
+      breite: (Number(L.breite) || 0) + (Number(R.breite) || 0),
+      hoehe: Number(L.hoehe),
+      row: L.row ?? 0, col: L.col ?? 0, offset: undefined,
+      verbunden: true, _dir: 'h', _parts: [...partsOf(L), ...partsOf(R)],
+      _teile: [...teileOf(L), ...teileOf(R)],
+      nettoJeStueck: (Number(L.nettoJeStueck) || 0) + (Number(R.nettoJeStueck) || 0),
+    }, newId);
+    const wasMain = prev[0].id === L.id || prev[0].id === R.id;
+    const rest = prev.filter(e => e.id !== L.id && e.id !== R.id)
+      .map(e => ((e.col ?? 0) > (R.col ?? 0) ? { ...e, col: (e.col ?? 0) - 1 } : e));
+    return wasMain ? [M, ...rest] : [...rest, M];
+  }
+  const T = prev.find(e => e.id === cand.top.id);
+  const B = prev.find(e => e.id === cand.bottom.id);
+  if (!T || !B) return prev;
+  const M = makeElement({
+    ...T,
+    panes: [...T.panes, ...B.panes],
+    cols: 1,
+    colWidths: [Number(T.breite)],
+    rowHeights: [...T.rowHeights, ...B.rowHeights],
+    breite: Number(T.breite),
+    hoehe: (Number(T.hoehe) || 0) + (Number(B.hoehe) || 0),
+    row: T.row ?? 0, col: T.col ?? 0, offset: undefined,
+    verbunden: true, _dir: 'v', _parts: [...partsOf(T), ...partsOf(B)],
+    _teile: [...teileOf(T), ...teileOf(B)],
+    nettoJeStueck: (Number(T.nettoJeStueck) || 0) + (Number(B.nettoJeStueck) || 0),
+  }, newId);
+  const wasMain = prev[0].id === T.id || prev[0].id === B.id;
+  const rest = prev.filter(e => e.id !== T.id && e.id !== B.id)
+    .map(e => ((e.row ?? 0) > (B.row ?? 0) ? { ...e, row: (e.row ?? 0) - 1 } : e));
+  return wasMain ? [M, ...rest] : [...rest, M];
+}
+
 // Breite eines Elements setzen und die Sub-Spaltenbreiten proportional mitskalieren.
 function scaleBreite(e, nbRaw) {
   const n = e.cols || 1;
@@ -392,6 +439,8 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
   const istKombi = elemente.length > 1;
   // Verbinden/Trennen: passender Nachbar zum aktiven Element (nur in einer Kombination)
   const mergePartner = istKombi ? findMergePartner(aktiv, elemente) : null;
+  // „Alle verbinden" ist möglich, sobald irgendwo in der Kombination ein bündiges Paar existiert.
+  const kannVerbinden = istKombi && elemente.some(e => findMergePartner(e, elemente));
 
   // Farboptionen aus dem gewählten Profil
   const farbOptionen = useMemo(() => {
@@ -618,56 +667,22 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
     setSelectedPane(null);
   }
 
-  // Zwei benachbarte Teile zu EINEM Element (ein Rahmen mit Pfosten) verbinden.
+  // ALLE Elemente des Editors verbinden: solange ein bündiges Paar existiert, wird es zu einem
+  // Element verschmolzen. So entsteht aus mehreren Fenstern ein gemeinsamer Rahmen (mit Pfosten).
   function verbinde() {
-    const cand = findMergePartner(aktiv, elemente);
-    if (!cand) return;
-    const newId = `el${nextId.current++}`;
-    setElemente(prev => {
-      if (cand.dir === 'h') {
-        const L = prev.find(e => e.id === cand.left.id);
-        const R = prev.find(e => e.id === cand.right.id);
-        if (!L || !R) return prev;
-        const M = makeElement({
-          ...L,
-          panes: [...L.panes, ...R.panes],
-          cols: (L.cols || 1) + (R.cols || 1),
-          colWidths: [...L.colWidths, ...R.colWidths],
-          rowHeights: [Number(L.hoehe)],
-          breite: (Number(L.breite) || 0) + (Number(R.breite) || 0),
-          hoehe: Number(L.hoehe),
-          row: L.row ?? 0, col: L.col ?? 0, offset: undefined,
-          verbunden: true, _dir: 'h', _parts: [...partsOf(L), ...partsOf(R)],
-          _teile: [...teileOf(L), ...teileOf(R)],
-          nettoJeStueck: (Number(L.nettoJeStueck) || 0) + (Number(R.nettoJeStueck) || 0),
-        }, newId);
-        const wasMain = prev[0].id === L.id || prev[0].id === R.id;
-        const rest = prev.filter(e => e.id !== L.id && e.id !== R.id)
-          .map(e => ((e.col ?? 0) > (R.col ?? 0) ? { ...e, col: (e.col ?? 0) - 1 } : e));
-        return wasMain ? [M, ...rest] : [...rest, M];
-      }
-      const T = prev.find(e => e.id === cand.top.id);
-      const B = prev.find(e => e.id === cand.bottom.id);
-      if (!T || !B) return prev;
-      const M = makeElement({
-        ...T,
-        panes: [...T.panes, ...B.panes],
-        cols: 1,
-        colWidths: [Number(T.breite)],
-        rowHeights: [...T.rowHeights, ...B.rowHeights],
-        breite: Number(T.breite),
-        hoehe: (Number(T.hoehe) || 0) + (Number(B.hoehe) || 0),
-        row: T.row ?? 0, col: T.col ?? 0, offset: undefined,
-        verbunden: true, _dir: 'v', _parts: [...partsOf(T), ...partsOf(B)],
-        _teile: [...teileOf(T), ...teileOf(B)],
-        nettoJeStueck: (Number(T.nettoJeStueck) || 0) + (Number(B.nettoJeStueck) || 0),
-      }, newId);
-      const wasMain = prev[0].id === T.id || prev[0].id === B.id;
-      const rest = prev.filter(e => e.id !== T.id && e.id !== B.id)
-        .map(e => ((e.row ?? 0) > (B.row ?? 0) ? { ...e, row: (e.row ?? 0) - 1 } : e));
-      return wasMain ? [M, ...rest] : [...rest, M];
-    });
-    setActiveId(newId);
+    let els = elemente;
+    let lastId = activeId;
+    for (let guard = 0; guard < 100; guard++) {
+      let cand = null;
+      for (const e of els) { const c = findMergePartner(e, els); if (c) { cand = c; break; } }
+      if (!cand) break;
+      const nid = `el${nextId.current++}`;
+      els = mergePair(els, cand, nid);
+      lastId = nid;
+    }
+    if (els === elemente) return;   // nichts Bündiges zum Verbinden gefunden
+    setElemente(els);
+    setActiveId(lastId);
     setSelectedPane(null);
   }
 
@@ -1256,17 +1271,18 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
             )}
             <span className="np-chip">Maß <b>{Math.round(breiteGes).toLocaleString('de-DE')} × {Math.round(hoeheGes).toLocaleString('de-DE')} mm</b></span>
             <span className="np-chip">Fläche <b>{flaeche.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} m²</b></span>
-            {aktiv.verbunden ? (
+            {aktiv.verbunden && (
               <div className="np-merge np-merge--on">
                 <span className="np-merge-label">✓ Verbunden</span>
                 <button className="np-merge-btn" onClick={trenne}>Trennen</button>
               </div>
-            ) : mergePartner ? (
-              <div className="np-merge" title="Dieses und das benachbarte Element zu EINEM Rahmen verbinden">
-                <span className="np-merge-label">Verbinden</span>
+            )}
+            {kannVerbinden && (
+              <div className="np-merge" title="Alle Elemente dieses Editors zu EINEM Rahmen verbinden">
+                <span className="np-merge-label">Alle verbinden</span>
                 <button className="np-merge-btn" onClick={verbinde}>Ja</button>
               </div>
-            ) : null}
+            )}
             {/* Durchgehendes Glas (Trennrahmen entfernen) – nur bei verbundenem Bogen/Dreieck ÜBER/UNTER Fenster (vertikal) */}
             {aktiv.verbunden && aktiv._dir === 'v' && Array.isArray(aktiv._teile) && aktiv._teile.some(t => geometrieByCode(t.code)?.form) && (
               aktiv.durchgehend ? (
