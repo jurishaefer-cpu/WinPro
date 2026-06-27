@@ -629,12 +629,12 @@ export function computeUnit(r0, scale, { geometrie, breite, hoehe, panes: panesP
 }
 
 // Zeichnet den Körper EINER Einheit (ohne Maßketten) aus dem computeUnit-Ergebnis.
-export function UnitBody({ c, glasFarbe = '#cfe3ef', onPaneClick, selectedPane, keyPrefix = '', scale = 1, onPfostenV }) {
+export function UnitBody({ c, glasFarbe = '#cfe3ef', onPaneClick, selectedPane, keyPrefix = '', scale = 1, onPfostenV, onPfostenStart, onPfostenEnd }) {
   const { r0, win, kasten, blendIn, miterBlend, leaves, pfostenList, lamellen, badge, glasMinX, glasMaxX, hatVerb, hatKasten, istTuer, effPanes, g } = c;
   // Horizontalen Pfosten vertikal ziehen → verschiebt die Grenze zwischen zwei Zeilen.
   const pfDrag = useRef(null);
   const pfScaleRef = useRef(scale); pfScaleRef.current = scale;
-  const pfDown = (e, h0) => { e.stopPropagation(); e.currentTarget.setPointerCapture?.(e.pointerId); pfDrag.current = { y: e.clientY, h0 }; };
+  const pfDown = (e, h0) => { e.stopPropagation(); e.currentTarget.setPointerCapture?.(e.pointerId); pfDrag.current = { y: e.clientY, h0 }; onPfostenStart?.(); };
   const pfMove = (e, idx) => {
     const d = pfDrag.current; if (!d || !onPfostenV) return;
     const ctm = e.currentTarget.ownerSVGElement?.getScreenCTM();
@@ -642,7 +642,7 @@ export function UnitBody({ c, glasFarbe = '#cfe3ef', onPaneClick, selectedPane, 
     const nh = Math.round(d.h0 + dySvg / Math.max(0.0001, pfScaleRef.current));   // SVG-px → mm
     onPfostenV(idx, nh);
   };
-  const pfUp = () => { pfDrag.current = null; };
+  const pfUp = () => { if (pfDrag.current) { pfDrag.current = null; onPfostenEnd?.(); } };
   return (
     <g>
       {(hatVerb || hatKasten) && (
@@ -1011,7 +1011,7 @@ export function durchgehendPfade(r0, teile, dir, frame) {
   return { outer: path(pts), inner: path(ip) };
 }
 
-function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkasten, schwelle, oberlichtHoehe, glasFarbe = '#cfe3ef', onBreite, onHoehe, onOberlichtHoehe, onBottomHoehe, panes: panesProp, cols: colsProp, colWidths, rowHeights, onColWidth, onRowHeight, onPaneClick, selectedPane, teile, dir: teilDir, durchgehend, onDivider, onBackgroundClick, onBogenRowHeight, onPfostenV }) {
+function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkasten, schwelle, oberlichtHoehe, glasFarbe = '#cfe3ef', onBreite, onHoehe, onOberlichtHoehe, onBottomHoehe, panes: panesProp, cols: colsProp, colWidths, rowHeights, onColWidth, onRowHeight, onPaneClick, selectedPane, teile, dir: teilDir, durchgehend, onDivider, onBackgroundClick, onBogenRowHeight, onPfostenV, onPfostenStart, onPfostenEnd }) {
   const b = Math.max(200, Number(breite) || 1000);
   const hh = Math.max(200, Number(hoehe) || 1200);
 
@@ -1332,7 +1332,7 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
           onPaneClick={onPaneClick ? () => onPaneClick(0) : undefined} selected={selectedPane === 0} />
       ) : (
         <UnitBody c={c} glasFarbe={glasFarbe} onPaneClick={onPaneClick} selectedPane={selectedPane}
-          scale={scale} onPfostenV={onPfostenV} />
+          scale={scale} onPfostenV={onPfostenV} onPfostenStart={onPfostenStart} onPfostenEnd={onPfostenEnd} />
       )}
 
       {/* Höhen-Griff am Bogen-Scheitel (nur unverbundener Bogen/Dreieck): vertikal ziehen = Höhe */}

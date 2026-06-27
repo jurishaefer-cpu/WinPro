@@ -343,12 +343,28 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
   const histRef = useRef(null);
   if (histRef.current === null) histRef.current = { stack: [], prev: undefined };
   const skipHist = useRef(false);
+  // Gruppen-Modus: während eines zusammenhängenden Vorgangs (z. B. Pfosten ziehen) wird nur EINMAL
+  // der Stand beim Start gesichert; die vielen Zwischenschritte werden zusammengefasst → „Zurück"
+  // setzt auf den Stand zurück, an dem man den Pfosten gegriffen hat.
+  const histGroup = useRef({ active: false, pushed: false });
+  function histGroupStart() { histGroup.current = { active: true, pushed: false }; }
+  function histGroupEnd() { histGroup.current.active = false; }
   const [histLen, setHistLen] = useState(0);
   useEffect(() => {
     const h = histRef.current;
     if (h.prev === undefined) { h.prev = elemente; return; }
     if (h.prev === elemente) return;
     if (skipHist.current) { skipHist.current = false; h.prev = elemente; return; }
+    if (histGroup.current.active) {
+      if (!histGroup.current.pushed) {
+        h.stack.push(h.prev);
+        if (h.stack.length > 60) h.stack.shift();
+        histGroup.current.pushed = true;
+        setHistLen(h.stack.length);
+      }
+      h.prev = elemente;
+      return;
+    }
     h.stack.push(h.prev);
     if (h.stack.length > 60) h.stack.shift();
     h.prev = elemente;
@@ -1392,7 +1408,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
                 panes={aktiv.panes} cols={aktiv.cols}
                 colWidths={aktiv.colWidths} rowHeights={aktiv.rowHeights}
                 onColWidth={setColWidth} onRowHeight={setRowHeight} onBogenRowHeight={setBogenRowHeight}
-                onPfostenV={setPfostenRow}
+                onPfostenV={setPfostenRow} onPfostenStart={histGroupStart} onPfostenEnd={histGroupEnd}
                 teile={aktiv.verbunden ? aktiv._teile : null} dir={aktiv._dir}
                 durchgehend={aktiv.durchgehend} onDivider={() => updAktiv({ durchgehend: true })}
                 onPaneClick={waehlePane} selectedPane={auswahlAktiv ? selectedPane : null}
