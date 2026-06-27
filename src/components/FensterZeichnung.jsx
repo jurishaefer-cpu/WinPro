@@ -903,7 +903,7 @@ export function SonderBody({ sp, glas = '#cfe3ef', kp = '', oeffnung, panes, onP
 // gerade Seiten + Boden), Kämpfer (Querbalken) am Übergang, oben das feste Oberlicht-Glas, unten
 // der Fenster-Flügel mit Glas und Öffnungssymbol. Liefert null, wenn der Fall nicht passt
 // (dann zeichnet der Aufrufer die Teile wie bisher).
-export function VerbundBogenBody({ r0, teile, scale, glasFarbe = '#cfe3ef', kp = '', panes, onPaneClick, selectedPane, onRowDrag }) {
+export function VerbundBogenBody({ r0, teile, scale, glasFarbe = '#cfe3ef', kp = '', panes, onPaneClick, selectedPane, onRowDrag, durchgehend }) {
   if (!Array.isArray(teile) || teile.length !== 2) return null;
   const formIdx = geometrieByCode(teile[0]?.code)?.form ? 0 : (geometrieByCode(teile[1]?.code)?.form ? 1 : -1);
   if (formIdx !== 0) return null;                                  // nur Bogen OBEN
@@ -994,10 +994,12 @@ export function VerbundBogenBody({ r0, teile, scale, glasFarbe = '#cfe3ef', kp =
               x={colX[i + 1] - pfW / 2} y={y + fwB} width={pfW} height={(y + h - fwB) - (y + fwB)}
               fill="#fff" stroke="#0f1f3d" strokeWidth="1.6" />
       ))}
-      {/* Kämpfer am Bogenansatz (splitY): trennt den Bogen vom geraden Fensterteil. Nur im
-          „Trennrahmen"-Zustand sichtbar – bei durchgehendem Glas wird dieser Body gar nicht genutzt. */}
-      <rect x={winRect.x} y={splitY - pfW / 2} width={winRect.w} height={pfW}
-            fill="#fff" stroke="#0f1f3d" strokeWidth="1.6" />
+      {/* Kämpfer am Bogenansatz (splitY): trennt Bogen vom geraden Fensterteil. Nur im
+          „Trennrahmen"-Zustand – bei durchgehendem Glas ausgeblendet. */}
+      {!durchgehend && (
+        <rect x={winRect.x} y={splitY - pfW / 2} width={winRect.w} height={pfW}
+              fill="#fff" stroke="#0f1f3d" strokeWidth="1.6" />
+      )}
       {/* Horizontaler Pfosten: nur im Fensterteil (1 Balken je hinzugefügter Zeile). */}
       {Array.from({ length: wRows - 1 }).map((_, i) => (
         <g key={kp + 'pfh' + i}>
@@ -1141,10 +1143,13 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
     });
   }
   // Trennrahmen entfernt → durchgehende Form (ein Glas).
-  const durchPf = (formTeile && durchgehend) ? durchgehendPfade(r0, formTeile, teilDir || 'h', Math.max(6, 60 * scale)) : null;
-  // „Bogen über Fenster" verbunden → durchgehender Außenrahmen + Kämpfer (statt zwei Rahmen).
-  const bogenOben = !durchgehend && formTeile && formTeile.length === 2 && (teilDir || 'h') === 'v'
+  // „Bogen über Fenster" verbunden → IMMER als VerbundBogenBody (zeichnet Glas-in-Bogen UND
+  // vertikale Pfosten); der Kämpfer wird über `durchgehend` ein-/ausgeblendet. So bleibt das
+  // durchgehende Glas erhalten, wenn man einen vertikalen Pfosten einfügt.
+  const bogenOben = formTeile && formTeile.length === 2 && (teilDir || 'h') === 'v'
     && ['rundbogen', 'segmentbogen'].includes(geometrieByCode(formTeile[0]?.code)?.form);
+  // durchPf (eine durchgehende Scheibe) nur für die ANDEREN Fälle (Trapez/Dreieck seitlich/vertikal).
+  const durchPf = (formTeile && durchgehend && !bogenOben) ? durchgehendPfade(r0, formTeile, teilDir || 'h', Math.max(6, 60 * scale)) : null;
   // Klickbarer Trennrahmen-Streifen zwischen den beiden Teilen (nur Editor, solange nicht durchgehend).
   let dividerStrip = null;
   if (formTeile && formTeile.length === 2 && onDivider && !durchgehend) {
@@ -1420,7 +1425,7 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
         );
       })() : bogenOben ? (
         <VerbundBogenBody r0={r0} teile={formTeile} scale={scale} glasFarbe={glasFarbe} kp="vb"
-          panes={panesProp} onPaneClick={onPaneClick} selectedPane={selectedPane} onRowDrag={onBogenRowHeight} />
+          panes={panesProp} onPaneClick={onPaneClick} selectedPane={selectedPane} onRowDrag={onBogenRowHeight} durchgehend={durchgehend} />
       ) : teilBodies ? (
         <g>{teilBodies}</g>
       ) : istSonderform ? (
@@ -1848,7 +1853,7 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
             {uBogenOben ? (
               <VerbundBogenBody r0={u.r0} teile={teile} scale={scale} glasFarbe={uGlas} kp={'u' + u.e._key + '-vb'}
                 panes={u.e.panes} onPaneClick={interaktiv && aktiv ? (i => { if (!justDraggedRef.current) onPaneClick(i); }) : undefined}
-                selectedPane={aktiv ? selectedPane : null} />
+                selectedPane={aktiv ? selectedPane : null} durchgehend={u.e.durchgehend} />
             ) : teilBodies ? (
               <g>{teilBodies}</g>
             ) : uSonder ? (
