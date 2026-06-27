@@ -806,9 +806,9 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
       const newTeile = teile.map((t, i) => (i === winIdx ? newWin : t));
       const archPanes = teile[1 - winIdx].panes || [{ fest: true }];
       const combined = winIdx === 1 ? [...archPanes, ...newWin.panes] : [...newWin.panes, ...archPanes];
-      // Nur eine HORIZONTALE Teilung setzt das durchgehende Glas zurück (echte Kämpfer-Teilung).
-      // Ein vertikaler Pfosten darf das durchgehende Glas NICHT aufheben.
-      updAktiv({ _teile: newTeile, panes: combined, ...(richtung === 'h' ? { durchgehend: false } : {}) });
+      // Pfosten teilt NUR den Fensterteil; der Bogen-Kämpfer (durchgehend) bleibt unangetastet,
+      // sonst entsteht ein zweiter (Kämpfer-)Pfosten zusätzlich zum eingefügten.
+      updAktiv({ _teile: newTeile, panes: combined });
     } else {
       const upd = pfostenAdd(el, richtung);
       if (!upd) { zeigeWarnung('max. erreicht'); return; }
