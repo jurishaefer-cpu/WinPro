@@ -1646,6 +1646,8 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
 
       {/* Zeilenhöhen (links, innen) – entfällt für Zeilen, deren Element eigene Teilmaße zeigt. */}
       {rowsSet.length > 1 && rowsSet.map(rr => {
+        // Einspaltig: jede Element-Höhe steht schon rechts → linkes Zeilenmaß wäre doppelt.
+        if (colsSet.length === 1) return null;
         if (interaktiv && units.some(u => (u.rr ?? 0) === rr && u.c?.subRows?.length > 0)) return null;
         const y0 = rowYpx[rr], y1 = rowYpx[rr] + rowHmm[rr] * scale, mid = (y0 + y1) / 2;
         return (
