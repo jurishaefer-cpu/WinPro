@@ -591,6 +591,24 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
     }
     updAktiv(patch);
   }
+  // Wie setPfostenRow, aber für ein bestimmtes Element in einer Kombination (z. B. das Fenster
+  // unter einem aufgesetzten Bogen). Gesamthöhe des Elements bleibt konstant.
+  function setElementPfostenRow(id, topIdx, newTopH) {
+    setElemente(prev => prev.map(e => {
+      if (e.id !== id) return e;
+      const rows = (e.rowHeights || []).map(v => Math.round(Number(v) || 0));
+      if (topIdx < 0 || topIdx + 1 >= rows.length) return e;
+      const paar = rows[topIdx] + rows[topIdx + 1];
+      let h = Math.max(100, Math.round(Number(newTopH) || 0));
+      if (h > paar - 100) h = paar - 100;
+      rows[topIdx] = h; rows[topIdx + 1] = paar - h;
+      const next = { ...e, rowHeights: rows };
+      if (e.verbunden && Array.isArray(e._teile) && e._dir === 'v') {
+        next._teile = e._teile.map((t, k) => ({ ...t, hoehe: rows[k] ?? (Number(t.hoehe) || 0) }));
+      }
+      return next;
+    }));
+  }
   // Verbund-Bogenfenster: horizontalen Pfosten ziehen → Zeilen i / i+1 im Fensterteil verschieben
   // (Summe bleibt = Höhe des Fensterteils, Bogenanteil und Gesamthöhe bleiben unverändert).
   function setBogenRowHeight(i, val) {
@@ -1395,7 +1413,8 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
                 onBackgroundClick={deselectAlles}
                 onDock={dockElement} onSlide={slideElement}
                 onTotalBreite={setTotalBreite} onTotalHoehe={setTotalHoehe}
-                onElementBreite={setElementBreite} onElementHoehe={setElementHoehe} />
+                onElementBreite={setElementBreite} onElementHoehe={setElementHoehe}
+                onElementPfostenV={setElementPfostenRow} onPfostenStart={histGroupStart} onPfostenEnd={histGroupEnd} />
             ) : (
               <FensterZeichnung geometrie={geometrie} breite={aktiv.breite} hoehe={aktiv.hoehe}
                 verbreiterung={aktiv.verbreiterung ? aktiv.verb : null}
