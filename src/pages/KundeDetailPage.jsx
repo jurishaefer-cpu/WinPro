@@ -270,7 +270,7 @@ function KundeDetailPage() {
             </p>
             <div className="modal-actions">
               <button className="btn btn-secondary" onClick={() => setShowDelete(false)}>Abbrechen</button>
-              <button className="btn btn-danger" onClick={handleDeleteKunde}>Endgültig löschen</button>
+              <button className="btn btn-danger" autoFocus onClick={handleDeleteKunde}>Endgültig löschen</button>
             </div>
           </div>
         </div>
@@ -287,7 +287,7 @@ function KundeDetailPage() {
             </p>
             <div className="modal-actions">
               <button className="btn btn-secondary" onClick={() => setDeleteAngebot(null)}>Abbrechen</button>
-              <button className="btn btn-danger" onClick={handleDeleteAngebot}>Endgültig löschen</button>
+              <button className="btn btn-danger" autoFocus onClick={handleDeleteAngebot}>Endgültig löschen</button>
             </div>
           </div>
         </div>

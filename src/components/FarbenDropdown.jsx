@@ -86,7 +86,7 @@ function FarbenDropdown({ value, onChange }) {
                     <>
                       <span className="farben-confirm-text">„{f}" entfernen?</span>
                       <span className="farben-confirm-actions">
-                        <button type="button" className="farben-confirm-yes" onClick={() => remove(i)}>Ja</button>
+                        <button type="button" className="farben-confirm-yes" autoFocus onClick={() => remove(i)}>Ja</button>
                         <button type="button" className="farben-confirm-no" onClick={() => setConfirmIndex(null)}>Nein</button>
                       </span>
                     </>

@@ -520,7 +520,7 @@ function AngebotEditorPage() {
             <p className="modal-text">Möchtest du diese Position wirklich aus dem Angebot entfernen?</p>
             <div className="modal-actions">
               <button className="btn btn-secondary" onClick={() => setDeletePos(null)}>Abbrechen</button>
-              <button className="btn btn-danger" onClick={loeschePosition}>Löschen</button>
+              <button className="btn btn-danger" autoFocus onClick={loeschePosition}>Löschen</button>
             </div>
           </div>
         </div>

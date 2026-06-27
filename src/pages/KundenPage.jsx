@@ -142,7 +142,7 @@ function KundenPage() {
               <button className="btn btn-secondary" onClick={() => setDeleteTarget(null)}>
                 Abbrechen
               </button>
-              <button className="btn btn-danger" onClick={confirmDelete}>
+              <button className="btn btn-danger" autoFocus onClick={confirmDelete}>
                 Endgültig löschen
               </button>
             </div>
