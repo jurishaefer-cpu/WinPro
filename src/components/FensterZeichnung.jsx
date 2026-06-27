@@ -532,7 +532,7 @@ export function computeUnit(r0, scale, { geometrie, breite, hoehe, panes: panesP
     const olH = Math.min(olMM * scale, inner.h * 0.6);  // mind. unteren Bereich erhalten
     const kH = blendW;                                  // Kämpfer (waagrechter Rahmen) unter dem Oberlicht
     oberlichtRect = { x: inner.x, y: inner.y, w: inner.w, h: olH };
-    kaempferRect = { x: inner.x, y: inner.y + olH, w: inner.w, h: kH, fest: true };
+    kaempferRect = { x: blendIn.x, y: inner.y + olH, w: blendIn.w, h: kH, fest: true };
     inner = { x: inner.x, y: inner.y + olH + kH, w: inner.w, h: inner.h - olH - kH };
   }
 
@@ -580,9 +580,12 @@ export function computeUnit(r0, scale, { geometrie, breite, hoehe, panes: panesP
         const li = effPanes[c - 1], re = effPanes[c];
         if ((istSchiebe(li) && li.din !== 'links') || (istSchiebe(re) && re.din === 'links')) continue;
       }
-      pfostenList.push({ x: colX[c] - dW, y: inner.y, w: dW, h: inner.h, fest: !istStulp });
+      // Pfosten bis an die Rahmen-Innenkante (blendIn) durchziehen, damit er am Rahmen ansetzt
+      // statt im Luftspalt davor zu enden. Oben bei Oberlicht am Kämpfer (inner.y) beginnen.
+      const vTop = oberlichtRect ? inner.y : blendIn.y, vBot = blendIn.y + blendIn.h;
+      pfostenList.push({ x: colX[c] - dW, y: vTop, w: dW, h: vBot - vTop, fest: !istStulp });
     }
-    for (let r = 1; r < rows; r++) pfostenList.push({ x: inner.x, y: rowY[r] - dH, w: inner.w, h: dH, fest: true });
+    for (let r = 1; r < rows; r++) pfostenList.push({ x: blendIn.x, y: rowY[r] - dH, w: blendIn.w, h: dH, fest: true });
     if (cols > 1) subCols = colX.map((cx0, c) => ({ x0: cx0, x1: cx0 + colWpx[c], mm: Math.round(cwMM[c]), idx: c }));
     if (rows > 1) subRows = rowY.map((ry0, r) => ({ y0: ry0, y1: ry0 + rowHpx[r], mm: Math.round(rhMM[r]), idx: r }));
   } else {
