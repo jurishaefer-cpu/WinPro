@@ -590,6 +590,30 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
     setSelectedPane(null);
     setAddMenu(false);
   }
+  // Sonderform (Bogen/Dreieck) als Aufsatz ÜBER das aktive Fenster/Tür setzen: gleiche Breite,
+  // eigene Höhe (geo.defHoehe). Das aktive Element (und alles darunter in seiner Spalte) rückt
+  // eine Zeile nach unten; die Gesamthöhe wächst um die Höhe der Sonderform.
+  function addSonderform(code) {
+    const geo = geometrieByCode(code);
+    const akt = elemente.find(e => e.id === activeId) || elemente[0];
+    const C = akt.col ?? 0, R = akt.row ?? 0;
+    const id = `el${nextId.current++}`;
+    const neu = makeElement({
+      kategorie: 'fenster', code,
+      breite: Number(akt.breite) || 1000,
+      hoehe: Number(geo?.defHoehe) || 500,
+      row: R, col: C,
+      innenfarbe: akt.innenfarbe, aussenfarbe: akt.aussenfarbe,
+      verglasung: akt.verglasung, dichtungInnen: akt.dichtungInnen, dichtungAussen: akt.dichtungAussen,
+    }, id);
+    setElemente(prev => [
+      ...prev.map(e => ((e.col ?? 0) === C && (e.row ?? 0) >= R) ? { ...e, row: (e.row ?? 0) + 1 } : e),
+      neu,
+    ]);
+    setActiveId(id);
+    setSelectedPane(null);
+    setAddMenu(false);
+  }
   // Pfosten in ein Feld-Raster einfügen: 'v' = neue Spalte, 'h' = neue Zeile. Liefert die
   // geänderten Felder (panes/cols/colWidths bzw. rowHeights) oder null (Maximum erreicht).
   // Neues Feld ist zunächst fest verglast und danach per Klick einstellbar.
@@ -1401,7 +1425,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
                 const g = geometrieByCode(code);
                 return (
                   <button key={code} className="pane-option"
-                          onClick={() => addElement('fenster', code)}>
+                          onClick={() => addSonderform(code)}>
                     <span className="pane-option-thumb"><GeometrieThumb geometrie={g} /></span>
                     <span className="pane-option-label">{g.label}</span>
                   </button>
