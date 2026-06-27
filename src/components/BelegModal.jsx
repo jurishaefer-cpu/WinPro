@@ -171,18 +171,31 @@ function BelegModal({ onClose, ...docProps }) {
         pdf.addImage(teil.toDataURL('image/jpeg', 0.88), 'JPEG', 0, yMm, 210, (hpx / scale) / pxProMm);
       };
 
-      // Body-Seiten ermitteln (Umbruch nur an weißen Lücken)
+      // Erlaubte Umbruchstellen: nur GANZE Positionen/Blöcke. Eine Position (Tabellenzeile
+      // mit Skizze + Text) wird NIE zerschnitten – passt sie nicht mehr aufs Blatt, rückt sie
+      // komplett auf die nächste Seite. Dazu die Unterkanten der Zeilen/Blöcke messen und in
+      // Scan-Einheiten umrechnen (Klon hängt noch im DOM, volle A4-Breite, kein Transform).
+      const cloneTop = clone.getBoundingClientRect().top;
+      const grenzeScanVon = el => (el.getBoundingClientRect().bottom - cloneTop) * scale / body.ratio;
+      const grenzenRoh = [];
+      clone.querySelectorAll('.beleg-tabelle tbody tr').forEach(tr => grenzenRoh.push(grenzeScanVon(tr)));
+      clone.querySelectorAll('.beleg-tabelle, .beleg-summen, .beleg-zahlung').forEach(el => grenzenRoh.push(grenzeScanVon(el)));
+      const grenzen = [...new Set(grenzenRoh.map(g => Math.round(g)))]
+        .filter(g => g > body.oben && g <= body.unten)
+        .sort((a, b) => a - b);
+
+      // Body-Seiten ermitteln (Umbruch nur an Positions-/Blockgrenzen)
       const seiten = [];
       let start = body.oben;
       while (start < body.unten - 0.5) {
-        const ziel = Math.min(start + nutzScan, body.unten);
-        let cut = ziel;
-        if (ziel < body.unten) {
-          const limit = start + nutzScan * 0.6;
-          let y = Math.floor(ziel);
-          while (y > limit && !body.leer(y)) y--;
-          if (y > limit) cut = y;
-        }
+        const grenzeMax = start + nutzScan;
+        if (grenzeMax >= body.unten) { seiten.push([start, body.unten]); break; }
+        // größte erlaubte Grenze, die noch ganz auf die Seite passt
+        let cut = -1;
+        for (const g of grenzen) { if (g > start + 1 && g <= grenzeMax) cut = g; }
+        // Keine Positionsgrenze passt (einzelne Position höher als eine ganze Seite) →
+        // harter Schnitt unvermeidbar, damit es nicht endlos läuft.
+        if (cut < 0) cut = grenzeMax;
         seiten.push([start, cut]);
         start = cut;
       }
