@@ -955,7 +955,9 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
 
   // Zeichenfläche
   const VB_W = 780, VB_H = 720;
-  const maxW = 360, maxH = 430;
+  // Breite bis 600 px zulassen (wie die Mehrfach-Ansicht), damit breite/verbundene Fenster die
+  // Fläche füllen statt herausgezoomt zu wirken. Hochformat-Fenster bleiben höhenbegrenzt (maxH).
+  const maxW = 600, maxH = 430;
   const scale = Math.min(maxW / b, maxH / hh);
   const rw = b * scale, rh = hh * scale;
   const cx = VB_W / 2 + 24, cy = VB_H / 2 + 14;
