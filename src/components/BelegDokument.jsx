@@ -63,8 +63,6 @@ function BelegDokument({ art, angebot, kunde, positionen, profileMap, einstellun
       {meta.schluss && angebot?.ausfuehrungsdatum && (
         <p className="beleg-ausfuehrungsdatum">Ausführungsdatum: {datumDE(angebot.ausfuehrungsdatum)}</p>
       )}
-      <p className="beleg-anrede">Sehr geehrte Damen und Herren,</p>
-      <p className="beleg-intro">{meta.intro}</p>
 
       {meta.bauvorhaben && angebot?.bezeichnung?.trim() && (
         <p className="beleg-bauvorhaben"><span className="beleg-bauvorhaben-label">Bauvorhaben:</span> <strong>{angebot.bezeichnung}</strong></p>
