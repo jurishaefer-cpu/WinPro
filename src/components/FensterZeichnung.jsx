@@ -725,6 +725,18 @@ export function UnitBody({ c, glasFarbe = '#cfe3ef', onPaneClick, selectedPane, 
   );
 }
 
+// Kleiner Winkel-Bogen am Scheitel eines rechtwinkligen Dreiecks (zwischen senkrechter Kante und
+// Hypotenuse). links = Spitze links (Hypotenuse läuft nach rechts-unten), sonst nach links-unten.
+function winkelBogenPath(ax, ay, w, h, links, r) {
+  const L = Math.hypot(w, h) || 1;
+  const d1 = [0, 1];                                        // senkrechte Kante nach unten
+  const d2 = links ? [w / L, h / L] : [-w / L, h / L];      // Hypotenuse
+  const p1 = [ax + d1[0] * r, ay + d1[1] * r];
+  const p2 = [ax + d2[0] * r, ay + d2[1] * r];
+  const sweep = (d1[0] * d2[1] - d1[1] * d2[0]) > 0 ? 1 : 0;
+  return `M ${p1[0]},${p1[1]} A ${r},${r} 0 0 ${sweep} ${p2[0]},${p2[1]}`;
+}
+
 // Polygon um d nach innen versetzen: jede Kante parallel (Normale Richtung Schwerpunkt) um d
 // verschieben, neue Ecken = Schnittpunkt benachbarter versetzter Kanten → überall gleich dicker
 // Rahmen (anders als Skalieren zum Schwerpunkt, das je Kante ungleich versetzt).
@@ -1084,7 +1096,7 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
       if (tGeo?.form) {
         if (tGeo.form === 'dreieck' && (tGeo.variante === 'links' || tGeo.variante === 'rechts')) {
           const links = tGeo.variante === 'links';
-          teilWinkel.push({ ti, links, ax: links ? sub.x : sub.x + sub.w, ay: sub.y,
+          teilWinkel.push({ ti, links, ax: links ? sub.x : sub.x + sub.w, ay: sub.y, w: sub.w, h: sub.h,
             wk: Math.round(Math.atan2(Number(t.breite) || 0, Number(t.hoehe) || 1) * 180 / Math.PI) });
         }
         const sp = sonderformPfade(sub, tGeo, Math.max(6, 60 * scale));
@@ -1383,18 +1395,24 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
         const winkel = Math.round(Math.atan2(b, hh) * 180 / Math.PI);   // Winkel an der oberen Spitze
         const links = geometrie.variante === 'links';
         const ax = links ? r0.x : r0.x + r0.w;                          // obere Spitze
-        const tx = links ? ax + 12 : ax - 12;
+        const tx = links ? ax + 26 : ax - 26;
         return (
-          <text x={tx} y={r0.y + 26} textAnchor={links ? 'start' : 'end'} fontSize="15" fontWeight="700"
-                fill="#c0152e" stroke="#fff" strokeWidth="4" paintOrder="stroke">{winkel}°</text>
+          <g key="winkel-haupt">
+            <path d={winkelBogenPath(ax, r0.y, r0.w, r0.h, links, 18)} fill="none" stroke="#c0152e" strokeWidth="2" />
+            <text x={tx} y={r0.y + 30} textAnchor={links ? 'start' : 'end'} fontSize="15" fontWeight="700"
+                  fill="#c0152e" stroke="#fff" strokeWidth="4" paintOrder="stroke">{winkel}°</text>
+          </g>
         );
       })()}
 
       {/* Spitzenwinkel der rechtwinkligen Dreieck-Teile in einer verbundenen Kombination. */}
       {(onBreite || onHoehe) && teilWinkel.map(w => (
-        <text key={'tw' + w.ti} x={w.links ? w.ax + 12 : w.ax - 12} y={w.ay + 26}
-              textAnchor={w.links ? 'start' : 'end'} fontSize="15" fontWeight="700"
-              fill="#c0152e" stroke="#fff" strokeWidth="4" paintOrder="stroke">{w.wk}°</text>
+        <g key={'tw' + w.ti}>
+          <path d={winkelBogenPath(w.ax, w.ay, w.w, w.h, w.links, 18)} fill="none" stroke="#c0152e" strokeWidth="2" />
+          <text x={w.links ? w.ax + 26 : w.ax - 26} y={w.ay + 30}
+                textAnchor={w.links ? 'start' : 'end'} fontSize="15" fontWeight="700"
+                fill="#c0152e" stroke="#fff" strokeWidth="4" paintOrder="stroke">{w.wk}°</text>
+        </g>
       ))}
 
       {/* Klickbarer Trennrahmen zwischen den Teilen → „Entfernen" macht durchgehendes Glas */}
@@ -1814,13 +1832,19 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
               );
             })}
             {/* Spitzenwinkel oben bei rechtwinkligen Dreieck-Elementen (auch unverbunden in der Kombi). */}
-            {interaktiv && uGeo?.form === 'dreieck' && (uGeo.variante === 'links' || uGeo.variante === 'rechts') && (
-              <text x={uGeo.variante === 'links' ? u.r0.x + 12 : u.r0.x + u.r0.w - 12} y={u.r0.y + 24}
-                    textAnchor={uGeo.variante === 'links' ? 'start' : 'end'} fontSize="14" fontWeight="700"
-                    fill="#c0152e" stroke="#fff" strokeWidth="4" paintOrder="stroke" pointerEvents="none">
-                {Math.round(Math.atan2(Number(u.e.breite) || 0, Number(u.e.hoehe) || 1) * 180 / Math.PI)}°
-              </text>
-            )}
+            {interaktiv && uGeo?.form === 'dreieck' && (uGeo.variante === 'links' || uGeo.variante === 'rechts') && (() => {
+              const links = uGeo.variante === 'links';
+              const ax = links ? u.r0.x : u.r0.x + u.r0.w;
+              return (
+                <g pointerEvents="none">
+                  <path d={winkelBogenPath(ax, u.r0.y, u.r0.w, u.r0.h, links, 16)} fill="none" stroke="#c0152e" strokeWidth="2" />
+                  <text x={links ? ax + 24 : ax - 24} y={u.r0.y + 28} textAnchor={links ? 'start' : 'end'}
+                        fontSize="14" fontWeight="700" fill="#c0152e" stroke="#fff" strokeWidth="4" paintOrder="stroke">
+                    {Math.round(Math.atan2(Number(u.e.breite) || 0, Number(u.e.hoehe) || 1) * 180 / Math.PI)}°
+                  </text>
+                </g>
+              );
+            })()}
             {interaktiv && !aktiv && (
               <rect x={u.r0.x} y={u.r0.y} width={u.r0.w} height={u.r0.h} fill="transparent"
                     style={{ cursor: 'pointer' }}
