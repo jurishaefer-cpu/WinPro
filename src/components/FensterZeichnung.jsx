@@ -982,10 +982,27 @@ export function VerbundBogenBody({ r0, teile, scale, glasFarbe = '#cfe3ef', kp =
 export function durchgehendPfade(r0, teile, dir, frame) {
   const { x, y, w, h } = r0;
   const fw = Math.max(4, frame || 0);
-  if (dir !== 'v' || !Array.isArray(teile) || teile.length !== 2) return null;
+  if (!Array.isArray(teile) || teile.length !== 2) return null;
   const formIdx = geometrieByCode(teile[0].code)?.form ? 0 : (geometrieByCode(teile[1].code)?.form ? 1 : -1);
   if (formIdx < 0) return null;
   const g = geometrieByCode(teile[formIdx].code);
+
+  // Seitliche Verbindung (Rechteck + Dreieck): zu einem Viereck/Trapez verschmelzen – aber nur,
+  // wenn die VOLLE (hohe) Dreieckseite an der Naht liegt (sonst nicht bündig).
+  if (dir === 'h') {
+    if (g.form !== 'dreieck') return null;
+    const totalB = (Number(teile[0].breite) || 0) + (Number(teile[1].breite) || 0) || 1;
+    const splitX = x + (Number(teile[0].breite) / totalB) * w;
+    const formRight = formIdx === 1;
+    let pts;
+    if (formRight && g.variante === 'links') pts = [[x, y], [splitX, y], [x + w, y + h], [x, y + h]];
+    else if (!formRight && g.variante === 'rechts') pts = [[splitX, y], [x + w, y], [x + w, y + h], [x, y + h]];
+    else return null;
+    const pathH = ps => 'M ' + ps.map(p => `${p[0]},${p[1]}`).join(' L ') + ' Z';
+    return { outer: pathH(pts), inner: pathH(insetPolygon(pts, fw)) };
+  }
+
+  if (dir !== 'v') return null;
   const formOnTop = formIdx === 0;
   const total = (Number(teile[0].hoehe) || 0) + (Number(teile[1].hoehe) || 0) || 1;
   const splitY = y + (Number(teile[0].hoehe) / total) * h;

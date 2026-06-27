@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import FensterZeichnung, { GEOMETRIEN, geometrieByCode, GeometrieThumb, fensterBezeichnung, KombinationsZeichnung, istAluCode, RolloZeichnung } from './FensterZeichnung';
+import FensterZeichnung, { GEOMETRIEN, geometrieByCode, GeometrieThumb, fensterBezeichnung, KombinationsZeichnung, istAluCode, RolloZeichnung, durchgehendPfade } from './FensterZeichnung';
 import GeometrieSelect from './GeometrieSelect';
 import RichTextEditor from './RichTextEditor';
 import { kombiMass } from '../lib/belegHelfer';
@@ -421,6 +421,11 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
   const aktivIndex = Math.max(0, elemente.findIndex(e => e.id === aktiv.id));
   const istMain = aktiv && aktiv.id === elemente[0].id;
   const geometrie = geometrieByCode(aktiv.code);
+  // „Durchgehendes Glas" möglich? Verbund mit Sonderform-Teil, und durchgehendPfade liefert für
+  // die Richtung (v = übereinander, h = seitlich) eine verschmolzene Form (sonst null).
+  const kannDurchgehend = aktiv.verbunden && Array.isArray(aktiv._teile)
+    && aktiv._teile.some(t => geometrieByCode(t.code)?.form)
+    && !!durchgehendPfade({ x: 0, y: 0, w: 1000, h: 1000 }, aktiv._teile, aktiv._dir, 10);
   // System „Aluminium Haustür": ausschließlich die ALU-Geometrien anbieten – sonst die bisherigen.
   const istAluSystem = istAluHaustuerProfil(profil);
   // Haustüren (ALU-System oder Haustür-Geometrie): Standort, Aufsatzkasten/Rollladen, Dichtungen ausblenden.
@@ -1403,8 +1408,8 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
                 <button className="np-merge-btn" onClick={verbinde}>Ja</button>
               </div>
             )}
-            {/* Durchgehendes Glas (Trennrahmen entfernen) – nur bei verbundenem Bogen/Dreieck ÜBER/UNTER Fenster (vertikal) */}
-            {aktiv.verbunden && aktiv._dir === 'v' && Array.isArray(aktiv._teile) && aktiv._teile.some(t => geometrieByCode(t.code)?.form) && (
+            {/* Durchgehendes Glas (Trennrahmen entfernen) – verbundener Bogen/Dreieck über/unter ODER seitlich neben dem Fenster */}
+            {kannDurchgehend && (
               aktiv.durchgehend ? (
                 <div className="np-merge np-merge--on" title="Trennrahmen wieder einsetzen">
                   <span className="np-merge-label">✓ Durchgeh. Glas</span>
