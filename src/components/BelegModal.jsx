@@ -62,8 +62,10 @@ function BelegModal({ onClose, ...docProps }) {
   // Erzeugt die PDF selbst (ohne Browser-Druckdialog) und öffnet sie direkt zum Drucken.
   async function exportPdf() {
     if (busy || !druckRef.current) return;
-    // Druck-Tab sofort im Klick öffnen (sonst blockt der Popup-Blocker nach dem await)
-    const druckFenster = window.open('', '_blank');
+    // Safari/iOS: kein Popup (blob:-Navigation dort unzuverlässig) → später Download.
+    const istSafari = /^((?!chrome|android|crios|fxios).)*safari/i.test(navigator.userAgent);
+    // Chrome/Firefox: Druck-Tab sofort im Klick öffnen (sonst blockt der Popup-Blocker nach dem await)
+    const druckFenster = istSafari ? null : window.open('', '_blank');
     if (druckFenster) druckFenster.document.write('<title>Beleg</title><p style="font-family:sans-serif;color:#555;padding:24px">Beleg wird vorbereitet…</p>');
     setBusy(true);
     let holder;
@@ -107,7 +109,7 @@ function BelegModal({ onClose, ...docProps }) {
       const MAX_KANTE = 8192;          // konservative max. Canvas-Kantenlänge
       const bodyH = Math.max(clone.offsetHeight, 1);
       const scale = Math.max(1, Math.min(
-        6,
+        4,                               // Deckel 4 statt 6: kleinere, mobilfreundliche PDFs (scharf genug für A4-Druck)
         Math.sqrt(MAX_AREA / (A4_BREITE * bodyH)),
         MAX_KANTE / Math.max(A4_BREITE, bodyH),
       ));
@@ -166,7 +168,7 @@ function BelegModal({ onClose, ...docProps }) {
         const teil = document.createElement('canvas');
         teil.width = canvas.width; teil.height = hpx;
         teil.getContext('2d').drawImage(canvas, 0, startFull, canvas.width, hpx, 0, 0, canvas.width, hpx);
-        pdf.addImage(teil.toDataURL('image/jpeg', 0.96), 'JPEG', 0, yMm, 210, (hpx / scale) / pxProMm);
+        pdf.addImage(teil.toDataURL('image/jpeg', 0.88), 'JPEG', 0, yMm, 210, (hpx / scale) / pxProMm);
       };
 
       // Body-Seiten ermitteln (Umbruch nur an weißen Lücken)
@@ -193,19 +195,53 @@ function BelegModal({ onClose, ...docProps }) {
         if (i === seiten.length - 1 && hatFuss) pdf.addImage(fussCanvas.toDataURL('image/png'), 'PNG', 0, fussYmm, 210, fussHmm);
       });
 
-      // Direkt drucken: PDF im Tab öffnen (kein Download nötig)
-      pdf.autoPrint();
-      const url = pdf.output('bloburl');
-      if (druckFenster) druckFenster.location.href = url;
-      else pdf.save(dateiName(docProps.art, docProps.angebot?.belegnummern?.[docProps.art] ?? docProps.angebot?.belegnummer));   // Fallback bei Popup-Blocker
+      // Aufräumen vor der Ausgabe – ab hier ist die PDF fertig erzeugt.
+      if (holder) { document.body.removeChild(holder); holder = null; }
+      uebergebePdf(pdf, druckFenster);
     } catch (e) {
-      console.error(e);
-      if (druckFenster) druckFenster.close();
-      alert('PDF konnte nicht erstellt werden. Bitte erneut versuchen.');
+      console.error('PDF-Erzeugung fehlgeschlagen:', e);
+      if (druckFenster) { try { druckFenster.close(); } catch { /* egal */ } }
+      alert('PDF konnte nicht erstellt werden:\n' + (e?.message || e) + '\n\nBitte erneut versuchen.');
     } finally {
       if (holder) document.body.removeChild(holder);
       setBusy(false);
     }
+  }
+
+  // Gibt die fertige PDF aus. WICHTIG: Fehler hier dürfen NICHT als „Erstellung
+  // fehlgeschlagen" erscheinen – die PDF existiert ja bereits. Auf Safari/iOS ist das
+  // Navigieren eines Popups auf eine blob:-URL unzuverlässig, daher dort direkt Download.
+  function uebergebePdf(pdf, druckFenster) {
+    const name = dateiName(docProps.art, docProps.angebot?.belegnummern?.[docProps.art] ?? docProps.angebot?.belegnummer);
+    const istSafari = /^((?!chrome|android|crios|fxios).)*safari/i.test(navigator.userAgent);
+    let url;
+    try { try { pdf.autoPrint(); } catch { /* autoPrint optional */ }
+      url = URL.createObjectURL(pdf.output('blob'));
+    } catch (e) {
+      // Sollte praktisch nie passieren (Blob wurde oben schon erzeugt) – letzter Notnagel.
+      console.error('PDF-Ausgabe (blob) fehlgeschlagen:', e);
+      try { if (druckFenster) druckFenster.close(); } catch { /* egal */ }
+      try { pdf.save(name); } catch { alert('PDF konnte nicht geöffnet werden: ' + (e?.message || e)); }
+      return;
+    }
+
+    const download = () => {
+      const a = document.createElement('a');
+      a.href = url; a.download = name;
+      document.body.appendChild(a); a.click(); a.remove();
+    };
+
+    let geoeffnet = false;
+    // Chrome/Firefox: PDF im vorab geöffneten Tab anzeigen (inkl. autoPrint-Dialog).
+    if (!istSafari && druckFenster && !druckFenster.closed) {
+      try { druckFenster.location.href = url; geoeffnet = true; } catch { geoeffnet = false; }
+    }
+    if (!geoeffnet) {
+      // Safari/iOS oder Popup blockiert/fehlgeschlagen → zuverlässiger Download auf jedem Gerät.
+      try { if (druckFenster && !druckFenster.closed) druckFenster.close(); } catch { /* egal */ }
+      download();
+    }
+    setTimeout(() => { try { URL.revokeObjectURL(url); } catch { /* egal */ } }, 60000);
   }
 
   return (
