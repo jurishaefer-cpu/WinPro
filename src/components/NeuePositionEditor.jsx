@@ -774,21 +774,31 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
     const c = el.col ?? 0;
     const cols = [...new Set(elemente.map(e => e.col ?? 0))].sort((a, b) => a - b);
     const idx = cols.indexOf(c);
-    // Nur EIN Nachbar gleicht aus: bevorzugt die Spalte rechts, sonst die links daneben.
-    const nb = cols[idx + 1] ?? cols[idx - 1];
+    // Eine Spalte gilt als gesperrt, sobald ein Element darin eine von Hand gesetzte Breite hat.
+    const gesperrt = cc => elemente.some(e => (e.col ?? 0) === cc && e.fixB);
+    // Ausgleichsspalte: zuerst die nächste FREIE (rechts, dann links). Gibt es keine freie mehr,
+    // gleicht der direkte Nachbar aus – bei zwei Nachbarn der rechte, sonst der einzige.
+    let nb = null;
+    for (let i = idx + 1; i < cols.length && nb == null; i++) if (!gesperrt(cols[i])) nb = cols[i];
+    for (let i = idx - 1; i >= 0 && nb == null; i--) if (!gesperrt(cols[i])) nb = cols[i];
+    if (nb == null) nb = cols[idx + 1] ?? cols[idx - 1];
     if (nb != null) {
       const colW = cc => Math.max(0, ...elemente.filter(e => (e.col ?? 0) === cc).map(e => Number(e.breite) || 0));
       const paar = colW(c) + colW(nb);   // Summe der beiden bleibt konstant → Gesamtmaß bleibt gleich
       let w = Math.max(200, Math.round(Number(val) || 0));
       if (w > paar - 200) { w = paar - 200; zeigeWarnung('zu groß'); }
-      const next = { [c]: w, [nb]: paar - w };
-      setElemente(prev => prev.map(e => (next[e.col ?? 0] != null ? scaleBreite(e, next[e.col ?? 0]) : e)));
+      setElemente(prev => prev.map(e => {
+        const ec = e.col ?? 0;
+        if (ec === c) return { ...scaleBreite(e, w), fixB: true };   // bearbeitete Spalte: ab jetzt gesperrt
+        if (ec === nb) return scaleBreite(e, paar - w);              // freier/Nachbar gleicht aus
+        return e;
+      }));
       return;
     }
     // Nur eine Spalte: kein Nachbar zum Ausgleichen – Breite direkt setzen (durch Wand begrenzt).
     let w = Math.max(200, Math.round(Number(val) || 0));
     if (rahmenB && w > rahmenB) { w = rahmenB; zeigeWarnung('zu groß'); }
-    setElemente(prev => prev.map(e => (e.id === id ? scaleBreite(e, w) : e)));
+    setElemente(prev => prev.map(e => (e.id === id ? { ...scaleBreite(e, w), fixB: true } : e)));
   }
   function setElementHoehe(id, val) {
     const el = elemente.find(e => e.id === id);
@@ -796,21 +806,30 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
     const r = el.row ?? 0;
     const rows = [...new Set(elemente.map(e => e.row ?? 0))].sort((a, b) => a - b);
     const idx = rows.indexOf(r);
-    // Nur EIN Nachbar gleicht aus: bevorzugt die Zeile darunter, sonst die darüber.
-    const nb = rows[idx + 1] ?? rows[idx - 1];
+    // Eine Zeile gilt als gesperrt, sobald ein Element darin eine von Hand gesetzte Höhe hat.
+    const gesperrt = rr => elemente.some(e => (e.row ?? 0) === rr && e.fixH);
+    // Ausgleichszeile: zuerst die nächste FREIE (unten, dann oben). Sonst direkter Nachbar (unten bevorzugt).
+    let nb = null;
+    for (let i = idx + 1; i < rows.length && nb == null; i++) if (!gesperrt(rows[i])) nb = rows[i];
+    for (let i = idx - 1; i >= 0 && nb == null; i--) if (!gesperrt(rows[i])) nb = rows[i];
+    if (nb == null) nb = rows[idx + 1] ?? rows[idx - 1];
     if (nb != null) {
       const rowH = rr => Math.max(0, ...elemente.filter(e => (e.row ?? 0) === rr).map(e => Number(e.hoehe) || 0));
       const paar = rowH(r) + rowH(nb);
       let h = Math.max(200, Math.round(Number(val) || 0));
       if (h > paar - 200) { h = paar - 200; zeigeWarnung('zu groß'); }
-      const next = { [r]: h, [nb]: paar - h };
-      setElemente(prev => prev.map(e => (next[e.row ?? 0] != null ? scaleHoehe(e, next[e.row ?? 0]) : e)));
+      setElemente(prev => prev.map(e => {
+        const er = e.row ?? 0;
+        if (er === r) return { ...scaleHoehe(e, h), fixH: true };
+        if (er === nb) return scaleHoehe(e, paar - h);
+        return e;
+      }));
       return;
     }
     // Nur eine Zeile: kein gestapelter Nachbar – nur dieses Element ändern (durch Wand begrenzt).
     let h = Math.max(200, Math.round(Number(val) || 0));
     if (rahmenH && h > rahmenH) { h = rahmenH; zeigeWarnung('zu groß'); }
-    setElemente(prev => prev.map(e => (e.id === id ? scaleHoehe(e, h) : e)));
+    setElemente(prev => prev.map(e => (e.id === id ? { ...scaleHoehe(e, h), fixH: true } : e)));
   }
   // Gesamtmaß ändern: die Fenster füllen das neue Maß (Spalten/Zeilen skalieren proportional).
   // Kein leerer Rahmen – die Fenster nehmen das ganze Gesamtmaß ein.
