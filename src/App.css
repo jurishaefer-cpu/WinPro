@@ -1408,7 +1408,8 @@ a.detail-contact-link:hover span { text-decoration: underline; }
 .beleg-zahlung {
   margin-top: 26px; padding: 0;
 }
-.beleg-zahlung strong { display: block; margin-bottom: 6px; }
+/* nur die Überschrift (direktes Kind) als Block – der Betrag im Absatz bleibt inline */
+.beleg-zahlung > strong { display: block; margin-bottom: 6px; }
 .beleg-zahlung p { margin: 0 0 4px; }
 
 .beleg-fuss { display: flex; justify-content: space-between; gap: 20px; font-size: 10px; color: #555; line-height: 1.5; }
