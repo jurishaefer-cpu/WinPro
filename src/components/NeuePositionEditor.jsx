@@ -1566,11 +1566,13 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
                 );
               })()}
               <div className="pane-menu-sub">Sonderformen</div>
-              {['S01', 'S02', 'S03', 'S04', 'S05'].map(code => {
+              {['S01', 'S02', 'S03', 'S04', 'S05', 'S06', 'S07'].map(code => {
                 const g = geometrieByCode(code);
+                // Trapez ist ein vollwertiges Fenster → als neues Element einfügen (nicht als Aufsatz).
+                const istTrapez = g.form === 'trapez';
                 return (
                   <button key={code} className="pane-option"
-                          onClick={() => addSonderform(code)}>
+                          onClick={() => (istTrapez ? addElement('fenster', code) : addSonderform(code))}>
                     <span className="pane-option-thumb"><GeometrieThumb geometrie={g} /></span>
                     <span className="pane-option-label">{g.label}</span>
                   </button>
