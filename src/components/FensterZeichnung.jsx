@@ -43,6 +43,8 @@ export const GEOMETRIEN = [
   { code: 'S03', kategorie: 'fenster', gruppe: 'Sonderformen', label: 'Dreieckfenster gleichschenklig', form: 'dreieck', variante: 'gleich', open: 'fest', defBreite: 1200, defHoehe: 800 },
   { code: 'S04', kategorie: 'fenster', gruppe: 'Sonderformen', label: 'Dreieckfenster rechtwinklig (Spitze links)', form: 'dreieck', variante: 'links', open: 'fest', defBreite: 1200, defHoehe: 800 },
   { code: 'S05', kategorie: 'fenster', gruppe: 'Sonderformen', label: 'Dreieckfenster rechtwinklig (Spitze rechts)', form: 'dreieck', variante: 'rechts', open: 'fest', defBreite: 1200, defHoehe: 800 },
+  { code: 'S06', kategorie: 'fenster', gruppe: 'Sonderformen', label: 'Trapez (Schräge rechts)', form: 'trapez', variante: 'rechts', flach: 0.3, open: 'fest', defBreite: 2000, defHoehe: 1200 },
+  { code: 'S07', kategorie: 'fenster', gruppe: 'Sonderformen', label: 'Trapez (Schräge links)', form: 'trapez', variante: 'links', flach: 0.3, open: 'fest', defBreite: 2000, defHoehe: 1200 },
   { code: 'T01', kategorie: 'tuer', gruppe: 'Türen', label: 'Haustür DIN Links', open: 'tuer', din: 'links' },
   { code: 'T02', kategorie: 'tuer', gruppe: 'Türen', label: 'Haustür DIN Rechts', open: 'tuer', din: 'rechts' },
   { code: 'T03', kategorie: 'tuer', gruppe: 'Türen', label: 'Balkontür Dreh-Kipp DIN Links', open: 'drehkipp', din: 'links', tuer: true },
@@ -782,6 +784,17 @@ export function sonderformPfade(r, geo, frame, offen = false) {
     contour = (d) => {
       const ip = insetPolygon(pts, d);   // echter Parallel-Versatz → gleich dicker Rahmen
       return { path: `M ${ip[0][0]},${ip[0][1]} L ${ip[1][0]},${ip[1][1]} L ${ip[2][0]},${ip[2][1]} Z`, corners: ip };
+    };
+  } else if (geo.form === 'trapez') {
+    // Trapez: volle Höhe an einer Seite, oben eine gerade Strecke (flach·Breite), dann Schräge bis
+    // zur unteren Ecke der anderen Seite. 'rechts' = Schräge fällt nach rechts unten.
+    const wTop = Math.min(w - 2, Math.max(2, w * (geo.flach ?? 0.3)));
+    const pts = geo.variante === 'links'
+      ? [[x + w, y], [x + w - wTop, y], [x, y + h], [x + w, y + h]]
+      : [[x, y], [x + wTop, y], [x + w, y + h], [x, y + h]];
+    contour = (d) => {
+      const ip = insetPolygon(pts, d);
+      return { path: 'M ' + ip.map(p => `${p[0]},${p[1]}`).join(' L ') + ' Z', corners: ip };
     };
   } else if (geo.form === 'rundbogen') {
     // Rundbogen: Halbellipse mit Mittelpunkt auf der Basislinie. Innenkontur KONZENTRISCH (beide
