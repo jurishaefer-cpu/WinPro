@@ -1500,8 +1500,11 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
             <line x1={x1} y1={oy - 21} x2={x1} y2={oy - 11} stroke="#0f1f3d" strokeWidth="1" />
             {editM && onElementBreite ? (
               <foreignObject x={(x0 + x1) / 2 - 42} y={oy - 48} width={84} height={28}>
-                <input className="fz-massinput fz-massinput--sub" type="number" value={u.e.breite}
-                       onChange={e => onElementBreite(u.e._key, e.target.value)} />
+                <input className="fz-massinput fz-massinput--sub" type="number"
+                       key={'ew' + u.e._key + '_' + Math.round(Number(u.e.breite) || 0)}
+                       defaultValue={Math.round(Number(u.e.breite) || 0)}
+                       onBlur={e => onElementBreite(u.e._key, e.target.value)}
+                       onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); }} />
               </foreignObject>
             ) : (
               <text x={(x0 + x1) / 2} y={oy - 22} textAnchor="middle" fontSize={fSub} fill="#0f1f3d" fontWeight="700">{Math.round(u.r0.w / scale)}</text>
@@ -1676,8 +1679,11 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
             <line x1={dx - 5} y1={u.r0.y + u.r0.h} x2={dx + 5} y2={u.r0.y + u.r0.h} stroke="#0f1f3d" strokeWidth="1" />
             {editM && onElementHoehe ? (
               <foreignObject x={dx + 14 - 36} y={mid - 14} width={72} height={28} transform={`rotate(-90 ${dx + 14} ${mid})`}>
-                <input className="fz-massinput fz-massinput--sub" type="number" value={u.e.hoehe}
-                       onChange={e => onElementHoehe(u.e._key, e.target.value)} />
+                <input className="fz-massinput fz-massinput--sub" type="number"
+                       key={'eh' + u.e._key + '_' + Math.round(Number(u.e.hoehe) || 0)}
+                       defaultValue={Math.round(Number(u.e.hoehe) || 0)}
+                       onBlur={e => onElementHoehe(u.e._key, e.target.value)}
+                       onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); }} />
               </foreignObject>
             ) : (
               <text x={dx + 16} y={mid} textAnchor="middle" fontSize="15" fill="#0f1f3d" fontWeight="600"
