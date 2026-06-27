@@ -892,6 +892,10 @@ export function VerbundBogenBody({ r0, teile, scale, glasFarbe = '#cfe3ef', kp =
               x={colX[i + 1] - pfW / 2} y={y + fwB} width={pfW} height={(y + h - fwB) - (y + fwB)}
               fill="#fff" stroke="#0f1f3d" strokeWidth="1.6" />
       ))}
+      {/* Kämpfer am Bogenansatz (splitY): trennt den Bogen vom geraden Fensterteil. Nur im
+          „Trennrahmen"-Zustand sichtbar – bei durchgehendem Glas wird dieser Body gar nicht genutzt. */}
+      <rect x={winRect.x} y={splitY - pfW / 2} width={winRect.w} height={pfW}
+            fill="#fff" stroke="#0f1f3d" strokeWidth="1.6" />
       {/* Horizontaler Pfosten: nur im Fensterteil (1 Balken je hinzugefügter Zeile). */}
       {Array.from({ length: wRows - 1 }).map((_, i) => (
         <g key={kp + 'pfh' + i}>
