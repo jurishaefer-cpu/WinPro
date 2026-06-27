@@ -1750,6 +1750,18 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
               <rect x={u.r0.x} y={u.r0.y} width={u.r0.w} height={u.r0.h} fill="none"
                     stroke="#c0152e" strokeWidth="2.5" strokeDasharray="6 4" pointerEvents="none" />
             )}
+            {/* Interne Teilmaße (was der Pfosten im Element teilt) – auch wenn ein Element drüber sitzt. */}
+            {interaktiv && (u.c?.subRows?.length > 0) && u.c.subRows.map((s, si) => {
+              const mid = (s.y0 + s.y1) / 2, lx = u.r0.x + 16;
+              return (
+                <g key={'usr' + u.e._key + '-' + si} pointerEvents="none">
+                  <line x1={lx} y1={s.y0 + 2} x2={lx} y2={s.y1 - 2} stroke="#0f1f3d" strokeWidth="1" opacity="0.55" />
+                  <text x={lx} y={mid} textAnchor="middle" fontSize="13" fontWeight="700"
+                        fill="#0f1f3d" stroke="#fff" strokeWidth="3.5" paintOrder="stroke"
+                        transform={`rotate(-90 ${lx} ${mid})`}>{s.mm}</text>
+                </g>
+              );
+            })}
             {/* Spitzenwinkel oben bei rechtwinkligen Dreieck-Elementen (auch unverbunden in der Kombi). */}
             {interaktiv && uGeo?.form === 'dreieck' && (uGeo.variante === 'links' || uGeo.variante === 'rechts') && (
               <text x={uGeo.variante === 'links' ? u.r0.x + 12 : u.r0.x + u.r0.w - 12} y={u.r0.y + 24}
