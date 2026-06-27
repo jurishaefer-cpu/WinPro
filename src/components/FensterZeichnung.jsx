@@ -1489,7 +1489,7 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
 }
 
 // Kombination mehrerer gekoppelter Einheiten (eigener Rahmen je Element), im Raster (row/col).
-export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weissesGlas = false, onUnitClick, activeId, onPaneClick, selectedPane, onDock, onSlide, onTotalBreite, onTotalHoehe, onElementBreite, onElementHoehe, onBackgroundClick, rahmen, onElementPfostenV, onElementRowHeight, onPfostenStart, onPfostenEnd }) {
+export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weissesGlas = false, onUnitClick, activeId, onPaneClick, selectedPane, onDock, onSlide, onTotalBreite, onTotalHoehe, onElementBreite, onElementHoehe, onBackgroundClick, rahmen, onElementPfostenV, onElementRowHeight, onElementTrapezFlach, onPfostenStart, onPfostenEnd }) {
   const svgRef = useRef(null);
   const [drag, setDrag] = useState(null); // { id, side, targetId }
   function svgPoint(clientX, clientY) {
@@ -1789,8 +1789,12 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
         const aktiv = activeId != null && u.e._key === activeId;
         const istMainUnit = u.e._key === mainKey;
         const uGeo = geometrieByCode(u.e.code);
+        // Trapez: gerade Oberkante aus trapezFlach (mm) → Anteil der Breite (sonst Geometrie-Standard).
+        const uTrapez = uGeo?.form === 'trapez';
+        const uTrapezFrac = uTrapez ? Math.min(0.95, Math.max(0.04, (Number(u.e.trapezFlach) || (uGeo.flach ?? 0.3) * u.e.breite) / (Number(u.e.breite) || 1))) : 0;
+        const uGeoEff = uTrapez ? { ...uGeo, flach: uTrapezFrac } : uGeo;
         const uOffen = !!(u.e.panes?.[0] && !u.e.panes[0].fest && u.e.panes[0].open && u.e.panes[0].open !== 'fest');
-        const uSonder = uGeo?.form ? sonderformPfade(u.r0, uGeo, Math.max(5, 60 * scale), uOffen) : null;
+        const uSonder = uGeoEff?.form ? sonderformPfade(u.r0, uGeoEff, Math.max(5, 60 * scale), uOffen) : null;
         // Vertikale Mittelpfosten im Bogen-Element (auch in der Kombi zeichnen).
         const uSonderMullions = [];
         if (uSonder) {
@@ -1935,7 +1939,7 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
               );
             })()}
             {/* Höhen-Griff am Bogen-Scheitel (aktiver, unverbundener Bogen): vertikal ziehen = Höhe */}
-            {interaktiv && aktiv && uSonder && onElementHoehe && !wirdGezogen && (
+            {interaktiv && aktiv && uSonder && !uTrapez && onElementHoehe && !wirdGezogen && (
               <g>
                 <line x1={u.r0.x + u.r0.w / 2} y1={u.r0.y} x2={u.r0.x + u.r0.w / 2} y2={u.r0.y - 24} stroke="#c0152e" strokeWidth="1.6" pointerEvents="none" />
                 <circle cx={u.r0.x + u.r0.w / 2} cy={u.r0.y - 24} r="9" fill="#fff" stroke="#c0152e" strokeWidth="2.5"
@@ -1945,6 +1949,28 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
                 </circle>
               </g>
             )}
+            {/* Trapez: editierbares Maß der geraden Oberkante (an der flachen Seite oben). */}
+            {interaktiv && aktiv && uTrapez && onElementTrapezFlach && !wirdGezogen && (() => {
+              const rechts = uGeo.variante !== 'links';
+              const flatPx = uTrapezFrac * u.r0.w;
+              const x0 = rechts ? u.r0.x : u.r0.x + u.r0.w - flatPx;
+              const x1 = rechts ? u.r0.x + flatPx : u.r0.x + u.r0.w;
+              const mid = (x0 + x1) / 2;
+              const flatMm = Math.round(Number(u.e.trapezFlach) || uTrapezFrac * (Number(u.e.breite) || 1000));
+              return (
+                <g>
+                  <line x1={x0} y1={u.r0.y - 8} x2={x1} y2={u.r0.y - 8} stroke="#0f1f3d" strokeWidth="1" />
+                  <line x1={x0} y1={u.r0.y - 12} x2={x0} y2={u.r0.y - 4} stroke="#0f1f3d" strokeWidth="1" />
+                  <line x1={x1} y1={u.r0.y - 12} x2={x1} y2={u.r0.y - 4} stroke="#0f1f3d" strokeWidth="1" />
+                  <foreignObject x={mid - 38} y={u.r0.y - 40} width={76} height={28}>
+                    <input className="fz-massinput fz-massinput--sub" type="number"
+                           key={'utf' + u.e._key + '_' + flatMm} defaultValue={flatMm}
+                           onBlur={e => onElementTrapezFlach(u.e._key, e.target.value)}
+                           onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); }} />
+                  </foreignObject>
+                </g>
+              );
+            })()}
           </g>
         );
       })}

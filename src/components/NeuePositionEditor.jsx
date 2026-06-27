@@ -538,6 +538,16 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
     setSelectedPane(null);
   }
 
+  // Trapez in einer Kombination: gerade Oberkante (mm) eines bestimmten Elements setzen.
+  function setElementTrapezFlach(id, val) {
+    setElemente(prev => prev.map(e => {
+      if (e.id !== id) return e;
+      const b = Number(e.breite) || 1000;
+      let v = Math.max(80, Math.round(Number(val) || 0));
+      if (v > b - 80) v = b - 80;
+      return { ...e, trapezFlach: v };
+    }));
+  }
   // Trapez: Länge der geraden Oberkante (mm) setzen; bleibt innerhalb der Breite.
   function setTrapezFlach(val) {
     const b = Number(aktiv.breite) || 1000;
@@ -1471,6 +1481,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
                 onTotalBreite={setTotalBreite} onTotalHoehe={setTotalHoehe}
                 onElementBreite={setElementBreite} onElementHoehe={setElementHoehe}
                 onElementPfostenV={setElementPfostenRow} onElementRowHeight={setElementRowHeight}
+                onElementTrapezFlach={setElementTrapezFlach}
                 onPfostenStart={histGroupStart} onPfostenEnd={histGroupEnd} />
             ) : (
               <FensterZeichnung geometrie={geometrie} breite={aktiv.breite} hoehe={aktiv.hoehe}
