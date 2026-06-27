@@ -1600,7 +1600,10 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
             return <UnitBody key={'t' + ti} c={tc} glasFarbe={tGlas} keyPrefix={'u' + u.e._key + '-t' + ti + '-'} />;
           });
         }
-        const ziehbar = interaktiv && !istMainUnit;
+        // Nur das AKTIVE Element ist ziehbar – sonst fängt die Ziehfläche den ersten Klick ab
+        // (Touch-Wackeln startet einen Drag → Auswahl bleibt aus). So wechselt ein Tipp auf ein
+        // anderes Element zuverlässig beim ersten Klick; danach lässt es sich ziehen.
+        const ziehbar = interaktiv && aktiv && !istMainUnit;
         // Beim Ziehen folgt das Element ausgegraut frei dem Finger. Das Zentrum bleibt im
         // Zeichenbereich; das Element ragt (per overflow:visible) in die Ränder → frei beweglich
         // UND immer sichtbar (kein Abschneiden, nicht off-screen).
