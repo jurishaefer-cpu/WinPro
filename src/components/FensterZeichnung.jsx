@@ -1949,25 +1949,30 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
                 </circle>
               </g>
             )}
-            {/* Trapez: editierbares Maß der geraden Oberkante (an der flachen Seite oben). */}
-            {interaktiv && aktiv && uTrapez && onElementTrapezFlach && !wirdGezogen && (() => {
+            {/* Trapez: Maß der geraden Oberkante – immer sichtbar, editierbar wenn ausgewählt. */}
+            {interaktiv && uTrapez && !wirdGezogen && (() => {
               const rechts = uGeo.variante !== 'links';
               const flatPx = uTrapezFrac * u.r0.w;
               const x0 = rechts ? u.r0.x : u.r0.x + u.r0.w - flatPx;
               const x1 = rechts ? u.r0.x + flatPx : u.r0.x + u.r0.w;
               const mid = (x0 + x1) / 2;
               const flatMm = Math.round(Number(u.e.trapezFlach) || uTrapezFrac * (Number(u.e.breite) || 1000));
+              const editierbar = aktiv && onElementTrapezFlach;
               return (
                 <g>
                   <line x1={x0} y1={u.r0.y - 8} x2={x1} y2={u.r0.y - 8} stroke="#0f1f3d" strokeWidth="1" />
                   <line x1={x0} y1={u.r0.y - 12} x2={x0} y2={u.r0.y - 4} stroke="#0f1f3d" strokeWidth="1" />
                   <line x1={x1} y1={u.r0.y - 12} x2={x1} y2={u.r0.y - 4} stroke="#0f1f3d" strokeWidth="1" />
-                  <foreignObject x={mid - 38} y={u.r0.y - 40} width={76} height={28}>
-                    <input className="fz-massinput fz-massinput--sub" type="number"
-                           key={'utf' + u.e._key + '_' + flatMm} defaultValue={flatMm}
-                           onBlur={e => onElementTrapezFlach(u.e._key, e.target.value)}
-                           onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); }} />
-                  </foreignObject>
+                  {editierbar ? (
+                    <foreignObject x={mid - 38} y={u.r0.y - 40} width={76} height={28}>
+                      <input className="fz-massinput fz-massinput--sub" type="number"
+                             key={'utf' + u.e._key + '_' + flatMm} defaultValue={flatMm}
+                             onBlur={e => onElementTrapezFlach(u.e._key, e.target.value)}
+                             onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); }} />
+                    </foreignObject>
+                  ) : (
+                    <text x={mid} y={u.r0.y - 14} textAnchor="middle" fontSize="13" fontWeight="700" fill="#0f1f3d">{flatMm}</text>
+                  )}
                 </g>
               );
             })()}
