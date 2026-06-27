@@ -1269,6 +1269,19 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
         </g>
       )}
 
+      {/* Spitzenwinkel oben bei rechtwinkligen Dreiecken – ändert sich live mit Breite/Höhe. */}
+      {istSonderform && !formTeile && (onBreite || onHoehe)
+        && geometrie?.form === 'dreieck' && (geometrie.variante === 'links' || geometrie.variante === 'rechts') && (() => {
+        const winkel = Math.round(Math.atan2(b, hh) * 180 / Math.PI);   // Winkel an der oberen Spitze
+        const links = geometrie.variante === 'links';
+        const ax = links ? r0.x : r0.x + r0.w;                          // obere Spitze
+        const tx = links ? ax + 12 : ax - 12;
+        return (
+          <text x={tx} y={r0.y + 26} textAnchor={links ? 'start' : 'end'} fontSize="15" fontWeight="700"
+                fill="#c0152e" stroke="#fff" strokeWidth="4" paintOrder="stroke">{winkel}°</text>
+        );
+      })()}
+
       {/* Klickbarer Trennrahmen zwischen den Teilen → „Entfernen" macht durchgehendes Glas */}
       {dividerStrip && (
         <rect x={dividerStrip.x} y={dividerStrip.y} width={dividerStrip.w} height={dividerStrip.h}
