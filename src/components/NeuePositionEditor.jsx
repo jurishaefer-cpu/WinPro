@@ -591,6 +591,26 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
     }
     updAktiv(patch);
   }
+  // Eine interne Zeilenhöhe eines Elements in der Kombi setzen (Maßfeld der Pfosten-Teilung).
+  // Der Nachbar (unten, sonst oben) gleicht aus → Gesamthöhe des Elements bleibt konstant.
+  function setElementRowHeight(id, idx, val) {
+    setElemente(prev => prev.map(e => {
+      if (e.id !== id) return e;
+      const rows = (e.rowHeights || []).map(v => Math.round(Number(v) || 0));
+      if (idx < 0 || idx >= rows.length) return e;
+      let h = Math.max(100, Math.round(Number(val) || 0));
+      if (rows.length < 2) return { ...e, rowHeights: [h], hoehe: h };
+      const nb = idx + 1 < rows.length ? idx + 1 : idx - 1;
+      const paar = rows[idx] + rows[nb];
+      if (h > paar - 100) h = paar - 100;
+      rows[idx] = h; rows[nb] = paar - h;
+      const next = { ...e, rowHeights: rows };
+      if (e.verbunden && Array.isArray(e._teile) && e._dir === 'v') {
+        next._teile = e._teile.map((t, k) => ({ ...t, hoehe: rows[k] ?? (Number(t.hoehe) || 0) }));
+      }
+      return next;
+    }));
+  }
   // Wie setPfostenRow, aber für ein bestimmtes Element in einer Kombination (z. B. das Fenster
   // unter einem aufgesetzten Bogen). Gesamthöhe des Elements bleibt konstant.
   function setElementPfostenRow(id, topIdx, newTopH) {
@@ -1414,7 +1434,8 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
                 onDock={dockElement} onSlide={slideElement}
                 onTotalBreite={setTotalBreite} onTotalHoehe={setTotalHoehe}
                 onElementBreite={setElementBreite} onElementHoehe={setElementHoehe}
-                onElementPfostenV={setElementPfostenRow} onPfostenStart={histGroupStart} onPfostenEnd={histGroupEnd} />
+                onElementPfostenV={setElementPfostenRow} onElementRowHeight={setElementRowHeight}
+                onPfostenStart={histGroupStart} onPfostenEnd={histGroupEnd} />
             ) : (
               <FensterZeichnung geometrie={geometrie} breite={aktiv.breite} hoehe={aktiv.hoehe}
                 verbreiterung={aktiv.verbreiterung ? aktiv.verb : null}

@@ -1377,7 +1377,7 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
 }
 
 // Kombination mehrerer gekoppelter Einheiten (eigener Rahmen je Element), im Raster (row/col).
-export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weissesGlas = false, onUnitClick, activeId, onPaneClick, selectedPane, onDock, onSlide, onTotalBreite, onTotalHoehe, onElementBreite, onElementHoehe, onBackgroundClick, rahmen, onElementPfostenV, onPfostenStart, onPfostenEnd }) {
+export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weissesGlas = false, onUnitClick, activeId, onPaneClick, selectedPane, onDock, onSlide, onTotalBreite, onTotalHoehe, onElementBreite, onElementHoehe, onBackgroundClick, rahmen, onElementPfostenV, onElementRowHeight, onPfostenStart, onPfostenEnd }) {
   const svgRef = useRef(null);
   const [drag, setDrag] = useState(null); // { id, side, targetId }
   function svgPoint(clientX, clientY) {
@@ -1644,8 +1644,9 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
               transform={`rotate(-90 ${leftX - 10} ${oy + totalHpx / 2})`}>{Math.round(totalHmm)}</text>
       )}
 
-      {/* Zeilenhöhen (links, innen) */}
+      {/* Zeilenhöhen (links, innen) – entfällt für Zeilen, deren Element eigene Teilmaße zeigt. */}
       {rowsSet.length > 1 && rowsSet.map(rr => {
+        if (interaktiv && units.some(u => (u.rr ?? 0) === rr && u.c?.subRows?.length > 0)) return null;
         const y0 = rowYpx[rr], y1 = rowYpx[rr] + rowHmm[rr] * scale, mid = (y0 + y1) / 2;
         return (
           <g key={'rh' + rr}>
@@ -1750,15 +1751,21 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
               <rect x={u.r0.x} y={u.r0.y} width={u.r0.w} height={u.r0.h} fill="none"
                     stroke="#c0152e" strokeWidth="2.5" strokeDasharray="6 4" pointerEvents="none" />
             )}
-            {/* Interne Teilmaße (was der Pfosten im Element teilt) – auch wenn ein Element drüber sitzt. */}
-            {interaktiv && (u.c?.subRows?.length > 0) && u.c.subRows.map((s, si) => {
-              const mid = (s.y0 + s.y1) / 2, lx = u.r0.x + 16;
+            {/* Interne Teilmaße (was der Pfosten im Element teilt) – außerhalb, editierbar; auch
+                wenn ein Element drüber sitzt. Nur im Editor. */}
+            {interaktiv && onElementRowHeight && (u.c?.subRows?.length > 0) && u.c.subRows.map((s, si) => {
+              const mid = (s.y0 + s.y1) / 2, lx = u.r0.x - 22;
               return (
-                <g key={'usr' + u.e._key + '-' + si} pointerEvents="none">
-                  <line x1={lx} y1={s.y0 + 2} x2={lx} y2={s.y1 - 2} stroke="#0f1f3d" strokeWidth="1" opacity="0.55" />
-                  <text x={lx} y={mid} textAnchor="middle" fontSize="13" fontWeight="700"
-                        fill="#0f1f3d" stroke="#fff" strokeWidth="3.5" paintOrder="stroke"
-                        transform={`rotate(-90 ${lx} ${mid})`}>{s.mm}</text>
+                <g key={'usr' + u.e._key + '-' + si}>
+                  <line x1={u.r0.x - 10} y1={s.y0} x2={u.r0.x - 10} y2={s.y1} stroke="#0f1f3d" strokeWidth="1" />
+                  <line x1={u.r0.x - 14} y1={s.y0} x2={u.r0.x - 6} y2={s.y0} stroke="#0f1f3d" strokeWidth="1" />
+                  <line x1={u.r0.x - 14} y1={s.y1} x2={u.r0.x - 6} y2={s.y1} stroke="#0f1f3d" strokeWidth="1" />
+                  <foreignObject x={lx - 42} y={mid - 14} width={84} height={28} transform={`rotate(-90 ${lx} ${mid})`}>
+                    <input className="fz-massinput fz-massinput--sub" type="number"
+                           key={'usrv' + u.e._key + '-' + si + '_' + Math.round(s.mm)} defaultValue={Math.round(s.mm)}
+                           onBlur={e => onElementRowHeight(u.e._key, s.idx, e.target.value)}
+                           onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); }} />
+                  </foreignObject>
                 </g>
               );
             })}
