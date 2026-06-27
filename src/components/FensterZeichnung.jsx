@@ -825,13 +825,16 @@ export function SonderBody({ sp, glas = '#cfe3ef', kp = '', oeffnung, onPaneClic
       {sp.mid && <path d={sp.mid} fill="#fff" stroke="#0f1f3d" strokeWidth="1.6" strokeLinejoin="round" />}
       {sp.sash && <path d={sp.sash} fill="#fff" stroke="#0f1f3d" strokeWidth="2" strokeLinejoin="round" />}
       <path d={sp.inner} fill={glas} stroke="#0f1f3d" strokeWidth="1.4" strokeLinejoin="round" opacity="0.95" />
-      {/* Vertikale Mittelpfosten: in die Glasfläche (sp.inner) geclippt, laufen oben in den Bogen. */}
+      {/* Vertikale Mittelpfosten: auf den Blendrahmen-Innenrand (sp.mid) geclippt und vertikal
+          durchgezogen → laufen oben sauber in den Bogenrahmen und unten in den Rahmen, wie ein
+          echter Pfosten der zum Rahmen gehört. */}
       {mullions && mullions.length > 0 && (
         <>
-          <clipPath id={'sbm-' + kp}><path d={sp.inner} /></clipPath>
+          <clipPath id={'sbm-' + kp}><path d={sp.mid || sp.inner} /></clipPath>
           {mullions.map((mx, i) => (
-            <rect key={kp + 'pf' + i} clipPath={`url(#sbm-${kp})`} x={mx - pfW / 2} y={sp.glasBox.y}
-                  width={pfW} height={sp.glasBox.h} fill="#fff" stroke="#0f1f3d" strokeWidth="1.6" />
+            <rect key={kp + 'pf' + i} clipPath={`url(#sbm-${kp})`} x={mx - pfW / 2}
+                  y={sp.glasBox.y - sp.glasBox.h} width={pfW} height={sp.glasBox.h * 3}
+                  fill="#fff" stroke="#0f1f3d" strokeWidth="1.6" />
           ))}
         </>
       )}
