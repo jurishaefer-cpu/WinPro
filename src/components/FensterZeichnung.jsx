@@ -986,6 +986,7 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
   // Verbundenes Element mit Sonderform-Teil: gemeinsamer Rahmen, jedes Teil behält seine Form.
   const formTeile = (Array.isArray(teile) && teile.length > 1 && teile.some(t => geometrieByCode(t.code)?.form)) ? teile : null;
   let teilBodies = null;
+  const teilWinkel = [];   // Spitzenwinkel der rechtwinkligen Dreieck-Teile (links/rechts)
   if (formTeile) {
     const tdir = teilDir || 'h';
     const total = formTeile.reduce((a, t) => a + ((tdir === 'h' ? Number(t.breite) : Number(t.hoehe)) || 0), 0) || 1;
@@ -999,6 +1000,11 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
       const tGeo = geometrieByCode(t.code);
       const tGlas = t.ornament ? '#7fb0cc' : glasFarbe;
       if (tGeo?.form) {
+        if (tGeo.form === 'dreieck' && (tGeo.variante === 'links' || tGeo.variante === 'rechts')) {
+          const links = tGeo.variante === 'links';
+          teilWinkel.push({ ti, links, ax: links ? sub.x : sub.x + sub.w, ay: sub.y,
+            wk: Math.round(Math.atan2(Number(t.breite) || 0, Number(t.hoehe) || 1) * 180 / Math.PI) });
+        }
         const sp = sonderformPfade(sub, tGeo, Math.max(6, 60 * scale));
         return <SonderBody key={'t' + ti} sp={sp} glas={tGlas} kp={'t' + ti + '-'} />;
       }
@@ -1289,6 +1295,13 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
                 fill="#c0152e" stroke="#fff" strokeWidth="4" paintOrder="stroke">{winkel}°</text>
         );
       })()}
+
+      {/* Spitzenwinkel der rechtwinkligen Dreieck-Teile in einer verbundenen Kombination. */}
+      {(onBreite || onHoehe) && teilWinkel.map(w => (
+        <text key={'tw' + w.ti} x={w.links ? w.ax + 12 : w.ax - 12} y={w.ay + 26}
+              textAnchor={w.links ? 'start' : 'end'} fontSize="15" fontWeight="700"
+              fill="#c0152e" stroke="#fff" strokeWidth="4" paintOrder="stroke">{w.wk}°</text>
+      ))}
 
       {/* Klickbarer Trennrahmen zwischen den Teilen → „Entfernen" macht durchgehendes Glas */}
       {dividerStrip && (
@@ -1669,6 +1682,14 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
             {aktiv && (
               <rect x={u.r0.x} y={u.r0.y} width={u.r0.w} height={u.r0.h} fill="none"
                     stroke="#c0152e" strokeWidth="2.5" strokeDasharray="6 4" pointerEvents="none" />
+            )}
+            {/* Spitzenwinkel oben bei rechtwinkligen Dreieck-Elementen (auch unverbunden in der Kombi). */}
+            {interaktiv && uGeo?.form === 'dreieck' && (uGeo.variante === 'links' || uGeo.variante === 'rechts') && (
+              <text x={uGeo.variante === 'links' ? u.r0.x + 12 : u.r0.x + u.r0.w - 12} y={u.r0.y + 24}
+                    textAnchor={uGeo.variante === 'links' ? 'start' : 'end'} fontSize="14" fontWeight="700"
+                    fill="#c0152e" stroke="#fff" strokeWidth="4" paintOrder="stroke" pointerEvents="none">
+                {Math.round(Math.atan2(Number(u.e.breite) || 0, Number(u.e.hoehe) || 1) * 180 / Math.PI)}°
+              </text>
             )}
             {interaktiv && !aktiv && (
               <rect x={u.r0.x} y={u.r0.y} width={u.r0.w} height={u.r0.h} fill="transparent"
