@@ -544,6 +544,22 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
     updAktiv({ hoehe: val, rowHeights: Array(n).fill(Math.round((Number(val) || 0) / n)) });
   }
   function setColWidth(i, val) {
+    const cols = aktiv.colWidths.map(v => Math.round(Number(v) || 0));
+    // Verbundenes Element (z. B. Fenster + Dreieck nebeneinander, durchgehend): Gesamtbreite bleibt
+    // konstant – der Nachbar (rechts, sonst links) gleicht aus; die Teile (z. B. Dreieck) ziehen mit.
+    if (aktiv.verbunden && cols.length >= 2) {
+      let wv = Math.max(100, Math.round(Number(val) || 0));
+      const nb = i + 1 < cols.length ? i + 1 : i - 1;
+      const paar = cols[i] + cols[nb];
+      if (wv > paar - 100) wv = paar - 100;
+      cols[i] = wv; cols[nb] = paar - wv;
+      const patch = { colWidths: cols, breite: cols.reduce((a, c) => a + c, 0) };
+      if (Array.isArray(aktiv._teile) && aktiv._dir === 'h') {
+        patch._teile = aktiv._teile.map((t, k) => ({ ...t, breite: cols[k] ?? (Number(t.breite) || 0) }));
+      }
+      updAktiv(patch);
+      return;
+    }
     const next = aktiv.colWidths.map((c, idx) => (idx === i ? (Number(val) || 0) : c));
     updAktiv({ colWidths: next, breite: next.reduce((a, c) => a + c, 0) });
   }
