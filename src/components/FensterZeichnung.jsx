@@ -728,12 +728,18 @@ export function sonderformPfade(r, geo, frame, offen = false) {
       return { path: `M ${ip[0][0]},${ip[0][1]} L ${ip[1][0]},${ip[1][1]} L ${ip[2][0]},${ip[2][1]} Z`, corners: ip };
     };
   } else if (geo.form === 'rundbogen') {
-    // Rundbogen: Halbellipse; iry um 2·d eingerückt, damit die Rahmenbreite am Scheitel = d bleibt.
+    // Rundbogen: Halbellipse mit Mittelpunkt auf der Basislinie. Innenkontur KONZENTRISCH (beide
+    // Radien um d kleiner, gleicher Mittelpunkt) → überall gleich breiter Rahmen. Der Bogen wird an
+    // der um d angehobenen Unterkante (yb) abgeschnitten, was zugleich den unteren Rahmenbalken bildet.
     const rx = w / 2, ry = h;
+    const cx = x + w / 2, cy = y + h;
     contour = (d) => {
-      const rxd = Math.max(2, rx - d), ryd = Math.max(2, ry - 2 * d);
-      const ax = x + d, ay = y + h - d, bx = x + w - d;
-      return { path: `M ${ax},${ay} A ${rxd},${ryd} 0 0 1 ${bx},${ay} Z`, corners: [[ax, ay], [bx, ay]] };
+      const rxd = Math.max(2, rx - d), ryd = Math.max(2, ry - d);
+      const yb = y + h - d;
+      const ky = Math.min(1, d / ryd);                       // (cy − yb) / ryd
+      const dx = rxd * Math.sqrt(Math.max(0, 1 - ky * ky));  // x-Auslenkung der Ellipse bei y = yb
+      const ax = cx - dx, bx = cx + dx;
+      return { path: `M ${ax},${yb} A ${rxd},${ryd} 0 0 1 ${bx},${yb} Z`, corners: [[ax, yb], [bx, yb]] };
     };
   } else {
     // Segmentbogen: konzentrische Kreisbögen (Radius R−d) → überall gleich breiter Rahmen.
