@@ -779,6 +779,7 @@ body {
   display: flex;
   flex-direction: column;
   margin-bottom: 20px;
+  min-width: 0; /* verhindert, dass Felder im Grid (.form-row) über die Box hinauslaufen */
 }
 .form-field:last-child {
   margin-bottom: 0;
@@ -797,6 +798,8 @@ body {
   color: #999;
 }
 .form-field input {
+  width: 100%;
+  box-sizing: border-box;
   padding: 12px 14px;
   border: 1px solid #d1d5db;
   border-radius: 8px;
