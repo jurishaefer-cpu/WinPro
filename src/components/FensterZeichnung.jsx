@@ -1114,6 +1114,13 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
   const c = computeUnit(r0, scale, { geometrie, breite, hoehe, panes: panesProp, cols: colsProp, colWidths, rowHeights, verbreiterung, aufsatzkasten, schwelle, oberlichtHoehe });
   const hatSubB = c.subCols.length > 0;
   const hatSubH = c.subRows.length > 0 || c.hatOberlicht;
+  // Beim durchgehenden Element (kein Pfosten zwischen den Teilen) die Breiten-Zwischenmaße auf die
+  // Außenkanten legen – lückenlos bis zur Form-Kante – statt auf den eingerückten Innenbereich.
+  const subColAussen = durchPf ? (() => {
+    const tot = (colWidths || []).reduce((a, cc) => a + (Number(cc) || 0), 0) || (Number(breite) || 1);
+    let acc = 0;
+    return (colWidths || []).map(cw => { const x0 = x + (acc / tot) * rw; acc += Number(cw) || 0; return { x0, x1: x + (acc / tot) * rw }; });
+  })() : null;
 
   // Maß-Positionen: Hauptmaß weiter außen, wenn Zwischenmaße vorhanden
   const mainTopY = hatSubB ? y - 78 : y - 34;
@@ -1180,13 +1187,15 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
       )}
 
       {/* Zwischenmaße Breite (je Spalte) – editierbar */}
-      {c.subCols.map((s, i) => (
+      {c.subCols.map((s, i) => {
+        const bb = (subColAussen && subColAussen[s.idx]) || s;   // durchgehend: bis zur Außenkante
+        return (
         <g key={'sb' + i}>
-          <line x1={s.x0} y1={subTopY} x2={s.x1} y2={subTopY} stroke="#0f1f3d" strokeWidth="1" />
-          <line x1={s.x0} y1={subTopY - 5} x2={s.x0} y2={subTopY + 5} stroke="#0f1f3d" strokeWidth="1" />
-          <line x1={s.x1} y1={subTopY - 5} x2={s.x1} y2={subTopY + 5} stroke="#0f1f3d" strokeWidth="1" />
+          <line x1={bb.x0} y1={subTopY} x2={bb.x1} y2={subTopY} stroke="#0f1f3d" strokeWidth="1" />
+          <line x1={bb.x0} y1={subTopY - 5} x2={bb.x0} y2={subTopY + 5} stroke="#0f1f3d" strokeWidth="1" />
+          <line x1={bb.x1} y1={subTopY - 5} x2={bb.x1} y2={subTopY + 5} stroke="#0f1f3d" strokeWidth="1" />
           {onColWidth ? (
-            <foreignObject x={(s.x0 + s.x1) / 2 - 42} y={subTopY - 38} width={84} height={30}>
+            <foreignObject x={(bb.x0 + bb.x1) / 2 - 42} y={subTopY - 38} width={84} height={30}>
               <input className="fz-massinput fz-massinput--sub" type="number"
                      key={'sbw' + s.idx + '_' + Math.round((colWidths && colWidths[s.idx]) ?? s.mm)}
                      defaultValue={Math.round((colWidths && colWidths[s.idx]) ?? s.mm)}
@@ -1194,10 +1203,11 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
                      onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); }} />
             </foreignObject>
           ) : (
-            <text x={(s.x0 + s.x1) / 2} y={subTopY - 7} textAnchor="middle" fontSize={fSub} fill="#0f1f3d" fontWeight="700">{s.mm}</text>
+            <text x={(bb.x0 + bb.x1) / 2} y={subTopY - 7} textAnchor="middle" fontSize={fSub} fill="#0f1f3d" fontWeight="700">{s.mm}</text>
           )}
         </g>
-      ))}
+        );
+      })}
 
       {/* Hauptmaß Höhe (links) */}
       <line x1={mainLeftX} y1={y} x2={mainLeftX} y2={y + rh} stroke="#0f1f3d" strokeWidth="1.2" />
