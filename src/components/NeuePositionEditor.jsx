@@ -684,7 +684,11 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
     const nh = Math.max(100, Math.min(pair - 100, Math.round(Number(val) || 0)));
     rh[i] = nh; rh[i + 1] = pair - nh;
     const newTeile = teile.map((t, idx) => (idx === winIdx ? { ...t, rowHeights: rh } : t));
-    updAktiv({ _teile: newTeile });
+    // Element-rowHeights mitführen (Bogen-Zeilen + Fenster-Zeilen), damit die Maße zum Pfosten passen.
+    const archTeil = teile[1 - winIdx];
+    const archRows = (archTeil.rowHeights && archTeil.rowHeights.length) ? archTeil.rowHeights : [Math.round(Number(archTeil.hoehe) || 0)];
+    const elRows = winIdx === 1 ? [...archRows, ...rh] : [...rh, ...archRows];
+    updAktiv({ _teile: newTeile, rowHeights: elRows });
   }
 
   function wechselKategorie(k) {
@@ -804,11 +808,19 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
       }
       const newWin = { ...teile[winIdx], ...upd };
       const newTeile = teile.map((t, i) => (i === winIdx ? newWin : t));
-      const archPanes = teile[1 - winIdx].panes || [{ fest: true }];
+      const archTeil = teile[1 - winIdx];
+      const archPanes = archTeil.panes || [{ fest: true }];
       const combined = winIdx === 1 ? [...archPanes, ...newWin.panes] : [...newWin.panes, ...archPanes];
-      // Pfosten teilt NUR den Fensterteil; der Bogen-Kämpfer (durchgehend) bleibt unangetastet,
-      // sonst entsteht ein zweiter (Kämpfer-)Pfosten zusätzlich zum eingefügten.
-      updAktiv({ _teile: newTeile, panes: combined });
+      // Element-rowHeights an die neue Teilung anpassen (Bogen-Zeilen + Fenster-Zeilen), damit die
+      // Maße zum Pfosten passen. Pfosten teilt NUR den Fensterteil; der Bogen-Kämpfer (durchgehend)
+      // bleibt unangetastet (sonst entstünde ein zweiter Pfosten).
+      const patch = { _teile: newTeile, panes: combined };
+      if (richtung === 'h') {
+        const archRows = (archTeil.rowHeights && archTeil.rowHeights.length) ? archTeil.rowHeights : [Math.round(Number(archTeil.hoehe) || 0)];
+        const winRows = (newWin.rowHeights && newWin.rowHeights.length) ? newWin.rowHeights : [Math.round(Number(newWin.hoehe) || 0)];
+        patch.rowHeights = winIdx === 1 ? [...archRows, ...winRows] : [...winRows, ...archRows];
+      }
+      updAktiv(patch);
     } else {
       const upd = pfostenAdd(el, richtung);
       if (!upd) { zeigeWarnung('max. erreicht'); return; }
