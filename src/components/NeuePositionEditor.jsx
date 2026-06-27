@@ -539,6 +539,24 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
     updAktiv({ hoehe: ol + bottom });
   }
   function setRowHeight(i, val) {
+    const rows = aktiv.rowHeights.map(v => Math.round(Number(v) || 0));
+    // Verbundenes Element (z. B. Dreieck/Bogen über Fenster): Gesamthöhe bleibt konstant – der
+    // benachbarte Teil (unten, sonst oben) gleicht die Änderung aus. So „passt sich das Maß an,
+    // aber das Gesamtmaß bleibt gleich".
+    if (aktiv.verbunden && rows.length >= 2) {
+      let h = Math.max(100, Math.round(Number(val) || 0));
+      const nb = i + 1 < rows.length ? i + 1 : i - 1;
+      const paar = rows[i] + rows[nb];
+      if (h > paar - 100) h = paar - 100;
+      rows[i] = h; rows[nb] = paar - h;
+      const patch = { rowHeights: rows, hoehe: rows.reduce((a, c) => a + c, 0) };
+      // Teil-Höhen fürs Zeichnen mitführen (jeder Teil = eine Zeile in dieser Kombination).
+      if (Array.isArray(aktiv._teile) && aktiv._dir === 'v') {
+        patch._teile = aktiv._teile.map((t, k) => ({ ...t, hoehe: rows[k] ?? (Number(t.hoehe) || 0) }));
+      }
+      updAktiv(patch);
+      return;
+    }
     const next = aktiv.rowHeights.map((rr, idx) => (idx === i ? (Number(val) || 0) : rr));
     updAktiv({ rowHeights: next, hoehe: next.reduce((a, c) => a + c, 0) });
   }
