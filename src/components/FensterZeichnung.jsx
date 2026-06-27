@@ -1679,6 +1679,17 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
         const uGeo = geometrieByCode(u.e.code);
         const uOffen = !!(u.e.panes?.[0] && !u.e.panes[0].fest && u.e.panes[0].open && u.e.panes[0].open !== 'fest');
         const uSonder = uGeo?.form ? sonderformPfade(u.r0, uGeo, Math.max(5, 60 * scale), uOffen) : null;
+        // Vertikale Mittelpfosten im Bogen-Element (auch in der Kombi zeichnen).
+        const uSonderMullions = [];
+        if (uSonder) {
+          const uCols = Math.max(1, u.e.cols || 1);
+          if (uCols > 1) {
+            const cwMM = (u.e.colWidths && u.e.colWidths.length === uCols) ? u.e.colWidths.map(v => Math.max(1, Number(v) || 0)) : Array(uCols).fill((Number(u.e.breite) || 1000) / uCols);
+            const sumW = cwMM.reduce((a, c) => a + c, 0) || 1;
+            let acc = 0;
+            for (let k = 0; k < uCols - 1; k++) { acc += cwMM[k]; uSonderMullions.push(u.r0.x + (acc / sumW) * u.r0.w); }
+          }
+        }
         const uGlas = weissesGlas ? '#ffffff' : (u.e.ornament ? '#7fb0cc' : glasFarbe);
         // Verbundenes Element mit Sonderform-Teil: gemeinsamer Rahmen, aber jedes Teil
         // behält im Inneren seine eigene Form (statt zu einem rechteckigen Mehrfeld zu werden).
@@ -1739,6 +1750,7 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
               <g>{teilBodies}</g>
             ) : uSonder ? (
               <SonderBody sp={uSonder} glas={uGlas} kp={'u' + u.e._key + '-'} oeffnung={u.e.panes?.[0]}
+                mullions={uSonderMullions} pfW={Math.max(5, 60 * scale * 0.7)}
                 onPaneClick={interaktiv && aktiv ? () => { if (!justDraggedRef.current) onPaneClick(0); } : undefined}
                 selected={aktiv && selectedPane === 0} />
             ) : (
