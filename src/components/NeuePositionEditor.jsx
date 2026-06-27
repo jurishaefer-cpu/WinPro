@@ -560,6 +560,15 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
   }
 
   function wechselKategorie(k) {
+    if (k === aktiv.kategorie) return;
+    // Verbundenes Element (z. B. Dreiteiler): NUR die Kategorie umstellen, die Teilung/Gläser
+    // (panes/cols/colWidths/_teile) erhalten. Sonst würde waehleGeometrie sie auf eine
+    // Standard-Geometrie (1 Pane) zurücksetzen – dann wäre nach „Rollo → zurück" nur 1 Glas da.
+    if (aktiv.verbunden) {
+      const farbPatch = k === 'rollo' ? { behangfarbe: rolloFarbe(aktiv.behang) } : {};
+      updAktiv({ kategorie: k, ...farbPatch });
+      return;
+    }
     const erste = GEOMETRIEN.find(g => g.kategorie === k);
     updAktiv({ kategorie: k });
     if (erste) waehleGeometrie(erste.code, true);   // Maße des bisherigen Fensters übernehmen
