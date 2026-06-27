@@ -795,7 +795,7 @@ export function sonderformPfade(r, geo, frame, offen = false) {
 // Zeichnet den Sonderform-Rahmen (Bögen/Dreiecke) wie einen Fensterrahmen: Blendrahmen + Glas.
 // oeffnung: { open, din } – zeichnet die Öffnungssymbole (Dreh/Kipp …) auf die Glasfläche.
 // onPaneClick/selected: macht die Glasfläche anklickbar (Öffnungsart wählen).
-export function SonderBody({ sp, glas = '#cfe3ef', kp = '', oeffnung, onPaneClick, selected }) {
+export function SonderBody({ sp, glas = '#cfe3ef', kp = '', oeffnung, onPaneClick, selected, mullions, pfW = 6 }) {
   const offen = oeffnung && !oeffnung.fest && oeffnung.open && oeffnung.open !== 'fest';
   const lines = offen ? oeffnungsLinien(oeffnung, sp.glasBox) : [];
   const clipId = 'sbclip-' + kp;
@@ -805,6 +805,16 @@ export function SonderBody({ sp, glas = '#cfe3ef', kp = '', oeffnung, onPaneClic
       {sp.mid && <path d={sp.mid} fill="#fff" stroke="#0f1f3d" strokeWidth="1.6" strokeLinejoin="round" />}
       {sp.sash && <path d={sp.sash} fill="#fff" stroke="#0f1f3d" strokeWidth="2" strokeLinejoin="round" />}
       <path d={sp.inner} fill={glas} stroke="#0f1f3d" strokeWidth="1.4" strokeLinejoin="round" opacity="0.95" />
+      {/* Vertikale Mittelpfosten: in die Glasfläche (sp.inner) geclippt, laufen oben in den Bogen. */}
+      {mullions && mullions.length > 0 && (
+        <>
+          <clipPath id={'sbm-' + kp}><path d={sp.inner} /></clipPath>
+          {mullions.map((mx, i) => (
+            <rect key={kp + 'pf' + i} clipPath={`url(#sbm-${kp})`} x={mx - pfW / 2} y={sp.glasBox.y}
+                  width={pfW} height={sp.glasBox.h} fill="#fff" stroke="#0f1f3d" strokeWidth="1.6" />
+          ))}
+        </>
+      )}
       {(sp.miter || []).map((l, i) => (
         <line key={kp + 'm' + i} x1={l[0][0]} y1={l[0][1]} x2={l[1][0]} y2={l[1][1]} stroke="#0f1f3d" strokeWidth="1.4" />
       ))}
@@ -999,6 +1009,16 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
   const istSonderform = !!geometrie?.form;
   const sonderOffen = !!(panesProp?.[0] && !panesProp[0].fest && panesProp[0].open && panesProp[0].open !== 'fest');
   const sonder = istSonderform ? sonderformPfade(r0, geometrie, Math.max(6, 60 * scale), sonderOffen) : null;
+  // Vertikale Mittelpfosten im freistehenden Bogen (an den Spaltengrenzen).
+  const sonderCols = istSonderform ? Math.max(1, colsProp || 1) : 1;
+  const sonderMullions = [];
+  if (istSonderform && sonderCols > 1) {
+    const cwMM = (colWidths && colWidths.length === sonderCols) ? colWidths.map(v => Math.max(1, Number(v) || 0)) : Array(sonderCols).fill(b / sonderCols);
+    const sumW = cwMM.reduce((a, c) => a + c, 0) || 1;
+    let acc = 0;
+    for (let k = 0; k < sonderCols - 1; k++) { acc += cwMM[k]; sonderMullions.push(r0.x + (acc / sumW) * rw); }
+  }
+  const sonderPfW = Math.max(5, 60 * scale * 0.7);
   // Höhen-Griff am Bogen-Scheitel (nur unverbundene Sonderform): vertikal ziehen ändert die Höhe.
   const archDrag = useRef(null);
   const scaleRef = useRef(scale); scaleRef.current = scale;
@@ -1288,6 +1308,7 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
         <g>{teilBodies}</g>
       ) : istSonderform ? (
         <SonderBody sp={sonder} glas={glasFarbe} kp="s" oeffnung={panesProp?.[0]}
+          mullions={sonderMullions} pfW={sonderPfW}
           onPaneClick={onPaneClick ? () => onPaneClick(0) : undefined} selected={selectedPane === 0} />
       ) : (
         <UnitBody c={c} glasFarbe={glasFarbe} onPaneClick={onPaneClick} selectedPane={selectedPane} />

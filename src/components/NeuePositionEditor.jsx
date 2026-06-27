@@ -1434,19 +1434,31 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
                 <span className="pane-option-thumb"><GeometrieThumb geometrie={geometrieByCode('T01')} /></span>
                 <span className="pane-option-label">Tür hinzufügen</span>
               </button>
-              {!istRollo && (!geometrie?.form || (aktiv.verbunden && Array.isArray(aktiv._teile))) && (
-                <>
-                  <div className="pane-menu-sub">Pfosten ins aktive Fenster</div>
-                  <button className="pane-option" onClick={() => addPfosten('v')}>
-                    <span className="pane-option-thumb" aria-hidden>┃</span>
-                    <span className="pane-option-label">Vertikaler Pfosten</span>
-                  </button>
-                  <button className="pane-option" onClick={() => addPfosten('h')}>
-                    <span className="pane-option-thumb" aria-hidden>━</span>
-                    <span className="pane-option-label">Horizontaler Pfosten</span>
-                  </button>
-                </>
-              )}
+              {!istRollo && (() => {
+                const istForm = !!geometrie?.form;
+                const verbund = aktiv.verbunden && Array.isArray(aktiv._teile);
+                const istBogen = ['rundbogen', 'segmentbogen'].includes(geometrie?.form);
+                const zeigeV = !istForm || verbund || istBogen;    // vertikaler Pfosten (auch im freistehenden Bogen)
+                const zeigeH = !istForm || verbund;                // horizontaler Pfosten (nicht im freistehenden Bogen)
+                if (!zeigeV && !zeigeH) return null;
+                return (
+                  <>
+                    <div className="pane-menu-sub">Pfosten ins aktive Fenster</div>
+                    {zeigeV && (
+                      <button className="pane-option" onClick={() => addPfosten('v')}>
+                        <span className="pane-option-thumb" aria-hidden>┃</span>
+                        <span className="pane-option-label">Vertikaler Pfosten</span>
+                      </button>
+                    )}
+                    {zeigeH && (
+                      <button className="pane-option" onClick={() => addPfosten('h')}>
+                        <span className="pane-option-thumb" aria-hidden>━</span>
+                        <span className="pane-option-label">Horizontaler Pfosten</span>
+                      </button>
+                    )}
+                  </>
+                );
+              })()}
               <div className="pane-menu-sub">Sonderformen</div>
               {['S01', 'S02', 'S03', 'S04', 'S05'].map(code => {
                 const g = geometrieByCode(code);
