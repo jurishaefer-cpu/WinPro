@@ -1056,7 +1056,7 @@ export function durchgehendPfade(r0, teile, dir, frame) {
   return { outer: path(pts), inner: path(ip) };
 }
 
-function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkasten, schwelle, oberlichtHoehe, glasFarbe = '#cfe3ef', onBreite, onHoehe, onOberlichtHoehe, onBottomHoehe, panes: panesProp, cols: colsProp, colWidths, rowHeights, onColWidth, onRowHeight, onPaneClick, selectedPane, teile, dir: teilDir, durchgehend, onDivider, onBackgroundClick, onBogenRowHeight, onPfostenV, onPfostenStart, onPfostenEnd }) {
+function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkasten, schwelle, oberlichtHoehe, glasFarbe = '#cfe3ef', onBreite, onHoehe, onOberlichtHoehe, onBottomHoehe, panes: panesProp, cols: colsProp, colWidths, rowHeights, onColWidth, onRowHeight, onPaneClick, selectedPane, teile, dir: teilDir, durchgehend, onDivider, onBackgroundClick, onBogenRowHeight, onPfostenV, onPfostenStart, onPfostenEnd, trapezFlach, onTrapezFlach }) {
   const b = Math.max(200, Number(breite) || 1000);
   const hh = Math.max(200, Number(hoehe) || 1200);
 
@@ -1072,8 +1072,12 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
 
   const r0 = { x, y, w: rw, h: rh };                            // Gesamtmaß (mit Verbreiterung/Kasten)
   const istSonderform = !!geometrie?.form;
+  // Trapez: gerade Oberkante aus trapezFlach (mm) → Anteil der Breite. Sonst Geometrie-Standard.
+  const istTrapez = geometrie?.form === 'trapez';
+  const trapezFrac = istTrapez ? Math.min(0.95, Math.max(0.04, (Number(trapezFlach) || (geometrie.flach ?? 0.3) * b) / b)) : 0;
+  const geoEff = istTrapez ? { ...geometrie, flach: trapezFrac } : geometrie;
   const sonderOffen = !!(panesProp?.[0] && !panesProp[0].fest && panesProp[0].open && panesProp[0].open !== 'fest');
-  const sonder = istSonderform ? sonderformPfade(r0, geometrie, Math.max(6, 60 * scale), sonderOffen) : null;
+  const sonder = istSonderform ? sonderformPfade(r0, geoEff, Math.max(6, 60 * scale), sonderOffen) : null;
   // Vertikale Mittelpfosten im freistehenden Bogen (an den Spaltengrenzen).
   const sonderCols = istSonderform ? Math.max(1, colsProp || 1) : 1;
   const sonderMullions = [];
@@ -1147,8 +1151,9 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
     return (colWidths || []).map(cw => { const x0 = x + (acc / tot) * rw; acc += Number(cw) || 0; return { x0, x1: x + (acc / tot) * rw }; });
   })() : null;
 
-  // Maß-Positionen: Hauptmaß weiter außen, wenn Zwischenmaße vorhanden
-  const mainTopY = hatSubB ? y - 78 : y - 34;
+  // Maß-Positionen: Hauptmaß weiter außen, wenn Zwischenmaße vorhanden (auch Trapez-Oberkante)
+  const hatTrapezMass = istTrapez && (onBreite || onHoehe);
+  const mainTopY = (hatSubB || hatTrapezMass) ? y - 78 : y - 34;
   const subTopY = y - 32;
   const mainLeftX = hatSubH ? x - 86 : x - 34;
   const subLeftX = x - 34;
@@ -1233,6 +1238,29 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
         </g>
         );
       })}
+
+      {/* Trapez: editierbares Maß der geraden Oberkante (oben, an der flachen Seite). */}
+      {hatTrapezMass && onTrapezFlach && (() => {
+        const rechts = geometrie.variante !== 'links';
+        const flatPx = trapezFrac * rw;
+        const x0 = rechts ? x : x + rw - flatPx;
+        const x1 = rechts ? x + flatPx : x + rw;
+        const mid = (x0 + x1) / 2;
+        const flatMm = Math.round(Number(trapezFlach) || trapezFrac * b);
+        return (
+          <g>
+            <line x1={x0} y1={subTopY} x2={x1} y2={subTopY} stroke="#0f1f3d" strokeWidth="1" />
+            <line x1={x0} y1={subTopY - 5} x2={x0} y2={subTopY + 5} stroke="#0f1f3d" strokeWidth="1" />
+            <line x1={x1} y1={subTopY - 5} x2={x1} y2={subTopY + 5} stroke="#0f1f3d" strokeWidth="1" />
+            <foreignObject x={mid - 42} y={subTopY - 38} width={84} height={30}>
+              <input className="fz-massinput fz-massinput--sub" type="number"
+                     key={'tf_' + flatMm} defaultValue={flatMm}
+                     onBlur={e => onTrapezFlach(e.target.value)}
+                     onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); }} />
+            </foreignObject>
+          </g>
+        );
+      })()}
 
       {/* Hauptmaß Höhe (links) */}
       <line x1={mainLeftX} y1={y} x2={mainLeftX} y2={y + rh} stroke="#0f1f3d" strokeWidth="1.2" />
@@ -1391,7 +1419,7 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
       )}
 
       {/* Höhen-Griff am Bogen-Scheitel (nur unverbundener Bogen/Dreieck): vertikal ziehen = Höhe */}
-      {istSonderform && !formTeile && !durchPf && onHoehe && (
+      {istSonderform && geometrie?.form !== 'trapez' && !formTeile && !durchPf && onHoehe && (
         <g>
           <line x1={r0.x + r0.w / 2} y1={r0.y} x2={r0.x + r0.w / 2} y2={r0.y - 26} stroke="#c0152e" strokeWidth="1.6" pointerEvents="none" />
           <circle cx={r0.x + r0.w / 2} cy={r0.y - 26} r="9" fill="#fff" stroke="#c0152e" strokeWidth="2.5"

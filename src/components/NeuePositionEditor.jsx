@@ -121,6 +121,8 @@ function makeElement(src, id) {
     rowHeights: src?.rowHeights ?? Array(rows).fill(Math.round(hoehe / rows)),
     breite,
     hoehe,
+    // Trapez: Länge der geraden Oberkante in mm (editierbar). Standard = Geometrie-Anteil · Breite.
+    trapezFlach: src?.trapezFlach ?? (geo?.form === 'trapez' ? Math.round((geo.flach ?? 0.3) * breite) : null),
     verbreiterung: src?.verbreiterung ?? false,
     verb: src?.verb ?? { oben: 0, unten: 0, links: 0, rechts: 0 },
     aufsatzkasten: src?.aufsatzkasten ?? false,
@@ -530,11 +532,19 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
       colWidths: verteileNachRatio(nb, c, geo?.colRatio),
       rowHeights: Array(r).fill(Math.round(nh / r)),
       oberlichtHoehe: geo?.oberlichtMm ?? null,
+      trapezFlach: geo?.form === 'trapez' ? Math.round((geo.flach ?? 0.3) * nb) : null,
       ...farbPatch,
     });
     setSelectedPane(null);
   }
 
+  // Trapez: Länge der geraden Oberkante (mm) setzen; bleibt innerhalb der Breite.
+  function setTrapezFlach(val) {
+    const b = Number(aktiv.breite) || 1000;
+    let v = Math.max(80, Math.round(Number(val) || 0));
+    if (v > b - 80) v = b - 80;
+    updAktiv({ trapezFlach: v });
+  }
   function setMainBreite(val) {
     const n = aktiv.cols;
     updAktiv({ breite: val, colWidths: Array(n).fill(Math.round((Number(val) || 0) / n)) });
@@ -1470,6 +1480,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
                 colWidths={aktiv.colWidths} rowHeights={aktiv.rowHeights}
                 onColWidth={setColWidth} onRowHeight={setRowHeight} onBogenRowHeight={setBogenRowHeight}
                 onPfostenV={setPfostenRow} onPfostenStart={histGroupStart} onPfostenEnd={histGroupEnd}
+                trapezFlach={aktiv.trapezFlach} onTrapezFlach={setTrapezFlach}
                 teile={aktiv.verbunden ? aktiv._teile : null} dir={aktiv._dir}
                 durchgehend={aktiv.durchgehend} onDivider={() => updAktiv({ durchgehend: true })}
                 onPaneClick={waehlePane} selectedPane={auswahlAktiv ? selectedPane : null}
