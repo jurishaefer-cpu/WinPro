@@ -14,6 +14,7 @@ import EinstellungProfilPage from './pages/EinstellungProfilPage';
 import EinstellungFirmaPage from './pages/EinstellungFirmaPage';
 import EinstellungDokumentePage from './pages/EinstellungDokumentePage';
 import EinstellungErscheinungsbildPage from './pages/EinstellungErscheinungsbildPage';
+import EinstellungMitarbeiterPage from './pages/EinstellungMitarbeiterPage';
 import LoginPage from './pages/LoginPage';
 import NameSetupModal from './components/NameSetupModal';
 import { useAuth } from './auth/AuthContext';
@@ -51,6 +52,7 @@ function App() {
         <Route path="/einstellungen/firma" element={<EinstellungFirmaPage />} />
         <Route path="/einstellungen/dokumente" element={<EinstellungDokumentePage />} />
         <Route path="/einstellungen/erscheinungsbild" element={<EinstellungErscheinungsbildPage />} />
+        <Route path="/einstellungen/mitarbeiter" element={<EinstellungMitarbeiterPage />} />
       </Routes>
       {nameFehlt && <NameSetupModal />}
     </div>

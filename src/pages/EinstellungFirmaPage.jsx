@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../auth/AuthContext';
-import { ladeEinstellungen, speichereSektion } from '../lib/einstellungen';
+import { ladeEinstellungen, speichereSektion, FIRMA_OWNER } from '../lib/einstellungen';
+import { useView } from '../view/ViewContext';
+import LeseHinweis from '../components/LeseHinweis';
 
 const LEER = {
   firmenname: '', geschaeftsfuehrung: '',
@@ -13,24 +14,25 @@ const LEER = {
 };
 
 function EinstellungFirmaPage() {
-  const { user } = useAuth();
+  const { istAdmin } = useView();
   const navigate = useNavigate();
   const [form, setForm] = useState(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     async function laden() {
-      const data = await ladeEinstellungen(user.id);
+      // Firmendaten gelten firmenweit – immer vom Inhaber laden/speichern.
+      const data = await ladeEinstellungen(FIRMA_OWNER);
       setForm({ ...LEER, ...(data.firma ?? {}) });
     }
     laden();
-  }, [user]);
+  }, []);
 
   function ch(e) { setForm({ ...form, [e.target.name]: e.target.value }); }
 
   async function speichern() {
     setSaving(true);
-    await speichereSektion(user.id, 'firma', form);
+    await speichereSektion(FIRMA_OWNER, 'firma', form);
     navigate('/einstellungen');
   }
 
@@ -49,7 +51,10 @@ function EinstellungFirmaPage() {
       <h1 className="form-title" style={{ marginBottom: 6 }}>Firmendaten</h1>
       <p className="settings-subtitle">Name, Anschrift, Steuernummer und Bankverbindung für Belege.</p>
 
+      {!istAdmin && <LeseHinweis />}
+
       <div className="einst-card">
+       <fieldset className="einst-fieldset" disabled={!istAdmin}>
         <section className="einst-section">
           <h2 className="section-label">UNTERNEHMEN</h2>
           {F('firmenname', 'Firmenname')}
@@ -91,12 +96,15 @@ function EinstellungFirmaPage() {
           {F('bic', 'BIC')}
           {F('bank', 'Bank')}
         </section>
+       </fieldset>
 
         <div className="einst-footer">
-          <Link to="/einstellungen" className="btn btn-secondary">Abbrechen</Link>
-          <button className="btn btn-danger" onClick={speichern} disabled={saving}>
-            {saving ? 'Speichern…' : 'Speichern'}
-          </button>
+          <Link to="/einstellungen" className="btn btn-secondary">{istAdmin ? 'Abbrechen' : 'Zurück'}</Link>
+          {istAdmin && (
+            <button className="btn btn-danger" onClick={speichern} disabled={saving}>
+              {saving ? 'Speichern…' : 'Speichern'}
+            </button>
+          )}
         </div>
       </div>
     </main>

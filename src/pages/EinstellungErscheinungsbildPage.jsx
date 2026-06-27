@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../auth/AuthContext';
-import { ladeEinstellungen, speichereSektion } from '../lib/einstellungen';
+import { ladeEinstellungen, speichereSektion, FIRMA_OWNER } from '../lib/einstellungen';
+import { useView } from '../view/ViewContext';
+import LeseHinweis from '../components/LeseHinweis';
 
 function EinstellungErscheinungsbildPage() {
-  const { user } = useAuth();
+  const { istAdmin } = useView();
   const navigate = useNavigate();
   const fileRef = useRef(null);
   const [form, setForm] = useState(null);
@@ -12,12 +13,13 @@ function EinstellungErscheinungsbildPage() {
 
   useEffect(() => {
     async function laden() {
-      const data = await ladeEinstellungen(user.id);
+      // Logo & Akzentfarbe gelten firmenweit – immer vom Inhaber.
+      const data = await ladeEinstellungen(FIRMA_OWNER);
       const e = data.erscheinungsbild ?? {};
       setForm({ logo: e.logo ?? null, akzentfarbe: e.akzentfarbe ?? '#8b1a1a' });
     }
     laden();
-  }, [user]);
+  }, []);
 
   function waehleLogo(e) {
     const file = e.target.files?.[0];
@@ -34,7 +36,7 @@ function EinstellungErscheinungsbildPage() {
 
   async function speichern() {
     setSaving(true);
-    await speichereSektion(user.id, 'erscheinungsbild', form);
+    await speichereSektion(FIRMA_OWNER, 'erscheinungsbild', form);
     navigate('/einstellungen');
   }
 
@@ -46,7 +48,10 @@ function EinstellungErscheinungsbildPage() {
       <h1 className="form-title" style={{ marginBottom: 6 }}>Erscheinungsbild</h1>
       <p className="settings-subtitle">Logo und Akzentfarbe für das eigene Unternehmen.</p>
 
+      {!istAdmin && <LeseHinweis />}
+
       <div className="einst-card">
+       <fieldset className="einst-fieldset" disabled={!istAdmin}>
         <section className="einst-section">
           <h2 className="section-label">LOGO UND FARBE</h2>
 
@@ -79,12 +84,15 @@ function EinstellungErscheinungsbildPage() {
             </div>
           </div>
         </section>
+       </fieldset>
 
         <div className="einst-footer">
-          <Link to="/einstellungen" className="btn btn-secondary">Abbrechen</Link>
-          <button className="btn btn-danger" onClick={speichern} disabled={saving}>
-            {saving ? 'Speichern…' : 'Speichern'}
-          </button>
+          <Link to="/einstellungen" className="btn btn-secondary">{istAdmin ? 'Abbrechen' : 'Zurück'}</Link>
+          {istAdmin && (
+            <button className="btn btn-danger" onClick={speichern} disabled={saving}>
+              {saving ? 'Speichern…' : 'Speichern'}
+            </button>
+          )}
         </div>
       </div>
     </main>

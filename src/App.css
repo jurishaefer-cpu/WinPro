@@ -2734,3 +2734,91 @@ a.detail-contact-link:hover span { text-decoration: underline; }
   .login-title { font-size: 22px; }
   .login-subtitle { margin-bottom: 16px; }
 }
+
+/* ===== Rollen / Mitarbeiter-Verwaltung ===== */
+/* fieldset als reiner Layout-Container ohne Eigenoptik; disabled graut Felder aus */
+.einst-fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+.einst-fieldset:disabled {
+  opacity: 1;
+}
+.einst-fieldset:disabled input,
+.einst-fieldset:disabled textarea,
+.einst-fieldset:disabled .btn {
+  background: #f2f3f5;
+  color: #8a8f98;
+  cursor: not-allowed;
+}
+
+/* Leserechte-Hinweis oben auf gesperrten Einstellungsseiten */
+.lese-hinweis {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  background: #fff7e6;
+  border: 1px solid #f0d089;
+  border-radius: 10px;
+  color: #8a5a00;
+  font-size: 14px;
+}
+.lese-hinweis svg { flex: 0 0 auto; }
+
+/* Mitarbeiter-Liste */
+.mitarbeiter-liste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.mitarbeiter-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 4px;
+  border-bottom: 1px solid #eef0f3;
+}
+.mitarbeiter-row:last-child { border-bottom: 0; }
+.mitarbeiter-name {
+  font-weight: 600;
+  color: #1a1a1a;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.rollen-badge {
+  flex: 0 0 auto;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #eef0f3;
+  color: #5a6472;
+}
+.rollen-badge--admin {
+  background: #fde8ec;
+  color: #c0152e;
+}
+.btn-klein {
+  flex: 0 0 auto;
+  padding: 7px 12px;
+  font-size: 13px;
+}
+.mitarbeiter-fehler {
+  margin: 12px 0 0;
+  color: #c0152e;
+  font-size: 14px;
+}
+.mitarbeiter-info { margin-top: 16px; }
+
+@media (max-width: 600px) {
+  .mitarbeiter-row {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+  .mitarbeiter-name { flex: 1 1 100%; }
+  .btn-klein { margin-left: auto; }
+}

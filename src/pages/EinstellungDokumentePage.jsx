@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../auth/AuthContext';
-import { ladeEinstellungen, speichereSektion } from '../lib/einstellungen';
+import { ladeEinstellungen, speichereSektion, FIRMA_OWNER } from '../lib/einstellungen';
+import { useView } from '../view/ViewContext';
+import LeseHinweis from '../components/LeseHinweis';
 import { DEFAULT_NUMMERN, BELEG_ART, formatBelegnummer } from '../lib/belegHelfer';
 
 const ARTEN = [
@@ -21,18 +22,19 @@ function initForm(dok) {
 }
 
 function EinstellungDokumentePage() {
-  const { user } = useAuth();
+  const { istAdmin } = useView();
   const navigate = useNavigate();
   const [form, setForm] = useState(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     async function laden() {
-      const data = await ladeEinstellungen(user.id);
+      // Nummernkreise & Zahlungsbedingungen gelten firmenweit – immer vom Inhaber.
+      const data = await ladeEinstellungen(FIRMA_OWNER);
       setForm(initForm(data.dokumente));
     }
     laden();
-  }, [user]);
+  }, []);
 
   function setNummer(key, feld, wert) {
     setForm(f => ({ ...f, nummern: { ...f.nummern, [key]: { ...f.nummern[key], [feld]: wert } } }));
@@ -43,7 +45,7 @@ function EinstellungDokumentePage() {
 
   async function speichern() {
     setSaving(true);
-    await speichereSektion(user.id, 'dokumente', form);
+    await speichereSektion(FIRMA_OWNER, 'dokumente', form);
     navigate('/einstellungen');
   }
 
@@ -57,7 +59,10 @@ function EinstellungDokumentePage() {
       <h1 className="form-title" style={{ marginBottom: 6 }}>Dokumente</h1>
       <p className="settings-subtitle">Angebots-, Auftrags- und Rechnungsnummern, Zahlungsbedingungen.</p>
 
+      {!istAdmin && <LeseHinweis />}
+
       <div className="einst-card">
+       <fieldset className="einst-fieldset" disabled={!istAdmin}>
         <section className="einst-section">
           <h2 className="section-label">NUMMERNKREISE</h2>
           <p className="einst-hinweis">
@@ -121,12 +126,15 @@ function EinstellungDokumentePage() {
             </div>
           ))}
         </section>
+       </fieldset>
 
         <div className="einst-footer">
-          <Link to="/einstellungen" className="btn btn-secondary">Abbrechen</Link>
-          <button className="btn btn-danger" onClick={speichern} disabled={saving}>
-            {saving ? 'Speichern…' : 'Speichern'}
-          </button>
+          <Link to="/einstellungen" className="btn btn-secondary">{istAdmin ? 'Abbrechen' : 'Zurück'}</Link>
+          {istAdmin && (
+            <button className="btn btn-danger" onClick={speichern} disabled={saving}>
+              {saving ? 'Speichern…' : 'Speichern'}
+            </button>
+          )}
         </div>
       </div>
     </main>
