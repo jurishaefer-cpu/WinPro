@@ -560,6 +560,21 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
     const next = aktiv.rowHeights.map((rr, idx) => (idx === i ? (Number(val) || 0) : rr));
     updAktiv({ rowHeights: next, hoehe: next.reduce((a, c) => a + c, 0) });
   }
+  // Horizontalen Pfosten vertikal ziehen: Grenze zwischen Zeile topIdx und topIdx+1 verschieben.
+  // Die Summe der beiden bleibt gleich → Gesamthöhe konstant.
+  function setPfostenRow(topIdx, newTopH) {
+    const rows = aktiv.rowHeights.map(v => Math.round(Number(v) || 0));
+    if (topIdx < 0 || topIdx + 1 >= rows.length) return;
+    const paar = rows[topIdx] + rows[topIdx + 1];
+    let h = Math.max(100, Math.round(Number(newTopH) || 0));
+    if (h > paar - 100) h = paar - 100;
+    rows[topIdx] = h; rows[topIdx + 1] = paar - h;
+    const patch = { rowHeights: rows };   // Gesamthöhe unverändert (Paarsumme gleich)
+    if (aktiv.verbunden && Array.isArray(aktiv._teile) && aktiv._dir === 'v') {
+      patch._teile = aktiv._teile.map((t, k) => ({ ...t, hoehe: rows[k] ?? (Number(t.hoehe) || 0) }));
+    }
+    updAktiv(patch);
+  }
   // Verbund-Bogenfenster: horizontalen Pfosten ziehen → Zeilen i / i+1 im Fensterteil verschieben
   // (Summe bleibt = Höhe des Fensterteils, Bogenanteil und Gesamthöhe bleiben unverändert).
   function setBogenRowHeight(i, val) {
@@ -1377,6 +1392,7 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
                 panes={aktiv.panes} cols={aktiv.cols}
                 colWidths={aktiv.colWidths} rowHeights={aktiv.rowHeights}
                 onColWidth={setColWidth} onRowHeight={setRowHeight} onBogenRowHeight={setBogenRowHeight}
+                onPfostenV={setPfostenRow}
                 teile={aktiv.verbunden ? aktiv._teile : null} dir={aktiv._dir}
                 durchgehend={aktiv.durchgehend} onDivider={() => updAktiv({ durchgehend: true })}
                 onPaneClick={waehlePane} selectedPane={auswahlAktiv ? selectedPane : null}

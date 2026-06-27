@@ -585,7 +585,7 @@ export function computeUnit(r0, scale, { geometrie, breite, hoehe, panes: panesP
       const vTop = oberlichtRect ? inner.y : blendIn.y, vBot = blendIn.y + blendIn.h;
       pfostenList.push({ x: colX[c] - dW, y: vTop, w: dW, h: vBot - vTop, fest: !istStulp });
     }
-    for (let r = 1; r < rows; r++) pfostenList.push({ x: blendIn.x, y: rowY[r] - dH, w: blendIn.w, h: dH, fest: true });
+    for (let r = 1; r < rows; r++) pfostenList.push({ x: blendIn.x, y: rowY[r] - dH, w: blendIn.w, h: dH, fest: true, vDrag: r - 1, h0: Math.round(rhMM[r - 1]) });
     if (cols > 1) subCols = colX.map((cx0, c) => ({ x0: cx0, x1: cx0 + colWpx[c], mm: Math.round(cwMM[c]), idx: c }));
     if (rows > 1) subRows = rowY.map((ry0, r) => ({ y0: ry0, y1: ry0 + rowHpx[r], mm: Math.round(rhMM[r]), idx: r }));
   } else {
@@ -629,8 +629,20 @@ export function computeUnit(r0, scale, { geometrie, breite, hoehe, panes: panesP
 }
 
 // Zeichnet den Körper EINER Einheit (ohne Maßketten) aus dem computeUnit-Ergebnis.
-export function UnitBody({ c, glasFarbe = '#cfe3ef', onPaneClick, selectedPane, keyPrefix = '' }) {
+export function UnitBody({ c, glasFarbe = '#cfe3ef', onPaneClick, selectedPane, keyPrefix = '', scale = 1, onPfostenV }) {
   const { r0, win, kasten, blendIn, miterBlend, leaves, pfostenList, lamellen, badge, glasMinX, glasMaxX, hatVerb, hatKasten, istTuer, effPanes, g } = c;
+  // Horizontalen Pfosten vertikal ziehen → verschiebt die Grenze zwischen zwei Zeilen.
+  const pfDrag = useRef(null);
+  const pfScaleRef = useRef(scale); pfScaleRef.current = scale;
+  const pfDown = (e, h0) => { e.stopPropagation(); e.currentTarget.setPointerCapture?.(e.pointerId); pfDrag.current = { y: e.clientY, h0 }; };
+  const pfMove = (e, idx) => {
+    const d = pfDrag.current; if (!d || !onPfostenV) return;
+    const ctm = e.currentTarget.ownerSVGElement?.getScreenCTM();
+    const dySvg = (e.clientY - d.y) / ((ctm && ctm.d) || 1);            // Screen-px → SVG-px
+    const nh = Math.round(d.h0 + dySvg / Math.max(0.0001, pfScaleRef.current));   // SVG-px → mm
+    onPfostenV(idx, nh);
+  };
+  const pfUp = () => { pfDrag.current = null; };
   return (
     <g>
       {(hatVerb || hatKasten) && (
@@ -701,6 +713,14 @@ export function UnitBody({ c, glasFarbe = '#cfe3ef', onPaneClick, selectedPane, 
                 style={{ cursor: 'pointer' }} onClick={() => onPaneClick(li)} />
         );
       })}
+      {/* Ziehflächen über den horizontalen Pfosten (vertikal frei verschiebbar). */}
+      {onPfostenV && pfostenList.map((pf, i) => (pf.vDrag == null ? null : (
+        <rect key={keyPrefix + 'pfd' + i} x={pf.x} y={pf.y - Math.max(9, pf.h)} width={pf.w} height={pf.h + Math.max(18, pf.h * 2)}
+              fill="transparent" style={{ cursor: 'ns-resize', touchAction: 'none' }}
+              onPointerDown={e => pfDown(e, pf.h0)} onPointerMove={e => pfMove(e, pf.vDrag)} onPointerUp={pfUp}>
+          <title>Pfosten verschieben</title>
+        </rect>
+      )))}
     </g>
   );
 }
@@ -991,7 +1011,7 @@ export function durchgehendPfade(r0, teile, dir, frame) {
   return { outer: path(pts), inner: path(ip) };
 }
 
-function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkasten, schwelle, oberlichtHoehe, glasFarbe = '#cfe3ef', onBreite, onHoehe, onOberlichtHoehe, onBottomHoehe, panes: panesProp, cols: colsProp, colWidths, rowHeights, onColWidth, onRowHeight, onPaneClick, selectedPane, teile, dir: teilDir, durchgehend, onDivider, onBackgroundClick, onBogenRowHeight }) {
+function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkasten, schwelle, oberlichtHoehe, glasFarbe = '#cfe3ef', onBreite, onHoehe, onOberlichtHoehe, onBottomHoehe, panes: panesProp, cols: colsProp, colWidths, rowHeights, onColWidth, onRowHeight, onPaneClick, selectedPane, teile, dir: teilDir, durchgehend, onDivider, onBackgroundClick, onBogenRowHeight, onPfostenV }) {
   const b = Math.max(200, Number(breite) || 1000);
   const hh = Math.max(200, Number(hoehe) || 1200);
 
@@ -1311,7 +1331,8 @@ function FensterZeichnung({ geometrie, breite, hoehe, verbreiterung, aufsatzkast
           mullions={sonderMullions} pfW={sonderPfW}
           onPaneClick={onPaneClick ? () => onPaneClick(0) : undefined} selected={selectedPane === 0} />
       ) : (
-        <UnitBody c={c} glasFarbe={glasFarbe} onPaneClick={onPaneClick} selectedPane={selectedPane} />
+        <UnitBody c={c} glasFarbe={glasFarbe} onPaneClick={onPaneClick} selectedPane={selectedPane}
+          scale={scale} onPfostenV={onPfostenV} />
       )}
 
       {/* Höhen-Griff am Bogen-Scheitel (nur unverbundener Bogen/Dreieck): vertikal ziehen = Höhe */}
