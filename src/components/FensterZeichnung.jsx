@@ -1330,17 +1330,20 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
   if (rahmen) { totalWmm = Math.max(totalWmm, Number(rahmen.w) || 0); totalHmm = Math.max(totalHmm, Number(rahmen.h) || 0); }
   const hatWand = rahmen && (totalWmm > inhaltWmm + 0.5 || totalHmm > inhaltHmm + 0.5);
 
-  const maxW = 600, maxH = 440;
-  const scale = Math.min(maxW / Math.max(200, totalWmm), maxH / Math.max(200, totalHmm));
-  const totalWpx = totalWmm * scale, totalHpx = totalHmm * scale;
   // Im Beleg (nicht interaktiv) den Rahmen eng halten: rechts/unten gibt es keine Maße,
   // links/oben nur so viel Rand wie die Maßzahlen brauchen → Zeichnung füllt ihre Spalte.
   const beleg = !onUnitClick;
+  // Im Editor denselben Maßstab/Canvas wie die Einzel-Ansicht (maxW 600 / maxH 430, festes
+  // 780×720-viewBox), damit gleiche reale Maße gleich groß erscheinen – egal ob ein verbundenes
+  // Element oder viele Einzelteile. Beleg bleibt eng am Inhalt.
+  const maxW = 600, maxH = beleg ? 440 : 430;
+  const scale = Math.min(maxW / Math.max(200, totalWmm), maxH / Math.max(200, totalHmm));
+  const totalWpx = totalWmm * scale, totalHpx = totalHmm * scale;
   // Maß-Schrift box-bewusst wählen: nach dem Einpassen in die feste Beleg-Box (.beleg-zeichnung)
   // sollen die Maße auf jeder Position gleich groß/lesbar sein – auch bei hohen Kombinationen.
   const MR = beleg ? 22 : 86, MB = beleg ? 20 : 40;
   const BOX_W = 185, BOX_H = 150, ZIEL_FONT = 13;
-  let fMain, ML, MT;
+  let fMain, ML, MT, VB_W, VB_H, ox, oy;
   if (beleg) {
     fMain = 30;
     for (let i = 0; i < 4; i++) {
@@ -1351,13 +1354,16 @@ export function KombinationsZeichnung({ elemente, glasFarbe = '#cfe3ef', weisses
     }
     fMain = Math.round(fMain);
     ML = Math.round(70 + fMain * 0.8); MT = Math.round(70 + fMain * 0.8);
+    VB_W = totalWpx + ML + MR; VB_H = totalHpx + MT + MB;
+    ox = ML; oy = MT;
   } else {
-    fMain = 22; ML = 96; MT = 100;
+    // Fester Canvas wie die Einzel-Ansicht; Inhalt zentriert (leicht nach rechts/unten für die Maße).
+    fMain = 22;
+    VB_W = 780; VB_H = 720;
+    ox = Math.round(VB_W / 2 - totalWpx / 2 + 24);
+    oy = Math.round(VB_H / 2 - totalHpx / 2 + 14);
   }
   const fSub = beleg ? Math.round(fMain * 0.76) : 17;
-  const VB_W = totalWpx + ML + MR;
-  const VB_H = totalHpx + MT + MB;
-  const ox = ML, oy = MT;
 
   const colXpx = {}; { let xa = ox; colsSet.forEach(cc => { colXpx[cc] = xa; xa += colWmm[cc] * scale; }); }
   const rowYpx = {}; { let ya = oy; rowsSet.forEach(rr => { rowYpx[rr] = ya; ya += rowHmm[rr] * scale; }); }
