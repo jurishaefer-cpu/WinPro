@@ -768,30 +768,56 @@ function NeuePositionEditor({ kundeName, onClose, onSave, initial }) {
   }
   // Einzelmaß ändern: NUR dieses Fenster (Nachbarn bleiben unverändert). Geht es über die Wand
   // hinaus, wird auf das Maximum begrenzt und kurz „zu groß" angezeigt.
+  // Verteilt `rest` mm proportional zu `vorher` auf die `keys`, jede min. 200, Summe exakt = rest.
+  function verteileRest(keys, vorher, rest) {
+    const sum = keys.reduce((a, k) => a + (vorher[k] || 0), 0) || 1;
+    const out = {}; let assigned = 0;
+    keys.forEach((k, i) => {
+      if (i === keys.length - 1) out[k] = Math.max(200, rest - assigned);
+      else { const v = Math.max(200, Math.round(rest * (vorher[k] || 0) / sum)); out[k] = v; assigned += v; }
+    });
+    return out;
+  }
   function setElementBreite(id, val) {
     const el = elemente.find(e => e.id === id);
     if (!el) return;
-    let w = Math.max(200, Math.round(Number(val) || 0));
     const c = el.col ?? 0;
-    const cols = [...new Set(elemente.map(e => e.col ?? 0))];
-    const colMax = (cc, ww) => Math.max(0, ...elemente.filter(e => (e.col ?? 0) === cc && e.id !== id).map(e => Number(e.breite) || 0), cc === c ? ww : 0);
-    const totalFor = ww => cols.reduce((a, cc) => a + colMax(cc, ww), 0);
-    if (rahmenB && totalFor(w) > rahmenB) { w = Math.max(200, w - (totalFor(w) - rahmenB)); zeigeWarnung('zu groß'); }
+    const cols = [...new Set(elemente.map(e => e.col ?? 0))].sort((a, b) => a - b);
+    const others = cols.filter(cc => cc !== c);
+    // Mehrere Spalten: die Nachbarspalten gleichen die Änderung aus → Gesamtmaß bleibt konstant.
+    if (others.length) {
+      const colW = {}; cols.forEach(cc => { colW[cc] = Math.max(0, ...elemente.filter(e => (e.col ?? 0) === cc).map(e => Number(e.breite) || 0)); });
+      const total = cols.reduce((a, cc) => a + colW[cc], 0);
+      let w = Math.max(200, Math.round(Number(val) || 0));
+      if (w > total - 200 * others.length) { w = Math.max(200, total - 200 * others.length); zeigeWarnung('zu groß'); }
+      const newColW = { ...verteileRest(others, colW, total - w), [c]: w };
+      setElemente(prev => prev.map(e => scaleBreite(e, newColW[e.col ?? 0] ?? (Number(e.breite) || 0))));
+      return;
+    }
+    // Nur eine Spalte: kein Nachbar zum Ausgleichen – Breite direkt setzen (durch Wand begrenzt).
+    let w = Math.max(200, Math.round(Number(val) || 0));
+    if (rahmenB && w > rahmenB) { w = rahmenB; zeigeWarnung('zu groß'); }
     setElemente(prev => prev.map(e => (e.id === id ? scaleBreite(e, w) : e)));
   }
   function setElementHoehe(id, val) {
     const el = elemente.find(e => e.id === id);
     if (!el) return;
+    const r = el.row ?? 0;
+    const rows = [...new Set(elemente.map(e => e.row ?? 0))].sort((a, b) => a - b);
+    const others = rows.filter(rr => rr !== r);
+    // Mehrere Zeilen (gestapelt): die Nachbarzeilen gleichen die Änderung aus → Gesamtmaß bleibt konstant.
+    if (others.length) {
+      const rowH = {}; rows.forEach(rr => { rowH[rr] = Math.max(0, ...elemente.filter(e => (e.row ?? 0) === rr).map(e => Number(e.hoehe) || 0)); });
+      const total = rows.reduce((a, rr) => a + rowH[rr], 0);
+      let h = Math.max(200, Math.round(Number(val) || 0));
+      if (h > total - 200 * others.length) { h = Math.max(200, total - 200 * others.length); zeigeWarnung('zu groß'); }
+      const newRowH = { ...verteileRest(others, rowH, total - h), [r]: h };
+      setElemente(prev => prev.map(e => scaleHoehe(e, newRowH[e.row ?? 0] ?? (Number(e.hoehe) || 0))));
+      return;
+    }
+    // Nur eine Zeile: kein gestapelter Nachbar – nur dieses Element ändern (durch Wand begrenzt).
     let h = Math.max(200, Math.round(Number(val) || 0));
-    // Gesamthöhe der Kombination MIT der neuen Höhe – korrekt über Zeilen hinweg (ein Element,
-    // das über mehrere Zeilen reicht, wird NICHT doppelt gezählt). So lässt sich ein Element neben
-    // gestapelten Nachbarn auf die volle Höhe strecken, ohne dass sich die anderen ändern.
-    const totalFor = hh => {
-      const test = elemente.map(e => (e.id === id ? { ...e, hoehe: hh } : e));
-      const { vExt } = layoutExtents(test);
-      return Math.max(...test.map(e => vExt(e)[1]));
-    };
-    if (rahmenH && totalFor(h) > rahmenH) { h = Math.max(200, h - (totalFor(h) - rahmenH)); zeigeWarnung('zu groß'); }
+    if (rahmenH && h > rahmenH) { h = rahmenH; zeigeWarnung('zu groß'); }
     setElemente(prev => prev.map(e => (e.id === id ? scaleHoehe(e, h) : e)));
   }
   // Gesamtmaß ändern: die Fenster füllen das neue Maß (Spalten/Zeilen skalieren proportional).
